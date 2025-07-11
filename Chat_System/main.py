@@ -1,1 +1,0 @@
-from core.network.websocket import WebSocketManagerif __name__ == "__main__":    server = WebSocketManager(port=8765)    server.start()

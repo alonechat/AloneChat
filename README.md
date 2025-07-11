@@ -1,5 +1,66 @@
 # AloneChat
-AloneChat official repository.
-By Chenyun Zhang and Tony Tao, two students.
-The goal is a command-line chatting application.
-May be open-source at 2025 Q4 to 2026 Q4, before 2026 Sept.
+
+By ChenyunZhang and Tony Tao, two students. 
+A modern, extensible chat application with WebSocket support and plugin architecture.
+
+## Features gened by AI and will be done by us!
+- Real-time messaging using WebSocket protocol
+- Plugin-based architecture for extensibility
+- Admin and encryption plugins included
+- Cross-platform compatibility
+- Stable client connection with automatic reconnection
+
+## Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- pip (Python package manager)
+
+```bash
+git clone https://github.com/yourusername/AloneChat.git
+cd AloneChat
+pip install websockets
+```
+
+## Usage
+
+- Start Server
+```bash
+python server.py
+```
+
+- Run Client
+```bash
+python client.py
+```
+
+## Project Structure
+```
+./AloneChat/
+├── __init__.py
+├── core
+│   ├── __init__.py
+│   ├── client
+│   │   ├── __init__.py
+│   │   └── command.py
+│   ├── network
+│   │   ├── __init__.py
+│   │   ├── protocol.py
+│   │   └── websocket.py
+│   ├── plugin.py
+│   └── server
+│       ├── __init__.py
+│       └── manager.py
+└── plugins
+    ├── __init__.py
+    ├── admin
+    │   ├── __init__.py
+    │   └── kick.py
+    └── encryption
+        ├── __init__.py
+        └── aes.py
+```
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
