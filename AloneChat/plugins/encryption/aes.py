@@ -1,7 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 import base64
-from core.plugin import Plugin
+from AloneChat.core.plugin import Plugin
 
 class AESEncryptor(Plugin):
     def __init__(self):
