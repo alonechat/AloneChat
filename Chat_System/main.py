@@ -1,0 +1,1 @@
+from core.network.websocket import WebSocketManagerif __name__ == "__main__":    server = WebSocketManager(port=8765)    print(f"Server running on ws://{server.host}:{server.port}")    server.start()
