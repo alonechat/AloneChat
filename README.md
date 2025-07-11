@@ -39,26 +39,31 @@ python client.py
 ./AloneChat/
 ├── __init__.py
 ├── core
-│   ├── __init__.py
-│   ├── client
-│   │   ├── __init__.py
-│   │   └── command.py
-│   ├── network
-│   │   ├── __init__.py
-│   │   ├── protocol.py
-│   │   └── websocket.py
-│   ├── plugin.py
-│   └── server
-│       ├── __init__.py
-│       └── manager.py
-└── plugins
-    ├── __init__.py
-    ├── admin
-    │   ├── __init__.py
-    │   └── kick.py
-    └── encryption
-        ├── __init__.py
-        └── aes.py
+│   ├── __init__.py
+│   ├── client
+│   │   ├── __init__.py
+│   │   └── command.py
+│   ├── network
+│   │   ├── __init__.py
+│   │   ├── protocol.py
+│   │   └── websocket.py
+│   ├── plugin.py
+│   └── server
+│       ├── __init__.py
+│       └── manager.py
+├── plugins
+│   ├── __init__.py
+│   ├── admin
+│   │   ├── __init__.py
+│   │   └── kick.py
+│   └── encryption
+│       ├── __init__.py
+│       └── aes.py
+├── start
+│   ├── client.py
+│   └── server.py
+└── test
+    └── test_client.py
 ```
 
 ## License
