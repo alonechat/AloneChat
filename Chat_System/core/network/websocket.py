@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 from typing import Set
-from .protocol import Message
+from .protocol import Message, MessageType
 
 class WebSocketManager:
     def __init__(self, host="localhost", port=8765):
@@ -36,9 +36,13 @@ class WebSocketManager:
 
     async def broadcast(self, msg):
         if self.clients:
-            await asyncio.wait([client.send(msg.serialize()) for client in self.clients])
+            tasks = [asyncio.create_task(client.send(msg.serialize())) for client in self.clients]
+            await asyncio.gather(*tasks)
+
+    async def run(self):
+        async with websockets.serve(self.handler, self.host, self.port):
+            print(f"Server running on ws://{self.host}:{self.port}")
+            await asyncio.Future()
 
     def start(self):
-        start_server = websockets.serve(self.handler, self.host, self.port)
-        asyncio.get_event_loop().run_until_complete(start_server)
-        asyncio.get_event_loop().run_forever()
+        asyncio.run(self.run())
