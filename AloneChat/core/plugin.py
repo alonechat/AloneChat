@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-import importlib.util
-import os
+
+import AloneChat.plugins as _plugins
 
 
 class Plugin(ABC):
@@ -14,21 +14,10 @@ class Plugin(ABC):
 
 
 class PluginManager:
-    def __init__(self):
+    def __init__(self, path):
+        self.__path = path
         self.plugins = {}
 
-    def load_plugin(self, path):
-        spec = importlib.util.spec_from_file_location("plugin", path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        if hasattr(module, 'PluginImpl'):
-            plugin = module.PluginImpl()
-            self.plugins[plugin.__class__.__name__] = plugin
-            return True
-        return False
-
-    def load_all(self, directory):
-        for filename in os.listdir(directory):
-            if filename.endswith('.py'):
-                self.load_plugin(os.path.join(directory, filename))
+    def load(self):
+        _plugins.load_plugins(path=self.__path)
+        self.plugins = _plugins.PLUGIN_MODULES
