@@ -4,7 +4,7 @@ import time
 import asyncio
 import websockets
 from typing import Set
-from ..network.protocol import Message, MessageType
+from ..message.protocol import Message, MessageType
 
 @dataclass
 class UserSession:

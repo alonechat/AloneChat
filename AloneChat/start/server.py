@@ -1,5 +1,5 @@
 import asyncio
-from AloneChat.core.server.manager import WebSocketManager
+from AloneChat.core.server import WebSocketManager
 
 def server(port): 
     _server = WebSocketManager(port=port)

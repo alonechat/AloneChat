@@ -1,5 +1,6 @@
+import asyncio
 from AloneChat.core.plugin import Plugin
-from AloneChat.core.network.protocol import Message, MessageType
+from AloneChat.core.message.protocol import Message, MessageType
 
 class KickPlugin(Plugin):
     def initialize(self, context):

@@ -1,6 +1,6 @@
 import asyncio
 import websockets
-from ..core.network.protocol import Message, MessageType
+from ..core.message.protocol import Message, MessageType
 
 async def send_message():
     uri = "ws://localhost:8765"

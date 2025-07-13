@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 from websockets.exceptions import ConnectionClosed
-from AloneChat.core.network.protocol import Message, MessageType
+from AloneChat.core.message.protocol import Message, MessageType
 from AloneChat.core.client.command import CommandSystem
 
 from .command import CommandSystem

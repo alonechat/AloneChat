@@ -1,4 +1,4 @@
-from AloneChat.core.network.protocol import Message, MessageType
+from AloneChat.core.message.protocol import Message, MessageType
 
 
 class CommandSystem:
