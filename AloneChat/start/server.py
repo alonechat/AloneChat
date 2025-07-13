@@ -1,9 +1,10 @@
-from AloneChat.core.network.websocket import WebSocketManager
+import asyncio
+from AloneChat.core.server.manager import WebSocketManager
 
 def server(port): 
-    server = WebSocketManager(port=port)
+    _server = WebSocketManager(port=port)
     try:
-        server.start()
+        asyncio.run(_server.run())
     except KeyboardInterrupt:
         print("Closed by user.")
     
