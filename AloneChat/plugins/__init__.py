@@ -2,7 +2,6 @@ import sys
 
 PLUGIN_MODULES = dict()
 
-
 def load_plugins(path):
     sys.path.append(path)
     plugins = []

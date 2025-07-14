@@ -1,14 +1,20 @@
+"""
+A build script for AloneChat application.
+Creates standalone executable using PyInstaller.
+"""
+
 import subprocess
 
-# Install PyInstaller if not already installed by using pip install -r requirements-dev.txt
-main_script = "__main__.py"  
+# Configuration for PyInstaller build
+main_script = "__main__.py"  # Entry point of the application
 
+# PyInstaller command configuration
 command = [
     "pyinstaller",
-    "--onefile",
-    # "--windowed",  
+    "--onefile",  # Create a single executable file
+    # "--windowed", # Uncomment to hide the console window (GUI mode)
     main_script
 ]
 
-# Run PyInstaller
+# Execute PyInstaller command to build the executable
 subprocess.run(command)

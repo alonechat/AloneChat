@@ -1,30 +1,71 @@
+"""
+Server session management module for AloneChat application.
+Handles user sessions and their lifecycle management.
+"""
+
+import asyncio
+import time
 from dataclasses import dataclass
 from typing import Dict
-import time
-import asyncio
-import websockets
 from typing import Set
+
+import websockets
+
 from ..message.protocol import Message, MessageType
+
 
 @dataclass
 class UserSession:
+    """
+    Data class representing a user session.
+
+    Attributes:
+        user_id (str): Unique identifier for the user
+        last_active (float): Timestamp of last user activity
+    """
     user_id: str
     last_active: float
 
 class SessionManager:
+    """
+    Manages user sessions and their states in the chat server.
+    Handles session creation, removal, and activity monitoring.
+    """
     def __init__(self):
+        """Initialize an empty session manager."""
         self.sessions: Dict[str, UserSession] = {}
 
     def add_session(self, user_id: str):
+        """
+        Add a new user session.
+
+        Args:
+            user_id (str): Unique identifier for the user
+        """
         self.sessions[user_id] = UserSession(
             user_id=user_id,
             last_active=time.time()
         )
 
     def remove_session(self, user_id: str):
+        """
+        Remove a user session.
+
+        Args:
+            user_id (str): Unique identifier for the user to remove
+        """
         self.sessions.pop(user_id, None)
 
     def check_inactive(self, timeout: int = 300):
+        """
+        Check for inactive sessions based on a timeout period.
+
+        Args:
+            timeout (int): Timeout period in seconds (default: 300)
+
+        Returns:
+            list: List of inactive user IDs
+        """
         current = time.time()
         inactive = [
             uid for uid, session in self.sessions.items()
@@ -72,6 +113,7 @@ class WebSocketManager:
             await asyncio.gather(*tasks)
 
     async def run(self):
+        # noinspection PyTypeChecker
         async with websockets.serve(self.handler, self.host, self.port):
             print(f"Server running on ws://{self.host}:{self.port}")
             await asyncio.Future()
