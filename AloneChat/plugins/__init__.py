@@ -1,9 +1,9 @@
-PLUGIN_MODULES = {
-    'admin': ['kick'],
-    'encryption': ['aes']
-}
+import sys
 
-def load_plugins():
+PLUGIN_MODULES = dict()
+
+def load_plugins(path):
+    sys.path.append(path)
     plugins = []
     for category, modules in PLUGIN_MODULES.items():
         for module in modules:

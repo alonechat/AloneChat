@@ -1,34 +1,60 @@
+"""
+Plugin system module for AloneChat application.
+Provides base plugin interface and plugin management functionality.
+"""
+
 from abc import ABC, abstractmethod
-import importlib.util
-import os
+
+import AloneChat.plugins as _plugins
 
 
 class Plugin(ABC):
+    """
+    Abstract base class for AloneChat plugins.
+    All plugins must inherit from this class and implement its methods.
+    """
+
     @abstractmethod
     def initialize(self, context):
+        """
+        Initialize the plugin with given context.
+
+        Args:
+            context: Plugin initialization context
+        """
         pass
 
     @abstractmethod
     def execute(self, *args, **kwargs):
+        """
+        Execute the plugin's main functionality.
+
+        Args:
+            *args: Variable positional arguments
+            **kwargs: Variable keyword arguments
+        """
         pass
 
 
 class PluginManager:
-    def __init__(self):
+    """
+    Plugin manager responsible for loading and managing plugins.
+    """
+
+    def __init__(self, path):
+        """
+        Initialize plugin manager with "plugins" directory path.
+
+        Args:
+            path: Path to plugins directory
+        """
+        self.__path = path
         self.plugins = {}
 
-    def load_plugin(self, path):
-        spec = importlib.util.spec_from_file_location("plugin", path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        if hasattr(module, 'PluginImpl'):
-            plugin = module.PluginImpl()
-            self.plugins[plugin.__class__.__name__] = plugin
-            return True
-        return False
-
-    def load_all(self, directory):
-        for filename in os.listdir(directory):
-            if filename.endswith('.py'):
-                self.load_plugin(os.path.join(directory, filename))
+    def load(self):
+        """
+        Load all plugins from the specified plugins directory.
+        Plugins are registered in the PLUGIN_MODULES registry.
+        """
+        _plugins.load_plugins(path=self.__path)
+        self.plugins = _plugins.PLUGIN_MODULES

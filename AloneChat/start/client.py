@@ -1,54 +1,39 @@
+"""
+Client startup module for AloneChat application.
+Provides the entry point for starting the chat client.
+"""
+
 import asyncio
-import websockets
-from websockets.exceptions import ConnectionClosed
-from AloneChat.core.network.protocol import Message, MessageType
-from AloneChat.core.client.command import CommandSystem
+
+from AloneChat.core.client import CursesClient
+from AloneChat.core.client import StandardCommandlineClient
+
+__all__ = ['client']
 
 
-async def client(host="localhost", port=8765):
-    uri = f"ws://{host}:{port}" # TODO: Change to t-string in Python 3.14
+def client(host="localhost", port=8765, ui="tui"):
+    """
+    Start the chat client with specified connection parameters.
 
-    name = input("Enter username: ")
+    Args:
+        host (str): Server hostname to connect to (default: localhost)
+        port (int): Server port number (default: 8765)
+        ui   (str): User interface type ("text" for command-line, "tui" for Textual UI)
+    """
+    try:
+        if ui == "text":
+            _client = StandardCommandlineClient(host, port)
+            asyncio.run(_client.run())
+        elif ui == "tui":
+            _client = CursesClient(host, port)
+            _client.run()
+        else:
+            print(
+                "Sorry. But we don't have such a beautiful UI yet."
+                "We apologize, but we just have a text-based (ugly) UI and a curses-based TUI."
+                "No need? You are a geek! Why not join us in developing a new UI?"
+                "GitHub: https://github.com/alonechat/AloneChat , welcome you!"
+            )
 
-    while True:
-        try:
-            async with websockets.connect(uri) as websocket:
-                print("Connected to server!")
-                await websocket.send(Message(MessageType.JOIN, name, "").serialize())
-
-                async def receive():
-                    try:
-                        while True:
-                            try:
-                                msg = Message.deserialize(await websocket.recv())
-                                print(f"\n[{msg.sender}] {msg.content}")
-                            except ConnectionClosed:
-                                print("\n! Server connection closed")
-                                break
-                    except Exception as e:
-                        print(f"\nReceive error: {e}")
-
-                async def send():
-                    try:
-                        while True:
-                            try:
-                                text = await asyncio.get_event_loop().run_in_executor(None, input, "> ")
-                                msg = CommandSystem.process(text, name)
-                                await websocket.send(msg.serialize())
-                            except ConnectionClosed:
-                                break
-                    except Exception as e:
-                        print(f"\nSend error: {e}")
-
-                await asyncio.gather(receive(), send())
-
-        except ConnectionRefusedError:
-            print("Server not available, retrying in 3 seconds...")
-            await asyncio.sleep(3)
-        except Exception as e:
-            print(f"Fatal error: {str(e)}")
-            break
-
-
-if __name__ == "__main__":
-    asyncio.run(chat_client())
+    except KeyboardInterrupt:
+        print("Now quit. Bye!")
