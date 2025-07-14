@@ -11,7 +11,7 @@ from AloneChat.core.client import StandardCommandlineClient
 __all__ = ['client']
 
 
-def client(host="localhost", port=8765, ui="text"):
+def client(host="localhost", port=8765, ui="tui"):
     """
     Start the chat client with specified connection parameters.
 

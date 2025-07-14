@@ -33,8 +33,8 @@ def main():
     elif args.command == 'client':
         if args.ui == 'tui':
             client.client(host=args.host, port=args.port, ui='tui')
-        else:
-            client.client(host=args.host, port=args.port)
+        elif args.ui == 'text':
+            client.client(host=args.host, port=args.port, ui='text')
 
 if __name__ == '__main__':
     main()
