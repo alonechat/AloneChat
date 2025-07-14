@@ -1,3 +1,5 @@
-websockets
+websockets~=15.0.1
 fastapi
 uvicorn[standard]
+# if you're a windows user, you might need to install the following:
+# windows-curses

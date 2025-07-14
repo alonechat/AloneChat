@@ -80,6 +80,7 @@ class WebSocketManager:
     def __init__(self, host="localhost", port=8765):
         self.host = host
         self.port = port
+        # noinspection PyUnresolvedReferences
         self.clients: Set[websockets.WebSocketServerProtocol] = set()
         self.sessions = {}
 

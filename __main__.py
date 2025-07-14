@@ -22,6 +22,8 @@ def main():
     client_parser = subparsers.add_parser('client', help='Startup CLIENT')
     client_parser.add_argument('--host', default='localhost', help='CLIENT listening address (default: localhost)')
     client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8080)')
+    client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
+                               help='User interface type (default: text)')
 
     args = parser.parse_args()
 
@@ -29,7 +31,10 @@ def main():
     if args.command == 'server':
         server.server(port=args.port)
     elif args.command == 'client':
-        client.client(host=args.host, port=args.port)
+        if args.ui == 'tui':
+            client.client(host=args.host, port=args.port, ui='tui')
+        else:
+            client.client(host=args.host, port=args.port)
 
 if __name__ == '__main__':
     main()
