@@ -15,13 +15,13 @@ def main():
 
     # Setup server command line arguments
     server_parser = subparsers.add_parser('server', help='Startup SERVER')
-    server_parser.add_argument('--port', type=int, default=8765, help='SERVER port (default: 8080)')
+    server_parser.add_argument('--port', type=int, default=8765, help='SERVER port (default: 8765)')
     # server_parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 
     # Setup client command line arguments
     client_parser = subparsers.add_parser('client', help='Startup CLIENT')
     client_parser.add_argument('--host', default='localhost', help='CLIENT listening address (default: localhost)')
-    client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8080)')
+    client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8765)')
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
 

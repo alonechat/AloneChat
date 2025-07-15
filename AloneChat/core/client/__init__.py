@@ -205,8 +205,12 @@ class CursesClient(Client):
                         self.input_buffer = ""
                         self.auto_scroll = True  # Auto-scroll after sending
 
-                elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
-                    self.input_buffer = self.input_buffer[:-1]
+                elif key == curses.KEY_BACKSPACE or key == 8:  # Backspace key
+                    # The backspace key in windows is "8"...
+                    # Remove the last character from input buffer
+                    self.input_buffer = self.input_buffer[:-1] \
+                        if self.input_buffer != [] \
+                        else self.input_buffer
 
                 # Message history navigation
                 elif key == curses.KEY_UP:
@@ -252,6 +256,7 @@ class CursesClient(Client):
 
             except ConnectionClosed:
                 break
+
             except Exception as e:
                 self.messages.append(f"Input error: {e}")
                 self.update_display()
