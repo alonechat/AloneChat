@@ -25,7 +25,7 @@ Thus, the name `AloneChat` was born…
 Well, this part’s straightforward—two middle school students.
 
 - Zhang: Architecture & UI Lead  `<zhang dot chenyun at outlook dot com>`
-- Tao: Features & Components Lead
+- Tao: Features & Components Lead  `<tonytao2022 at outlook dot com>`
 
 This arrangement works smoothly for now,  
 and we plan to maintain it unless the project faces major changes—  

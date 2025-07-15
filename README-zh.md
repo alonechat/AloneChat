@@ -23,7 +23,7 @@
 额，这个说起来就比较简单了，两名同学，中学生。
 
 - 张同学，主要负责的是架构、UI，EMAIL: `<zhang dot chenyun at outlook dot com>`
-- 陶同学，主要负责的是功能、组件
+- 陶同学，主要负责的是功能、组件，EMAIL: `<tonytao2022 at outlook dot com>`
 
 这个目前看上去没什么问题，
 并且打算就这么一直用下去，直到这个软件出现一些状况，
