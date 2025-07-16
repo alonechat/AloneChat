@@ -11,6 +11,7 @@ from typing import Set
 
 import websockets
 
+from AloneChat.core.client.command import COMMANDS as COMMANDS
 from ..message.protocol import Message, MessageType
 
 
@@ -99,12 +100,21 @@ class WebSocketManager:
                     del self.sessions[user]
 
     async def process_message(self, msg):
-        if msg.type == MessageType.KICK and msg.sender == "admin":
-            if target_ws := self.sessions.get(msg.target):
-                await target_ws.close()
-        elif msg.type == MessageType.HELP:
-            help_msg = Message(MessageType.TEXT, "SERVER", "Commands: /help, /join, /kick")
+        """
+        if msg.type == MessageType.HELP:
+            help_msg = Message(
+                MessageType.TEXT, "SERVER",
+                "TODO: Implement this message..."
+            )
             await self.sessions[msg.sender].send(help_msg.serialize())
+        elif ...
+        """
+        if msg.type == MessageType.COMMAND:
+            parts = msg.content.split(maxsplit=1)
+            cmd = parts[0]
+            if cmd in list(COMMANDS.keys()):
+                command_msg = Message(MessageType.TEXT, "COMMAND", COMMANDS[cmd]["handler"]()())
+                await self.sessions[msg.sender].send(command_msg.serialize())
         else:
             await self.broadcast(msg)
 

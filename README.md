@@ -49,7 +49,7 @@ Instead, enjoy some quirky behind-the-scenes tidbits:
 
 1. [x] Simple chatroom.
 2. [x] `curses`TUI.
-3. [ ] Plugins support.
+3. [x] Plugins support.
 4. [ ] API.
 
 Em, generally, not much now...
