@@ -47,7 +47,12 @@ Instead, enjoy some quirky behind-the-scenes tidbits:
 
 ### Features
 
-*(Section intentionally blank for now)*
+1. [x] Simple chatroom.
+2. [x] `curses`TUI.
+3. [ ] Plugins support.
+4. [ ] API.
+
+Em, generally, not much now...
 
 ### Usage
 
@@ -87,6 +92,32 @@ python . client    # Launch client
 python packing.py  # Package to EXE  
 ```  
 
+### Project Structure
+
+```
+./AloneChat/
+├── __init__.py
+├── core
+│   ├── __init__.py
+│   ├── client
+│   │   ├── __init__.py
+│   │   └── command.py
+│   ├── message
+│   │   ├── __init__.py
+│   │   └── protocol.py
+│   ├── plugin.py
+│   └── server
+│       ├── __init__.py
+│       └── manager.py
+├── plugins
+│   └── __init__.py
+├── start
+│   ├── client.py
+│   └── server.py
+└── test
+    └── test_client.py
+```
+
 ### Branch Strategy
 
 We use `canary` + `develop` + `master`:
@@ -96,7 +127,7 @@ We use `canary` + `develop` + `master`:
     - **Understand every line of code** *AND/OR*
     - **Diagnose errors’ root causes** *AND/OR*
     - **Fix most bugs independently**.  
-      *STRICTLY LIMITED TO* developers/professionals. Newcomers—use `develop`.
+      *STRICTLY LIMITED TO* developers/professionals. Hobbyists—use `develop`.
 - `develop`: "Stable"? Nope. But *less chaotic* than `canary`.  
   Hobbyists may experiment here (Python proficiency required—no prebuilt packages).
 - `master**: Relatively stable. End-users should use this branch.  

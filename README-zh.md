@@ -45,6 +45,13 @@
 
 ### 功能
 
+1. [x] 简单的聊天室。
+2. [x] `curses`TUI。
+3. [ ] 插件支持。
+4. [ ] API。
+
+总的来说，没啥功能……
+
 ### 使用方法
 
 #### 用户
@@ -86,6 +93,32 @@ python . client   # 打开客户端
 python packing.py # 打包为exe
 ```
 
+### 结构
+
+```
+./AloneChat/
+├── __init__.py
+├── core
+│   ├── __init__.py
+│   ├── client
+│   │   ├── __init__.py
+│   │   └── command.py
+│   ├── message
+│   │   ├── __init__.py
+│   │   └── protocol.py
+│   ├── plugin.py
+│   └── server
+│       ├── __init__.py
+│       └── manager.py
+├── plugins
+│   └── __init__.py
+├── start
+│   ├── client.py
+│   └── server.py
+└── test
+    └── test_client.py
+```
+
 ### 分支
 
 采用`canary`+`develop`+`master`分支策略。
@@ -112,6 +145,10 @@ python packing.py # 打包为exe
 | 开发者 | ✅        | ⚠️        | ❌        |
 | 爱好者 | ❌        | ✅         | ⚠️       |
 | 用户  | ❌        | ❌         | ✅        |
+
+- ❌：最好……别用。
+- ⚠️：可以用，但不是特别建议。
+- ✅：建议使用。
 
 ### 打包
 
