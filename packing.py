@@ -6,6 +6,7 @@ Creates standalone executable using PyInstaller.
 import os
 import shutil
 import subprocess
+from argparse import ArgumentParser
 
 
 def build():
@@ -83,6 +84,12 @@ def postprocessing():
 
 
 if __name__ == "__main__":
-    preprocessing()
-    build()  # Build the application
-    postprocessing()
+    parser = ArgumentParser()
+    parser.add_argument("--just-clean", action="store_true", default=False)
+    args = parser.parse_args()
+    if args.just_clean:
+        preprocessing()
+    else:
+        preprocessing()
+        build()  # Build the application
+        postprocessing()
