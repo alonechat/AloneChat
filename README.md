@@ -40,7 +40,7 @@ Instead, enjoy some quirky behind-the-scenes tidbits:
 1. **Total Reset**: Originally developed in August 2024,  
    the first version was… well, "steaming e-garbage" (Zhang takes the lion’s share of blame).  
    The old repo lived at `alonechat/AloneChat.Frame`.
-2. **Reborn on 2025.7.9**: Post-reset, everything’s fresh.  
+2. **Reborn at 2025.7.9**: Post-reset, everything’s fresh.  
    New URL: `alonechat/AloneChat`.  
    "Frame" was dropped because separating framework/core failed—  
    now merged for ~~simplicity & clarity~~.
@@ -130,7 +130,7 @@ We use `canary` + `develop` + `master`:
       *STRICTLY LIMITED TO* developers/professionals. Hobbyists—use `develop`.
 - `develop`: "Stable"? Nope. But *less chaotic* than `canary`.  
   Hobbyists may experiment here (Python proficiency required—no prebuilt packages).
-- `master**: Relatively stable. End-users should use this branch.  
+- `master**: Relatively stable. End users should use this branch.  
   Not recommended for devs due to slow update cycles.
 
 **User/Branch Compatibility**:

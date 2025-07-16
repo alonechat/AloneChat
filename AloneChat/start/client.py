@@ -18,7 +18,7 @@ def client(host="localhost", port=8765, ui="tui"):
     Args:
         host (str): Server hostname to connect to (default: localhost)
         port (int): Server port number (default: 8765)
-        ui   (str): User interface type ("text" for command-line, "tui" for Textual UI)
+        ui (str): User interface type ("text" for command-line, "tui" for Textual UI)
     """
     try:
         if ui == "text":

@@ -24,7 +24,7 @@ def build():
         "pyinstaller",
         "--onefile",  # Create a single executable file
         "--clean",  # Clean up temporary files after build
-        # "--windowed",       # Uncomment to hide the console window (GUI mode)
+        # "--windowed", # Uncomment to hide the console window (GUI mode)
         main_script
     ]
 
@@ -58,7 +58,7 @@ def clean():
 
 def preprocessing():
     """
-    Preprocessing step before building the application.
+    Preprocessing before building the application.
 
     This function can be used to perform any necessary preprocessing tasks
     such as cleaning up old build artifacts or preparing resources.
@@ -71,12 +71,12 @@ def preprocessing():
 
 def postprocessing():
     """
-    Postprocessing step after building the application.
+    Postprocessing after building the application.
 
     This function can be used to perform any necessary postprocessing tasks
     such as moving the executable to a specific location or cleaning up temporary files.
     """
-    # Move the built executable to a desired location if needed
+    # Move the built executable to a desired location if needed,
     # For example, move it to a 'bin' directory
     clean()
     # Clean up the dist directory after moving
