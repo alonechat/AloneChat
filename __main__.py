@@ -6,6 +6,7 @@ This module provides a command-line interface to start either a server or client
 import argparse
 
 from AloneChat.start import client, server
+from AloneChat.test import main as test_main
 
 
 def main():
@@ -25,6 +26,11 @@ def main():
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
 
+    client_parser = subparsers.add_parser('test', help='Run Test')
+    client_parser.add_argument('--host', default='localhost', help='Test server listening address (default: localhost)')
+    client_parser.add_argument('--port', type=int, default=8765, help='Test server port (default: 8765)')
+    client_parser.add_argument('message', help='Message to send in test')
+
     args = parser.parse_args()
 
     # Launch either server or client based on command line arguments
@@ -35,6 +41,8 @@ def main():
             client.client(host=args.host, port=args.port, ui='tui')
         elif args.ui == 'text':
             client.client(host=args.host, port=args.port, ui='text')
+    elif args.command == 'test':
+        test_main(args.message, host=args.host, port=args.port)
 
 if __name__ == '__main__':
     main()
