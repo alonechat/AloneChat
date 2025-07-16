@@ -205,8 +205,12 @@ class CursesClient(Client):
                         self.input_buffer = ""
                         self.auto_scroll = True  # Auto-scroll after sending
 
-                elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
-                    self.input_buffer = self.input_buffer[:-1]
+                elif key == curses.KEY_BACKSPACE or key == 8:  # Backspace key
+                    # The backspace key in windows is "8"...
+                    # Remove the last character from input buffer
+                    self.input_buffer = self.input_buffer[:-1] \
+                        if self.input_buffer != [] \
+                        else self.input_buffer
 
                 # Message history navigation
                 elif key == curses.KEY_UP:
@@ -252,6 +256,7 @@ class CursesClient(Client):
 
             except ConnectionClosed:
                 break
+
             except Exception as e:
                 self.messages.append(f"Input error: {e}")
                 self.update_display()
@@ -310,5 +315,13 @@ class CursesClient(Client):
                 break
 
     def run(self):
-        """Start the curses-based client."""
-        curses.wrapper(lambda stdscr: asyncio.run(self.async_run(stdscr)))
+        try:
+            """Start the curses-based client."""
+            curses.wrapper(lambda stdscr: asyncio.run(self.async_run(stdscr)))
+        except NameError:
+            print(
+                "Are you using AloneChat in Windows?"
+                "You can install curses using `pip install windows-curses`."
+                "Please check requirements.txt for more details."
+                "Or you can add '--ui text' to client command."
+            )

@@ -17,8 +17,7 @@ class MessageType(Enum):
     LEAVE = 3  # User leave notification
     HELP = 4  # Help command message
     COMMAND = 5  # System command message
-    KICK = 6  # User kick command
-    ENCRYPTED = 7  # Encrypted message type
+    ENCRYPTED = 6  # Encrypted message type
 
 @dataclass
 class Message:
@@ -35,6 +34,7 @@ class Message:
     sender: str
     content: str
     target: str = None
+    command: str = None
 
     def serialize(self) -> str:
         """

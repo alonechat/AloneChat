@@ -3,19 +3,31 @@ A command processing system for AloneChat client.
 Handles parsing and processing of chat commands.
 """
 
+from AloneChat.core.client.plugin_loader import PluginManager
 from AloneChat.core.message.protocol import Message, MessageType
 
+COMMANDS = {}
+MANAGER = PluginManager()
+
+
+def load() -> dict | None:
+    return MANAGER.load()
 
 class CommandSystem:
     """
     Static class for processing chat commands.
     Handles command recognition and message creation.
     """
+    global COMMANDS, MANAGER
     # Dictionary mapping command strings to their message types and handlers
-    COMMANDS = {
-        "/help": {"type": MessageType.HELP, "handler": None},
-        # TODO: Write these commands
-    }
+    loaded_modules = load()
+    """
+    COMMANDS.update({
+        # TODO: Write some predefined commands
+    })
+    """
+    if loaded_modules is not None:
+        COMMANDS.update(load())
 
     @classmethod
     def process(cls, input_str, sender):
@@ -33,15 +45,15 @@ class CommandSystem:
             # Split command and content
             parts = input_str.split(maxsplit=1)
             cmd = parts[0]
-            content = parts[1] if len(parts) > 1 else ""
 
             # Check if command exists and create the appropriate message
-            if cmd in cls.COMMANDS:
+            if cmd in COMMANDS:
                 return Message(
-                    type=cls.COMMANDS[cmd]["type"],
+                    type=MessageType.COMMAND,
                     sender=sender,
-                    content=content,
+                    content=input_str,
                     target="None"
                 )
+
         # Return as a regular text message if not a command
         return Message(MessageType.TEXT, sender, input_str)
