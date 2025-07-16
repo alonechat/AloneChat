@@ -315,5 +315,13 @@ class CursesClient(Client):
                 break
 
     def run(self):
-        """Start the curses-based client."""
-        curses.wrapper(lambda stdscr: asyncio.run(self.async_run(stdscr)))
+        try:
+            """Start the curses-based client."""
+            curses.wrapper(lambda stdscr: asyncio.run(self.async_run(stdscr)))
+        except NameError:
+            print(
+                "Are you using AloneChat in Windows?"
+                "You can install curses using `pip install windows-curses`."
+                "Please check requirements.txt for more details."
+                "Or you can add '--ui text' to client command."
+            )
