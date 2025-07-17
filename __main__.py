@@ -26,10 +26,10 @@ def main():
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
 
-    client_parser = subparsers.add_parser('test', help='Run Test')
-    client_parser.add_argument('--host', default='localhost', help='Test server listening address (default: localhost)')
-    client_parser.add_argument('--port', type=int, default=8765, help='Test server port (default: 8765)')
-    client_parser.add_argument('message', help='Message to send in test')
+    test_parser = subparsers.add_parser('test', help='Run Test')
+    test_parser.add_argument('--host', default='localhost', help='Test server listening address (default: localhost)')
+    test_parser.add_argument('--port', type=int, default=8765, help='Test server port (default: 8765)')
+    test_parser.add_argument('message', help='Message to send in test')
 
     args = parser.parse_args()
 
