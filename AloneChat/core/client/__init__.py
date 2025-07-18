@@ -52,21 +52,6 @@ class StandardCommandlineClient(Client):
         super().__init__(host, port)
 
     @staticmethod
-    def while_try_connection_closed(function, **params):
-        """
-        Utility method to repeatedly try a function until connection is closed.
-
-        Args:
-            function: Function to execute
-            **params: Parameters to pass to the function
-        """
-        while True:
-            try:
-                function(**params)
-            except ConnectionClosed:
-                pass
-
-    @staticmethod
     async def send(name, websocket):
         """
         Asynchronously send messages to the websocket server.
@@ -184,7 +169,7 @@ class CursesClient(Client):
         input_line = f"> {self.input_buffer}"
         self.stdscr.addstr(height - 1, 0, input_line[:width - 1])
 
-        # Position cursor at end of input
+        # Position cursor at the end of input
         if len(input_line) < width:
             self.stdscr.move(height - 1, len(input_line))
         else:
@@ -294,7 +279,7 @@ class CursesClient(Client):
         while True:
             try:
                 async with websockets.connect(uri) as websocket:
-                    # Send join message
+                    # Send `join` message
                     join_msg = Message(MessageType.JOIN, self.username, "").serialize()
                     await websocket.send(join_msg)
 

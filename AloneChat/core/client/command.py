@@ -30,13 +30,14 @@ class CommandSystem:
         COMMANDS.update(load())
 
     @classmethod
-    def process(cls, input_str, sender):
+    def process(cls, input_str, sender, target=None):
         """
         Process input string and convert to the appropriate message type.
 
         Args:
             input_str (str): User input string to process
             sender (str): Username of the message sender
+            target (str, optional): Target user for the message, if needed
 
         Returns:
             Message: Processed message object
@@ -52,7 +53,7 @@ class CommandSystem:
                     type=MessageType.COMMAND,
                     sender=sender,
                     content=input_str,
-                    target="None"
+                    target=target
                 )
 
         # Return as a regular text message if not a command
