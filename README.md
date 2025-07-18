@@ -50,7 +50,7 @@ Instead, enjoy some quirky behind-the-scenes tidbits:
 1. [x] Simple chatroom.
 2. [x] `curses`TUI.
 3. [x] Plugins support.
-4. [ ] API.
+4. [x] API.
 
 Em, generally, not much now...
 
@@ -95,27 +95,40 @@ python packing.py  # Package to EXE
 ### Project Structure
 
 ```
-./AloneChat/
-├── __init__.py
-├── core
-│   ├── __init__.py
-│   ├── client
-│   │   ├── __init__.py
-│   │   └── command.py
-│   ├── message
-│   │   ├── __init__.py
-│   │   └── protocol.py
-│   ├── plugin.py
-│   └── server
-│       ├── __init__.py
-│       └── manager.py
-├── plugins
-│   └── __init__.py
-├── start
-│   ├── client.py
-│   └── server.py
-└── test
-    └── test_client.py
+.
+├── AloneChat
+│   ├── API
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── __init__.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── client
+│   │   │   ├── __init__.py
+│   │   │   ├── command.py
+│   │   │   └── plugin_loader.py
+│   │   ├── message
+│   │   │   ├── __init__.py
+│   │   │   └── protocol.py
+│   │   └── server
+│   │       ├── __init__.py
+│   │       └── manager.py
+│   ├── plugins
+│   │   ├── __init__.py
+│   │   └── help.py
+│   ├── start
+│   │   ├── API.py
+│   │   ├── client.py
+│   │   └── server.py
+│   └── test
+│       └── __init__.py
+├── LICENSE
+├── README-zh.md
+├── README.md
+├── __main__.py
+├── packing.py
+├── requirements-dev.txt
+└── requirements.txt
 ```
 
 ### Branch Strategy

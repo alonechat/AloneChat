@@ -48,7 +48,7 @@
 1. [x] 简单的聊天室。
 2. [x] `curses`TUI。
 3. [x] 插件支持。
-4. [ ] API。
+4. [x] API。
 
 总的来说，没啥功能……
 
@@ -96,27 +96,40 @@ python packing.py # 打包为exe
 ### 结构
 
 ```
-./AloneChat/
-├── __init__.py
-├── core
-│   ├── __init__.py
-│   ├── client
-│   │   ├── __init__.py
-│   │   └── command.py
-│   ├── message
-│   │   ├── __init__.py
-│   │   └── protocol.py
-│   ├── plugin.py
-│   └── server
-│       ├── __init__.py
-│       └── manager.py
-├── plugins
-│   └── __init__.py
-├── start
-│   ├── client.py
-│   └── server.py
-└── test
-    └── test_client.py
+.
+├── AloneChat
+│   ├── API
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── __init__.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── client
+│   │   │   ├── __init__.py
+│   │   │   ├── command.py
+│   │   │   └── plugin_loader.py
+│   │   ├── message
+│   │   │   ├── __init__.py
+│   │   │   └── protocol.py
+│   │   └── server
+│   │       ├── __init__.py
+│   │       └── manager.py
+│   ├── plugins
+│   │   ├── __init__.py
+│   │   └── help.py
+│   ├── start
+│   │   ├── API.py
+│   │   ├── client.py
+│   │   └── server.py
+│   └── test
+│       └── __init__.py
+├── LICENSE
+├── README-zh.md
+├── README.md
+├── __main__.py
+├── packing.py
+├── requirements-dev.txt
+└── requirements.txt
 ```
 
 ### 分支
