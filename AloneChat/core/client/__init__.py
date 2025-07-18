@@ -52,21 +52,6 @@ class StandardCommandlineClient(Client):
         super().__init__(host, port)
 
     @staticmethod
-    def while_try_connection_closed(function, **params):
-        """
-        Utility method to repeatedly try a function until connection is closed.
-
-        Args:
-            function: Function to execute
-            **params: Parameters to pass to the function
-        """
-        while True:
-            try:
-                function(**params)
-            except ConnectionClosed:
-                pass
-
-    @staticmethod
     async def send(name, websocket):
         """
         Asynchronously send messages to the websocket server.
