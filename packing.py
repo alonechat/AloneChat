@@ -76,8 +76,7 @@ def postprocessing():
     This function can be used to perform any necessary postprocessing tasks
     such as moving the executable to a specific location or cleaning up temporary files.
     """
-    # Move the built executable to a desired location if needed,
-    # For example, move it to a 'bin' directory
+    # Move the built executable to a desired location if needed
     clean()
     # Clean up the dist directory after moving
     shutil.move('dist/__main__.exe', 'dist/AloneChat.exe')
