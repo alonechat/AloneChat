@@ -1,5 +1,5 @@
 websockets~=15.0.1
-fastapi
-uvicorn[standard]
+fastapi~=0.116.1
+uvicorn[standard]~=0.35.0
 # if you're a windows user, you might need to install the following:
-# windows-curses
+windows-curses ; platform_system == "Windows"

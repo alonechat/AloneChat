@@ -30,16 +30,17 @@ app = FastAPI(
 )
 
 
+# noinspection AiaStyle, GrazieInspection
 @app.post("/send")
 async def send_message(sender: str, message: str, target: str | None = None):
     """
-    Send a message to the connected WebSocket.
+        Send a message to the connected WebSocket.
 
-    Args:
-        sender : The sender of the message.
-        message (str): The message to send.
-        target (str, optional): Target user for the message, if needed
-    """
+        Args:
+            sender : The sender of the message.
+            message (str): The message to send.
+            target (str, optional): Target user for the message, if needed
+        """
     # noinspection PyShadowingNames
     try:
         msg = CommandSystem.process(message, sender, target)
