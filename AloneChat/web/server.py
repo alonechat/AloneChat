@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_config():
-    """加载配置文件"""
+    """Load configuration from a JSON file."""
     config_path = Path(__file__).parent / 'config.json'
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -37,10 +37,9 @@ def load_config():
 
 
 class SimpleHandler(http.server.SimpleHTTPRequestHandler):
-    """自定义请求处理程序，仅处理根路径请求"""
+    """Process HTTP GET requests for static files."""
 
     def do_GET(self):
-        # 只响应根路径请求
         if self.path is not None:
             if self.path == '/':
                 self.path = 'index.html'
@@ -49,11 +48,11 @@ class SimpleHandler(http.server.SimpleHTTPRequestHandler):
                 self.path = self.path[1:]
 
             try:
-                # 检查模板文件是否存在
+                # Check if the requested file exists
                 if not os.path.exists('./AloneChat/web/static/' + self.path):
                     raise FileNotFoundError
 
-                # 读取并发送HTML文件
+                # Read and send the requested file
                 with open('./AloneChat/web/static/' + self.path, 'rb') as file:
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
@@ -61,15 +60,15 @@ class SimpleHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(file.read())
 
             except FileNotFoundError:
-                # 文件不存在时返回404
+                # Raise 404 error if files not found
                 self.send_error(404, "File Not Found", f"{self.path} not found in directory")
             except Exception as e:
-                # 其他错误返回500
+                # Raise 500 error for any other exceptions
                 self.send_error(500, f"Server Error: {str(e)}")
 
 
 def server(port=None):
-    # 创建服务器
+    # Create the server
     if port is None:
         port = PORT
 
@@ -78,7 +77,7 @@ def server(port=None):
         print(f"Serving at http://localhost:{port}")
         print("Press Ctrl+C to stop server...")
         try:
-            # 启动服务器
+            # Start the server
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("\nServer stopped.")

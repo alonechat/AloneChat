@@ -1,6 +1,6 @@
 class AloneChat {
     constructor(config = {}) {
-        // WebSocket 配置
+        // WebSocket config
         this.wsConfig = {
             protocol: config.wsProtocol || 'ws',
             host: config.wsHost || 'localhost',
@@ -8,14 +8,14 @@ class AloneChat {
             path: config.wsPath || ''
         };
 
-        // 登录相关元素
+        // Login-related elements
         this.loginContainer = document.getElementById('loginContainer');
         this.chatContainer = document.getElementById('chatContainer');
         this.usernameInput = document.getElementById('usernameInput');
         this.loginButton = document.getElementById('loginButton');
         this.currentUser = document.getElementById('currentUser');
 
-        // 聊天相关元素
+        // Chat-related elements
         this.messageInput = document.getElementById('messageInput');
         this.sendButton = document.getElementById('sendButton');
         this.messageArea = document.getElementById('messageArea');
@@ -28,7 +28,7 @@ class AloneChat {
     }
 
     setupEventListeners() {
-        // 登录事件监听
+        // Listener for login button and username input
         this.loginButton.addEventListener('click', () => this.handleLogin());
         this.usernameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -36,7 +36,7 @@ class AloneChat {
             }
         });
 
-        // 聊天事件监听
+        // Listener for chat events
         this.sendButton.addEventListener('click', () => this.handleSendMessage());
         this.messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -57,28 +57,28 @@ class AloneChat {
 
     validateUsername(username) {
         if (!username) {
-            this.showError('用户名不能为空');
+            this.showError('Username cannot be empty');
             return false;
         }
         if (username.length < 2 || username.length > 20) {
-            this.showError('用户名长度必须在2-20个字符之间');
+            this.showError('Username must between 2 and 20 characters');
             return false;
         }
         if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-            this.showError('用户名只能包含字母、数字、下划线和中文');
+            this.showError('Username can only contain letters, numbers, underscores, and Chinese characters');
             return false;
         }
         return true;
     }
 
     showError(message) {
-        // 移除旧的错误信息
+        // Remove any existing error messages
         const oldError = this.loginContainer.querySelector('.error-message');
         if (oldError) {
             oldError.remove();
         }
 
-        // 显示新的错误信息
+        // Display the new error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.textContent = message;
@@ -92,7 +92,7 @@ class AloneChat {
     }
 
     connect() {
-        // 关闭现有连接
+        // Remove any existing WebSocket connection
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -102,26 +102,27 @@ class AloneChat {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-            this.connectionStatus.textContent = '已连接';
+            this.connectionStatus.textContent = 'Connected';
             this.connectionStatus.classList.add('connected');
-            // 发送加入消息
+            // Send a JOIN message to the server
             this.sendMessage('', 'JOIN');
         };
 
         this.ws.onclose = () => {
-            this.connectionStatus.textContent = '未连接';
+            this.connectionStatus.textContent = 'Disconnected';
             this.connectionStatus.classList.remove('connected');
-            // 3秒后尝试重新连接
+            // Retry connection after 3 seconds
             setTimeout(() => this.connect(), 3000);
         };
 
         this.ws.onerror = (error) => {
-            this.showError('连接失败，请检查服务器是否正常运行');
+            this.showError('Connect failed, please check your WebSocket server at port 8765.');
             console.error('WebSocket error:', error);
         };
 
         this.ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
+            console.log('Called, Received message:', message);
             this.displayMessage(message);
         };
     }
@@ -158,7 +159,7 @@ class AloneChat {
             `;
         } else if (message.type === 2 || message.type === 3) { // JOIN or LEAVE
             messageDiv.classList.add('system');
-            messageDiv.textContent = `${this.escapeHtml(message.sender)} ${message.type === 2 ? '加入了聊天' : '离开了聊天'}`;
+            messageDiv.textContent = `${this.escapeHtml(message.sender)} ${message.type === 2 ? 'joined' : 'leaved'}`;
         }
 
         this.messageArea.appendChild(messageDiv);
@@ -175,7 +176,7 @@ class AloneChat {
     }
 }
 
-// 从 URL 参数中获取配置
+// Get config from URL parameters
 function getConfigFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -186,7 +187,7 @@ function getConfigFromUrl() {
     };
 }
 
-// 初始化聊天应用
+// Initialize the chat application when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     const config = getConfigFromUrl();
     new AloneChat(config);
