@@ -1,0 +1,7 @@
+{
+  "host": "0.0.0.0",
+  "port": 9007,
+  "static_path": "static",
+  "templates_path": "templates"
+}
+

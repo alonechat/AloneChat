@@ -1,0 +1,89 @@
+import http.server
+import json
+import logging
+import os
+import socketserver
+import sys
+from pathlib import Path
+
+PORT = 9007
+
+# 配置日志
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+def load_config():
+    """加载配置文件"""
+    config_path = Path(__file__).parent / 'config.json'
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.warning(f"Config file {config_path} not found, using default configuration.")
+        return {
+            "server": {
+                "host": "localhost",
+                "http_port": 9007,
+                "ws_port": 8765,
+                "ws_path": ""
+            }
+        }
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Error at config file: {e}")
+        sys.exit(1)
+
+
+class SimpleHandler(http.server.SimpleHTTPRequestHandler):
+    """自定义请求处理程序，仅处理根路径请求"""
+
+    def do_GET(self):
+        # 只响应根路径请求
+        if self.path is not None:
+            if self.path == '/':
+                self.path = 'index.html'
+
+            if self.path[0] == '/':
+                self.path = self.path[1:]
+
+            try:
+                # 检查模板文件是否存在
+                if not os.path.exists('./AloneChat/web/static/' + self.path):
+                    raise FileNotFoundError
+
+                # 读取并发送HTML文件
+                with open('./AloneChat/web/static/' + self.path, 'rb') as file:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    self.wfile.write(file.read())
+
+            except FileNotFoundError:
+                # 文件不存在时返回404
+                self.send_error(404, "File Not Found", f"{self.path} not found in directory")
+            except Exception as e:
+                # 其他错误返回500
+                self.send_error(500, f"Server Error: {str(e)}")
+
+
+def server(port=None):
+    # 创建服务器
+    if port is None:
+        port = PORT
+
+    # noinspection PyTypeChecker
+    with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
+        print(f"Serving at http://localhost:{port}")
+        print("Press Ctrl+C to stop server...")
+        try:
+            # 启动服务器
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+            sys.exit(0)
+
+
+if __name__ == '__main__':
+    server()

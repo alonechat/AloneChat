@@ -4,9 +4,15 @@ This module provides a command-line interface to start either a server or client
 """
 
 import argparse
+import logging
 
-from AloneChat.start import client, server, API
+from AloneChat.start import client, server, API, web
 from AloneChat.test import main as test_main
+
+# Logger configuration
+logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s] %(levelname)s - %(message)s')
+logger = logging.getLogger("AloneChat")
 
 
 def main():
@@ -24,6 +30,11 @@ def main():
     client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8766)')
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
+
+    web_parser = subparsers.add_parser('web', help='Startup WEB')
+    # web_parser.add_argument('--host', default='localhost', help='Web server listening address (default: localhost)')
+    # web_parser.add_argument('--port', type=int, default=8765, help='Web server port (default: 8765)')
+    web_parser.add_argument('--web-port', type=int, default=9007, help='Web server port (default: 9007)')
 
     # noinspection PyPep8Naming
     API_parser = subparsers.add_parser('api', help='Startup API')
@@ -46,6 +57,8 @@ def main():
             client.client(host=args.host, port=args.port, ui='text')
     elif args.command == 'api':
         API.API(port=args.port)
+    elif args.command == 'web':
+        web.web(port=args.web_port)
     elif args.command == 'test':
         test_main(args.message, host=args.host, port=args.port)
 
