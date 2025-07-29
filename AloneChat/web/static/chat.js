@@ -186,9 +186,3 @@ function getConfigFromUrl() {
         wsPath: params.get('wsPath')
     };
 }
-
-// Initialize the chat application when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const config = getConfigFromUrl();
-    new AloneChat(config);
-});

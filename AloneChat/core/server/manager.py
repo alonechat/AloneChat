@@ -126,5 +126,5 @@ class WebSocketManager:
     async def run(self):
         # noinspection PyTypeChecker
         async with websockets.serve(self.handler, self.host, self.port):
-            print(f"Server running on ws://{self.host}:{self.port}")
+            print(f"Server running on ws://{self.host}:{self.port}/")
             await asyncio.Future()
