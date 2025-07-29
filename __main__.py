@@ -32,8 +32,8 @@ def main():
                                help='User interface type (default: text)')
 
     web_parser = subparsers.add_parser('web', help='Startup WEB')
-    # web_parser.add_argument('--host', default='localhost', help='Web server listening address (default: localhost)')
-    # web_parser.add_argument('--port', type=int, default=8765, help='Web server port (default: 8765)')
+    web_parser.add_argument('--ws-host', default='localhost', help='Web server listening address (default: localhost)')
+    web_parser.add_argument('--ws-port', type=int, default=8765, help='Web server port (default: 8765)')
     web_parser.add_argument('--web-port', type=int, default=9007, help='Web server port (default: 9007)')
 
     # noinspection PyPep8Naming
@@ -58,7 +58,7 @@ def main():
     elif args.command == 'api':
         API.API(port=args.port)
     elif args.command == 'web':
-        web.web(port=args.web_port)
+        web.web(ws_host=args.ws_host, ws_port=args.ws_port, port=args.web_port)
     elif args.command == 'test':
         test_main(args.message, host=args.host, port=args.port)
 

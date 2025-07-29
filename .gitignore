@@ -210,3 +210,6 @@ __marimo__/
 
 # Configs
 AloneChat/web/static/config.json
+
+# Tools
+tools/

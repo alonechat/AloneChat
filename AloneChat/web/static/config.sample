@@ -1,7 +1,8 @@
 {
-  "host": "0.0.0.0",
-  "port": 9007,
-  "static_path": "static",
-  "templates_path": "templates"
+    "server": {
+        "ws_protocol": "ws",
+        "ws_host": "localhost",
+        "ws_port": 8765,
+        "ws_path": ""
+    }
 }
-
