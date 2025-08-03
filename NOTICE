@@ -1,0 +1,48 @@
+AlneChat AloneChat
+Copyright 2025 The AloneChat team at GitHub (@alonechat)
+
+This product will be used in software developed at
+The AloneChat Team (http://github.com/alonechat).
+
+Portions of this software were developed based on the following third-party works:
+
+1. websockets (>=10.0)
+   Copyright (c) 2013-2023 Aymeric Augustin and contributors.
+   Licensed under the MIT License.
+   Source: https://github.com/aaugustin/websockets
+
+2. FastAPI (~=0.116.1)
+   Copyright (c) 2018 Sebastián Ramírez.
+   Licensed under the MIT License.
+   Source: https://github.com/tiangolo/fastapi
+
+3. Uvicorn[standard] (~=0.35.0)
+   Copyright (c) 2017-present Tom Christie and contributors.
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/encode/uvicorn
+
+4. Flask (>=2.0.0)
+   Copyright (c) 2010 by the Pallets team.
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/pallets/flask
+
+5. Jinja2 (>=3.0.1)
+   Copyright (c) 2008 by the Jinja Team.
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/pallets/jinja
+
+6. python-multipart (>=0.0.5)
+   Copyright (c) 2018 Marcelo Trylesinski.
+   Licensed under the MIT License.
+   Source: https://github.com/Kludex/python-multipart
+
+7. windows-curses (Windows only)
+   Copyright (c) 2013-2018 Zack Buhman.
+   Licensed under the MIT License.
+   Source: https://github.com/zephyrproject-rtos/windows-curses
+
+Development Dependencies:
+8. PyInstaller
+   Copyright (c) 2005-2023 PyInstaller Contributors.
+   Licensed under the GPL v2 or later (with linking exception).
+   Source: https://github.com/pyinstaller/pyinstaller
