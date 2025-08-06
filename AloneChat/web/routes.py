@@ -49,7 +49,7 @@ def load_user_credentials():
     # Initial users with hashed passwords
     return {
         "admin": {
-            "password": getpass.getpass("Admin user not found, set admin password: "),
+            "password": hash_password(getpass.getpass("Admin user not found, set admin password: ")),
             "is_online": False
         }
     }
