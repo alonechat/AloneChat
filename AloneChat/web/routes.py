@@ -1,10 +1,10 @@
 # Standard library imports
+import datetime
 import json
 import os
 import sys
 import time
-import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # 反馈数据文件路径
 FEEDBACK_FILE = "feedback.json"

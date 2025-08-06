@@ -19,4 +19,5 @@ try:
 except requests.exceptions.RequestException as e:
     print(f'API调用错误: {e}')
     if 'response' in locals():
+        # noinspection PyUnboundLocalVariable
         print(f'响应内容: {response.text}')

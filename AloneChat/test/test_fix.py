@@ -2,11 +2,12 @@
 简单的测试脚本，用于验证AloneChat项目的修复是否有效。
 """
 import asyncio
-import sys
-import jwt
 import time
-from AloneChat.core.message.protocol import Message, MessageType
+
+import jwt
+
 from AloneChat.config import config
+from AloneChat.core.message.protocol import Message, MessageType
 
 
 async def test_message_serialization():
