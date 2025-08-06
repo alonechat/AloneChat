@@ -14,6 +14,7 @@ import bcrypt
 import jwt
 import psutil
 import uvicorn
+import getpass
 import websockets
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,11 +49,7 @@ def load_user_credentials():
     # Initial users with hashed passwords
     return {
         "admin": {
-            "password": hash_password("password123"),
-            "is_online": False
-        },  # Example user
-        "testuser": {
-            "password": hash_password("testpass"),
+            "password": getpass.getpass("Admin user not found, set admin password: "),
             "is_online": False
         }
     }
