@@ -50,7 +50,6 @@ Instead, enjoy some quirky behind-the-scenes tidbits:
 1. [x] Simple chatroom.
 2. [x] `curses`TUI.
 3. [x] Plugins support.
-4. [ ] API.
 
 Em, generally, not much now...
 
@@ -89,33 +88,63 @@ python -m pip install -r requirements.txt
 python -m pip install -r requirements-dev.txt  # For packaging  
 python . server    # Launch server  
 python . client    # Launch client  
-python packing.py  # Package to EXE  
+python ./tools/packing.py  # Package to EXE  
 ```  
 
 ### Project Structure
 
 ```
-./AloneChat/
-├── __init__.py
-├── core
-│   ├── __init__.py
-│   ├── client
-│   │   ├── __init__.py
-│   │   └── command.py
-│   ├── message
-│   │   ├── __init__.py
-│   │   └── protocol.py
-│   ├── plugin.py
-│   └── server
-│       ├── __init__.py
-│       └── manager.py
-├── plugins
-│   └── __init__.py
-├── start
-│   ├── client.py
-│   └── server.py
-└── test
-    └── test_client.py
+.
+├── AloneChat
+│   ├── __init__.py
+│   ├── config.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── client
+│   │   │   ├── __init__.py
+│   │   │   ├── command.py
+│   │   │   └── plugin_loader.py
+│   │   ├── message
+│   │   │   ├── __init__.py
+│   │   │   └── protocol.py
+│   │   └── server
+│   │       ├── __init__.py
+│   │       └── manager.py
+│   ├── plugins
+│   │   ├── __init__.py
+│   │   └── help.py
+│   ├── start
+│   │   ├── client.py
+│   │   ├── server.py
+│   │   └── web.py
+│   ├── test
+│   │   ├── __init__.py
+│   │   ├── test_api.py
+│   │   └── test_fix.py
+│   └── web
+│       ├── __init__.py
+│       ├── routes.py
+│       └── static
+│           ├── admin.html
+│           ├── client.js
+│           ├── feedback.html
+│           ├── index.html
+│           ├── login.html
+│           └── test_api.html
+├── LICENSE
+├── NOTICE
+├── README-zh.md
+├── README.md
+├── __main__.py
+├── feedback.json
+├── requirements-dev.txt
+├── requirements.txt
+├── server_config.json
+├── tools
+│   ├── generate_hashes.py
+│   ├── packing.py
+│   └── update_version.py
+└── user_credentials.json
 ```
 
 ### Branch Strategy

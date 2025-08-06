@@ -1,0 +1,75 @@
+NOTICE
+
+AlneChat AloneChat
+Copyright 2025 The AloneChat team at GitHub (@alonechat)
+
+This product will be used in software developed at
+The AloneChat Team (http://github.com/alonechat).
+
+AloneChat includes third-party software components licensed under the following terms:
+
+
+1. websockets (>=15.0.1)
+   Copyright (c) 2013-2023 Aymeric Augustin and contributors.
+   Licensed under the MIT License.
+   Source: https://github.com/aaugustin/websockets
+
+2. FastAPI (>=0.95.0)
+   Copyright (c) 2018 Sebastián Ramírez
+   Licensed under the MIT License.
+   Source: https://github.com/tiangolo/fastapi
+
+3. Uvicorn (>=0.22.0)
+   Copyright (c) 2018-present Encode OSS Ltd.
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/encode/uvicorn
+
+4. Websockets (>=15.0.1)
+   Copyright (c) 2013-2024 Aymeric Augustin and contributors
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/python-websockets/websockets
+
+5. Pydantic (>=2.0.0)
+   Copyright (c) 2022 Samuel Colvin and individual contributors
+   Licensed under the MIT License.
+   Source: https://github.com/pydantic/pydantic
+
+6. PyJWT (>=2.4.0)
+   Copyright (c) 2015 José Padilla and contributors
+   Licensed under the MIT License.
+   Source: https://github.com/jpadilla/pyjwt
+
+7. bcrypt (>=4.0.1)
+   Copyright (c) 2023 Python Cryptographic Authority and contributors
+   Licensed under the Apache License 2.0.
+   Source: https://github.com/pyca/bcrypt
+
+8. psutil (>=5.9.0)
+   Copyright (c) 2009 Giampaolo Rodola'
+   Licensed under the BSD 3-Clause License.
+   Source: https://github.com/giampaolo/psutil
+
+9. aiohttp (>=3.8.4)
+   Copyright (c) 2012-2024 aio-libs contributors
+   Licensed under the Apache License 2.0.
+   Source: https://github.com/aio-libs/aiohttp
+
+10. windows-curses (>=2.3)
+   Copyright (c) 2018 Zephyr Project and contributors
+   Licensed under the same license as Python (PSF License).
+   Source: https://github.com/zephyrproject-rtos/windows-curses
+
+11. PyInstaller
+    Copyright (c) 2005-2024 PyInstaller contributors
+    Licensed under the GPL v2 or later license with PyInstaller exception.
+    Source: https://github.com/pyinstaller/pyinstaller
+
+12. requests
+    Copyright (c) 2019 Kenneth Reitz and contributors
+    Licensed under the Apache License 2.0.
+    Source: https://github.com/psf/requests
+
+---
+
+The full text of each license is included in the LICENSE file or can be found
+at the respective source repositories listed above.

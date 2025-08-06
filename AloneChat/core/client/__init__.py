@@ -4,12 +4,14 @@ Provides base client functionality and standard command-line client implementati
 """
 
 import asyncio
+
+import aiohttp
 import curses
+import getpass
 
 import websockets
 from websockets.exceptions import ConnectionClosed
 
-from AloneChat.core.client.command import CommandSystem
 from AloneChat.core.message.protocol import Message, MessageType
 from .command import CommandSystem
 
@@ -41,7 +43,8 @@ class Client:
         Must be implemented by subclasses.
         """
         return NotImplementedError
-    
+
+
 class StandardCommandlineClient(Client):
     """
     Standard command-line-based chat client implementation.
@@ -86,7 +89,15 @@ class StandardCommandlineClient(Client):
             while True:
                 try:
                     msg = Message.deserialize(await websocket.recv())
-                    print(f"\n[{msg.sender}] {msg.content}")
+
+                    # Handle different types of messages
+                    if msg.type == MessageType.JOIN:
+                        print(f"\n[System message] {msg.sender} joined the chat room")
+                    elif msg.type == MessageType.LEAVE:
+                        print(f"\n[System message] {msg.sender} left the chat room")
+                    else:
+                        # Regular message
+                        print(f"\n[{msg.sender}] {msg.content}")
                 except ConnectionClosed:
                     print("\n! Server connection closed")
                     break
@@ -97,20 +108,37 @@ class StandardCommandlineClient(Client):
         """
         Start the standard command-line client.
         Establishes connection to the server and handles sending/receiving messages.
+        Includes login and registration functionality.
         """
         host = self.host
         port = self.port
+        token = None
 
-        # TODO: Change to t-string in Python 3.14 to keep safe
-        uri = f"ws://{host}:{port}"
+        # Login or register before connecting
+        while not token:
+            print("\nPlease select options:")
+            print("1. Login")
+            print("2. Register")
+            choice = input("Please enter your choice (1/2): ").strip()
 
-        name = input("Enter username: ")
+            if choice == "1":
+                # noinspection PyUnresolvedReferences
+                token = await self._login(host, port)
+            elif choice == "2":
+                success = await self._register(host, port)
+                if success:
+                    print("Registration successful, please login")
+            else:
+                print("Invalid option, please choose again")
+
+        # Connect with token
+        uri = f"ws://{host}:{port}?token={token}"
+
         while True:
             try:
                 async with websockets.connect(uri) as websocket:
                     print("Connected to server!")
-                    await websocket.send(Message(MessageType.JOIN, name, "").serialize())
-                    await asyncio.gather(self.receive(websocket), self.send(name, websocket))
+                    await asyncio.gather(self.receive(websocket), self.send("", websocket))
 
             except ConnectionRefusedError:
                 print("Server not available, retrying in 3 seconds...")
@@ -118,6 +146,75 @@ class StandardCommandlineClient(Client):
             except Exception as error:
                 print(f"Fatal error: {str(error)}")
                 break
+
+    @staticmethod
+    async def _login(host, port):
+        """
+        Handle user login and return JWT token.
+        """
+
+        username = input("Username: ").strip()
+        password = getpass.getpass("Password: ").strip()
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # HTTP web runs on port+1
+                # noinspection HttpUrlsUsage
+                async with session.post(f"http://{host}:{port + 1}/api/login", json={
+                    "username": username,
+                    "password": password
+                }) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("success"):
+                            print("Login successfully!")
+                            return data.get("token")
+                        else:
+                            print(f"Login failed: {data.get('message')}")
+                            return None
+                    else:
+                        print(f"Request failed, status code: {response.status}")
+                        return None
+        except Exception as e:
+            print(f"Failed during login stage: {str(e)}")
+            return None
+
+    @staticmethod
+    async def _register(host, port):
+        """
+        Handle user registration.
+        """
+
+        username = input("Username: ").strip()
+        password = getpass.getpass("Password: ").strip()
+        confirm_password = getpass.getpass("Confirm password: ").strip()
+
+        if password != confirm_password:
+            print("Incorrect confirm password.")
+            return False
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # HTTP web runs on port+1
+                # noinspection HttpUrlsUsage
+                async with session.post(f"http://{host}:{port + 1}/api/register", json={
+                    "username": username,
+                    "password": password
+                }) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("success"):
+                            print("Register successfully!")
+                            return True
+                        else:
+                            print(f"Register failed: {data.get('message')}")
+                            return False
+                    else:
+                        print(f"Request failed, status code: {response.status}")
+                        return False
+        except Exception as e:
+            print(f"Failed during register stage: {str(e)}")
+            return False
 
 
 class CursesClient(Client):
@@ -194,7 +291,7 @@ class CursesClient(Client):
                     # The backspace key in windows is "8"...
                     # Remove the last character from input buffer
                     self.input_buffer = self.input_buffer[:-1] \
-                        if self.input_buffer != [] \
+                        if self.input_buffer != "" \
                         else self.input_buffer
 
                 # Message history navigation
@@ -267,14 +364,35 @@ class CursesClient(Client):
         """Asynchronous main method for curses client."""
         self.init_curses(stdscr)
 
-        # Get username
-        self.stdscr.addstr(0, 0, "Enter username: ")
-        self.stdscr.refresh()
-        curses.echo()
-        self.username = self.stdscr.getstr().decode('utf-8')
-        curses.noecho()
+        token = None
 
-        uri = f"ws://{self.host}:{self.port}"
+        # Login or register before connecting
+        while not token:
+            self.stdscr.clear()
+            self.stdscr.addstr(0, 0, "Please select an option:")
+            self.stdscr.addstr(1, 0, "1. Login")
+            self.stdscr.addstr(2, 0, "2. Register")
+            self.stdscr.addstr(3, 0, "Please enter your choice (1/2): ")
+            self.stdscr.refresh()
+
+            choice = self._get_input(3, 19)
+
+            if choice == "1":
+                # noinspection PyUnresolvedReferences
+                token = await self._login()
+            elif choice == "2":
+                success = await self._register()
+                if success:
+                    self.stdscr.addstr(5, 0, "Registration successful, please login")
+                    self.stdscr.refresh()
+                    await asyncio.sleep(2)
+            else:
+                self.stdscr.addstr(5, 0, "Invalid option, please choose again")
+                self.stdscr.refresh()
+                await asyncio.sleep(1)
+
+        # Connect with token
+        uri = f"ws://{self.host}:{self.port}?token={token}"
 
         while True:
             try:
@@ -298,6 +416,146 @@ class CursesClient(Client):
                 self.update_display()
                 await asyncio.sleep(5)
                 break
+
+    def _get_input(self, y, x):
+        """Get user input at specified position without echoing characters."""
+        input_str = ""
+        self.stdscr.move(y, x)
+        self.stdscr.refresh()
+
+        while True:
+            key = self.stdscr.getch()
+            if key == curses.KEY_ENTER or key in [10, 13]:  # Enter key
+                break
+            elif key == curses.KEY_BACKSPACE or key == 8:  # Backspace key
+                if input_str:
+                    input_str = input_str[:-1]
+                    self.stdscr.move(y, x + len(input_str))
+                    self.stdscr.delch()
+            elif 0 < key < 256 and chr(key).isprintable():
+                input_str += chr(key)
+                self.stdscr.addch(y, x + len(input_str) - 1, key)
+            self.stdscr.refresh()
+        return input_str
+
+    def _get_password(self, y, x):
+        """Get password input at specified position with masking."""
+        password = ""
+        self.stdscr.move(y, x)
+        self.stdscr.refresh()
+
+        while True:
+            key = self.stdscr.getch()
+            if key == curses.KEY_ENTER or key in [10, 13]:  # Enter key
+                break
+            elif key == curses.KEY_BACKSPACE or key == 8:  # Backspace key
+                if password:
+                    password = password[:-1]
+                    self.stdscr.move(y, x + len(password))
+                    self.stdscr.delch()
+            elif 0 < key < 256 and chr(key).isprintable():
+                password += chr(key)
+                self.stdscr.addch(y, x + len(password) - 1, '*')
+            self.stdscr.refresh()
+        return password
+
+    async def _login(self):
+        """Handle user login and return JWT token."""
+
+        self.stdscr.clear()
+        self.stdscr.addstr(0, 0, "Username: ")
+        self.stdscr.refresh()
+        username = self._get_input(0, 9)
+
+        self.stdscr.addstr(1, 0, "Password: ")
+        self.stdscr.refresh()
+        password = self._get_password(1, 9)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # HTTP web runs on port+1
+                # noinspection HttpUrlsUsage
+                async with session.post(f"http://{self.host}:{self.port + 1}/api/login", json={
+                    "username": username,
+                    "password": password
+                }) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("success"):
+                            self.stdscr.addstr(3, 0, "Login successful")
+                            self.stdscr.refresh()
+                            await asyncio.sleep(1)
+                            self.username = username
+                            return data.get("token")
+                        else:
+                            self.stdscr.addstr(3, 0, f"Login failed: {data.get('message')}")
+                            self.stdscr.refresh()
+                            await asyncio.sleep(2)
+                            return None
+                    else:
+                        self.stdscr.addstr(3, 0, f"Login request failed, status code: {response.status}")
+                        self.stdscr.refresh()
+                        await asyncio.sleep(2)
+                        return None
+        except Exception as e:
+            self.stdscr.addstr(3, 0, f"Error during login: {str(e)}")
+            self.stdscr.refresh()
+            await asyncio.sleep(2)
+            return None
+
+    async def _register(self):
+        """Handle user registration."""
+        import aiohttp
+
+        self.stdscr.clear()
+        self.stdscr.addstr(0, 0, "Username: ")
+        self.stdscr.refresh()
+        username = self._get_input(0, 9)
+
+        self.stdscr.addstr(1, 0, "Password: ")
+        self.stdscr.refresh()
+        password = self._get_password(1, 9)
+
+        self.stdscr.addstr(2, 0, "Confirm password: ")
+        self.stdscr.refresh()
+        confirm_password = self._get_password(2, 19)
+
+        if password != confirm_password:
+            self.stdscr.addstr(4, 0, "Passwords do not match")
+            self.stdscr.refresh()
+            await asyncio.sleep(2)
+            return False
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # HTTP web runs on port+1
+                # noinspection HttpUrlsUsage
+                async with session.post(f"http://{self.host}:{self.port + 1}/api/register", json={
+                    "username": username,
+                    "password": password
+                }) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("success"):
+                            self.stdscr.addstr(4, 0, "Registration successful")
+                            self.stdscr.refresh()
+                            await asyncio.sleep(1)
+                            return True
+                        else:
+                            self.stdscr.addstr(4, 0, f"Registration failed: {data.get('message')}")
+                            self.stdscr.refresh()
+                            await asyncio.sleep(2)
+                            return False
+                    else:
+                        self.stdscr.addstr(4, 0, f"Registration request failed, status code: {response.status}")
+                        self.stdscr.refresh()
+                        await asyncio.sleep(2)
+                        return False
+        except Exception as e:
+            self.stdscr.addstr(4, 0, f"Error during registration: {str(e)}")
+            self.stdscr.refresh()
+            await asyncio.sleep(2)
+            return False
 
     def run(self):
         try:
