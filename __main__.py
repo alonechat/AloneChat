@@ -4,15 +4,9 @@ This module provides a command-line interface to start either a server or client
 """
 
 import argparse
-import logging
 
-from AloneChat.start import client, server, API, web
+from AloneChat.start import client, server, web
 from AloneChat.test import main as test_main
-
-# Logger configuration
-logging.basicConfig(level=logging.INFO,
-                    format='[%(asctime)s] %(levelname)s - %(message)s')
-logger = logging.getLogger("AloneChat")
 
 
 def main():
@@ -31,14 +25,13 @@ def main():
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
 
-    web_parser = subparsers.add_parser('web', help='Startup WEB')
-    web_parser.add_argument('--ws-host', default='localhost', help='Web server listening address (default: localhost)')
-    web_parser.add_argument('--ws-port', type=int, default=8765, help='Web server port (default: 8765)')
-    web_parser.add_argument('--web-port', type=int, default=9007, help='Web server port (default: 9007)')
+    # Add 'web-only' command
+    web_parser = subparsers.add_parser('srv-only', help='Startup web (alias for api)')
+    web_parser.add_argument('--port', type=int, default=8765, help='server port (default: 8765)')
 
-    # noinspection PyPep8Naming
-    API_parser = subparsers.add_parser('api', help='Startup API')
-    API_parser.add_argument('--port', type=int, default=8766, help='API server port (default: 8766)')
+    # Add 'web-only' command
+    web_parser = subparsers.add_parser('web-only', help='Startup web (alias for api)')
+    web_parser.add_argument('--port', type=int, default=8766, help='web server port (default: 8766)')
 
     test_parser = subparsers.add_parser('test', help='Run Test')
     test_parser.add_argument('--host', default='localhost', help='Test server listening address (default: localhost)')
@@ -55,12 +48,14 @@ def main():
             client.client(host=args.host, port=args.port, ui='tui')
         elif args.ui == 'text':
             client.client(host=args.host, port=args.port, ui='text')
-    elif args.command == 'api':
-        API.API(port=args.port)
-    elif args.command == 'web':
-        web.web(ws_host=args.ws_host, ws_port=args.ws_port, port=args.web_port)
+    elif args.command == 'srv-only':
+        server.server(port=args.port, srv_only=True)
+    elif args.command == 'web-only':
+        web.web(port=args.port)
     elif args.command == 'test':
         test_main(args.message, host=args.host, port=args.port)
+    else:
+        raise Exception('Unknown command')
 
 if __name__ == '__main__':
     main()

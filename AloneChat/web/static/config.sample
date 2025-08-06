@@ -1,8 +1,0 @@
-{
-    "server": {
-        "ws_protocol": "ws",
-        "ws_host": "localhost",
-        "ws_port": 8765,
-        "ws_path": ""
-    }
-}

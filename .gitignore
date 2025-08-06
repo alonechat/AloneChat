@@ -208,8 +208,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Configs
-AloneChat/web/static/config.json
 
-# Tools
-tools/
+AloneChat/web/static/admin.html
+tools/git-chglog.exe

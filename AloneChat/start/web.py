@@ -1,6 +1,12 @@
-from AloneChat.web import server
+import AloneChat.web as _web
 
 
-def web(ws_host=None, ws_port=None, port=None):
-    """Laundh web server."""
-    server(ws_host=ws_host, ws_port=ws_port, port=port)
+# noinspection PyPep8Naming
+def web(port=8767):
+    """
+    Start the static server for AloneChat.
+
+    Args:
+        port (int): Port number for the static server (default: 8766).
+    """
+    _web.run(api_port=port)

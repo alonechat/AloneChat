@@ -48,7 +48,6 @@
 1. [x] 简单的聊天室。
 2. [x] `curses`TUI。
 3. [x] 插件支持。
-4. [x] API。
 
 总的来说，没啥功能……
 
@@ -98,10 +97,8 @@ python packing.py # 打包为exe
 ```
 .
 ├── AloneChat
-│   ├── API
-│   │   ├── __init__.py
-│   │   └── routes.py
 │   ├── __init__.py
+│   ├── config.py
 │   ├── core
 │   │   ├── __init__.py
 │   │   ├── client
@@ -118,18 +115,37 @@ python packing.py # 打包为exe
 │   │   ├── __init__.py
 │   │   └── help.py
 │   ├── start
-│   │   ├── API.py
 │   │   ├── client.py
-│   │   └── server.py
-│   └── test
-│       └── __init__.py
+│   │   ├── server.py
+│   │   └── web.py
+│   ├── test
+│   │   ├── __init__.py
+│   │   ├── test_api.py
+│   │   └── test_fix.py
+│   └── web
+│       ├── __init__.py
+│       ├── routes.py
+│       └── static
+│           ├── admin.html
+│           ├── client.js
+│           ├── feedback.html
+│           ├── index.html
+│           ├── login.html
+│           └── test_api.html
 ├── LICENSE
+├── NOTICE
 ├── README-zh.md
 ├── README.md
 ├── __main__.py
-├── packing.py
+├── feedback.json
 ├── requirements-dev.txt
-└── requirements.txt
+├── requirements.txt
+├── server_config.json
+├── tools
+│   ├── generate_hashes.py
+│   ├── packing.py
+│   └── update_version.py
+└── user_credentials.json
 ```
 
 ### 分支
