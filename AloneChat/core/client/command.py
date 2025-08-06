@@ -21,11 +21,7 @@ class CommandSystem:
     global COMMANDS, MANAGER
     # Dictionary mapping command strings to their message types and handlers
     loaded_modules = load()
-    """
-    COMMANDS.update({
-        # TODO: Write some predefined commands
-    })
-    """
+
     if loaded_modules is not None:
         COMMANDS.update(load())
 

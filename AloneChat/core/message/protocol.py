@@ -18,6 +18,7 @@ class MessageType(Enum):
     HELP = 4  # Help command message
     COMMAND = 5  # System command message
     ENCRYPTED = 6  # Encrypted message type
+    HEARTBEAT = 7  # Heartbeat message
 
 @dataclass
 class Message:
@@ -47,7 +48,8 @@ class Message:
             "type": self.type.value,
             "sender": self.sender,
             "content": self.content,
-            "target": self.target
+            "target": self.target,
+            "command": self.command
         })
 
     @classmethod
@@ -66,5 +68,6 @@ class Message:
             type=MessageType(obj["type"]),
             sender=obj["sender"],
             content=obj["content"],
-            target=obj.get("target")
+            target=obj.get("target"),
+            command=obj.get("command")
         )

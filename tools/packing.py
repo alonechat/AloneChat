@@ -50,10 +50,29 @@ def clean():
     if os.path.exists('__main__.spec'):
         os.remove('__main__.spec')  # Remove the PyInstaller spec file if it exists
 
-    for root, dirs, files in os.walk(".", topdown=False):
+    for root, dirs, files in os.walk("..", topdown=False):
         for name in dirs:
             if name == '__pycache__':
                 shutil.rmtree(os.path.join(root, name))
+
+
+def rm_all():
+    """
+    Remove all generated artifacts.
+    """
+    clean()
+
+    with open('feedback.json', 'w') as feedback:
+        feedback.write('{"feedbacks": []}')
+
+    with open('server_config.json', 'w') as server_config:
+        server_config.write('{"default_server_address": "ws://localhost:8765"}')
+
+    with open('user_credentials.json', 'w') as user_credentials:
+        user_credentials.write("{}")
+
+    if os.path.exists('dist'):
+        shutil.rmtree('dist')
 
 
 def preprocessing():
@@ -76,8 +95,7 @@ def postprocessing():
     This function can be used to perform any necessary postprocessing tasks
     such as moving the executable to a specific location or cleaning up temporary files.
     """
-    # Move the built executable to a desired location if needed,
-    # For example, move it to a 'bin' directory
+    # Move the built executable to a desired location if needed
     clean()
     # Clean up the dist directory after moving
     shutil.move('dist/__main__.exe', 'dist/AloneChat.exe')
@@ -86,9 +104,15 @@ def postprocessing():
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--just-clean", action="store_true", default=False)
+    parser.add_argument("--rm-all", action="store_true", default=False)
     args = parser.parse_args()
+    if args.just_clean and args.rm_all:
+        raise SystemExit("You can't use both --just-clean and --rm-all.")
+
     if args.just_clean:
-        preprocessing()
+        clean()
+    elif args.rm_all:
+        rm_all()
     else:
         preprocessing()
         build()  # Build the application
