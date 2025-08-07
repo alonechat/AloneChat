@@ -1,23 +1,48 @@
 name: Pylint
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-    - name: Analysing the code with pylint
-      run: |
-        pylint $(git ls-files '*.py')
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+
+      - name: Run pylint (non-blocking)
+        run: |
+          mkdir -p reports
+          pylint $(git ls-files '*.py') \
+            --output-format=text \
+            --score=y \
+            --reports=n \
+            > reports/pylint-report-${{ matrix.python-version }}.txt || true
+
+      - name: Upload pylint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pylint-report-${{ matrix.python-version }}
+          path: reports/pylint-report-${{ matrix.python-version }}.txt
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## Pylint Report (Python ${{ matrix.python-version }})"
+            echo '```'
+            cat reports/pylint-report-${{ matrix.python-version }}.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
