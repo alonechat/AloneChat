@@ -6,15 +6,11 @@ import sys
 import time
 from typing import Dict, List
 
-# 反馈数据文件路径
-FEEDBACK_FILE = "feedback.json"
-
 # Third-party imports
 import bcrypt
 import jwt
 import psutil
 import uvicorn
-import getpass
 import websockets
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,24 +31,36 @@ from ..core.message.protocol import Message, MessageType
 
 # Default server address configuration file
 SERVER_CONFIG_FILE = "server_config.json"
+# 反馈数据文件路径
+FEEDBACK_FILE = "feedback.json"
 USER_DB_FILE = config.USER_DB_FILE
 
 
 # Load saved user credentials
 def load_user_credentials():
+    user_credentials = {}
     if os.path.exists(USER_DB_FILE):
         try:
             with open(USER_DB_FILE, 'r') as f:
-                return json.load(f)
+                user_credentials = json.load(f)
         except (json.JSONDecodeError, IOError):
-            return {}
+            user_credentials = {}
     # Initial users with hashed passwords
-    return {
-        "admin": {
-            "password": hash_password(getpass.getpass("Admin user not found, set admin password: ")),
+    # Check if admin user exists
+    if "admin" not in user_credentials:
+        # Generate random 12-character password
+        import secrets
+        import string
+        password_chars = string.ascii_letters + string.digits + string.punctuation
+        admin_password = ''.join(secrets.choice(password_chars) for _ in range(12))
+        print(f"\n=== Auto-generated admin password (displayed once): {admin_password} ===\n")
+        user_credentials["admin"] = {
+            "password": hash_password(admin_password),
             "is_online": False
         }
-    }
+        # Save to file
+        save_user_credentials(user_credentials)
+    return user_credentials
 
 
 # Save user credentials to file

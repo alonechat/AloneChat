@@ -210,4 +210,4 @@ __marimo__/
 
 
 AloneChat/web/static/admin.html
-tools/git-chglog.exe
+tools/*.exe
