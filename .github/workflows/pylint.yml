@@ -21,8 +21,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements.txt | sort -u)
+          grep -vi '^windows-curses\b' requirements.txt > requirements-clean.txt
           pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-dev.txt  | sort -u)
+          pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-clean.txt | sort -u)
           pip install pylint
 
       - name: Run pylint (non-blocking)
