@@ -219,7 +219,12 @@ function connect() {
             addSystemMessage('成功连接到服务器');
 
             // 提示输入用户名
-            username = document.getElementById('username').value.trim() || '匿名用户';
+            try{
+                username = document.getElementById('username').value.trim() || '匿名用户';
+            } catch(e) { // Catch for error: Cannot read properties of null (reading 'value')
+                ws.close();
+                return;
+            }
             if (username) {
                 // 已通过令牌验证，无需发送JOIN消息
             } else {

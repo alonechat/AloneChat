@@ -1,3 +1,1 @@
-{
-  "default_server_address": "ws://localhost:8765"
-}
+{"default_server_address": "ws://localhost:8765"}
