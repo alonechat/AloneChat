@@ -13,6 +13,12 @@ import websockets
 from AloneChat.core.client.command import COMMANDS as COMMANDS
 from ..message.protocol import Message, MessageType
 
+from urllib.parse import urlparse, parse_qs
+import jwt
+from AloneChat.config import config
+# Update user online status function
+from AloneChat.web.routes import update_user_online_status
+
 
 @dataclass
 class UserSession:
@@ -97,110 +103,107 @@ class WebSocketManager:
             self.clients = set()
         if not hasattr(self, 'sessions'):
             self.sessions = {}
-        # 确保每次初始化都更新端口
+        # Ensure initialization port is unique
         print(f"WebSocketManager initialized with port: {self.port}")
 
     async def handler(self, websocket):
-        # 验证认证令牌
+        # Verify JWT token during connection
         try:
-            from urllib.parse import urlparse, parse_qs
-            import jwt
-            from AloneChat.config import config
-            # 导入更新用户在线状态的函数
-            from AloneChat.web.routes import update_user_online_status
             JWT_SECRET = config.JWT_SECRET
             JWT_ALGORITHM = config.JWT_ALGORITHM
 
-            print("开始WebSocket连接认证")
-            # 尝试从URL参数获取令牌
+            print("Start authentication process...")
+            # Try get token from URL query parameters
             request_path = websocket.request.path
-            print(f"请求路径: {request_path}")
+            print(f"Request path: {request_path}")
             query_params = {}
             if '?' in request_path:
                 path_part, query_part = request_path.split('?', 1)
                 query_params = parse_qs(query_part)
-                print(f"查询参数: {query_params}")
+                print(f"Query options: {query_params}")
             token = query_params.get('token', [None])[0]
-            print(f"从URL获取的令牌: {token}")
+            print(f"Token get from url: {token}")
 
-            # 如果URL中没有令牌，尝试从请求头的Cookie中获取
+            # If there's no param token, try get it from Cookie header
             if not token:
                 cookie_header = websocket.request.headers.get('Cookie', '')
-                print(f"Cookie头: {cookie_header}")
+                print(f"Cookie header: {cookie_header}")
                 for cookie in cookie_header.split(';'):
                     if 'authToken=' in cookie:
                         token = cookie.split('=')[1].strip()
-                        print(f"从Cookie获取的令牌: {token}")
+                        print(f"Token get from Cookie: {token}")
                         break
 
                 if not token:
-                    error_msg = Message(MessageType.TEXT, "SERVER", "缺少认证令牌，请先登录")
+                    error_msg = Message(MessageType.TEXT, "SERVER", 
+                                        "No verify token provided, please login first")
                     await websocket.send(error_msg.serialize())
-                    await websocket.close(code=1008, reason="未授权访问")
+                    await websocket.close(code=1008, reason="Unauthorized: No token")
                     return
 
-            # 验证令牌
+            # Verify token
             try:
                 payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
                 username = payload.get('sub')
                 if not username:
-                    raise ValueError("令牌中缺少用户名")
+                    raise ValueError("There is no username in token")
 
-                # 使用令牌中的用户名注册会话
+                # Use the name in the token as the user identity
                 if username in self.sessions:
-                    error_msg = Message(MessageType.TEXT, "SERVER", f"用户名 '{username}' 已在其他地方登录")
+                    error_msg = Message(MessageType.TEXT, "SERVER", 
+                                        f"User '{username}' already logged in at another location.")
                     await websocket.send(error_msg.serialize())
-                    await websocket.close(code=1008, reason="用户名已登录")
+                    await websocket.close(code=1008, reason="User already logged in")
                     return
                 self.sessions[username] = websocket
                 print(f"User {username} connected")
 
-                # 更新用户在线状态为在线
+                # Update user online status
                 update_user_online_status(username, True)
 
-                # 发送用户加入消息
-                join_msg = Message(MessageType.JOIN, username, "用户加入了聊天室")
+                # Send a join message to all clients
+                join_msg = Message(MessageType.JOIN, username, "User joined the chat")
                 await self.broadcast(join_msg)
             except jwt.ExpiredSignatureError:
-                error_msg = Message(MessageType.TEXT, "SERVER", "令牌已过期，请重新登录")
+                error_msg = Message(MessageType.TEXT, "SERVER", "The token has expired.")
                 await websocket.send(error_msg.serialize())
-                await websocket.close(code=1008, reason="令牌过期")
+                await websocket.close(code=1008, reason="Token expired")
                 return
             except jwt.InvalidTokenError as e:
-                error_msg = Message(MessageType.TEXT, "SERVER", f"无效的令牌: {str(e)}")
+                error_msg = Message(MessageType.TEXT, "SERVER", f"Invaild token: {str(e)}")
                 await websocket.send(error_msg.serialize())
-                await websocket.close(code=1008, reason="无效令牌")
+                await websocket.close(code=1008, reason="Invaild token")
                 return
         except Exception as e:
-            error_msg = Message(MessageType.TEXT, "SERVER", f"认证过程出错: {str(e)}")
+            error_msg = Message(MessageType.TEXT, "SERVER", f"Error during auth: {str(e)}")
             await websocket.send(error_msg.serialize())
-            await websocket.close(code=1011, reason="服务器错误")
+            await websocket.close(code=1011, reason="Server error during auth")
             return
 
         self.clients.add(websocket)
         try:
             async for message in websocket:
                 msg = Message.deserialize(message)
-                # 忽略JOIN消息，已通过令牌验证用户名
+                # Ignore json message (user already joined)
                 if msg.type == MessageType.JOIN:
                     continue
                 elif msg.type == MessageType.HEARTBEAT:
-                    # 处理心跳消息，更新用户活动时间
+                    # Process heartbeat message
                     if msg.sender in self.sessions:
-                        # 可以在这里添加用户活动时间更新逻辑
+                        # TODO: Update last active time if needed
                         pass
                 await self.process_message(msg)
         except websockets.exceptions.ConnectionClosedError:
-            # 处理连接关闭错误
+            # Process connection closed error
             pass
         finally:
-            # 确保移除客户端
+            # Ensure client is removed on disconnect
             self.clients.discard(websocket)
-            # 移除会话
+            # Remove from sessions
             for username, ws in list(self.sessions.items()):
                 if ws == websocket:
                     del self.sessions[username]
-                    # 更新用户在线状态
+                    # Update user online status
                     update_user_online_status(username, False)
                     break
 
@@ -208,9 +211,9 @@ class WebSocketManager:
         """
         Process incoming messages based on their type.
         """
-        # 检查发送者是否在会话中
+        # Check if sender is logged in
         if msg.sender not in self.sessions:
-            print(f"警告: 收到来自未登录用户 {msg.sender} 的消息")
+            print(f"Warning: Get message from unlogined user {msg.sender}, ignore it.")
             return
 
         if msg.type == MessageType.COMMAND:
@@ -219,8 +222,8 @@ class WebSocketManager:
             if cmd in list(COMMANDS.keys()):
                 command_msg = Message(MessageType.TEXT, "COMMAND", COMMANDS[cmd]["handler"]())
                 await self.sessions[msg.sender].send(command_msg.serialize())
-        elif msg.type == MessageType.HEARTBEAT:  # 处理心跳消息
-            # 回复pong消息以保持连接活跃
+        elif msg.type == MessageType.HEARTBEAT:  # Process heartbeat message
+            # Send PONG back
             pong_msg = Message(MessageType.HEARTBEAT, "SERVER", "pong")
             await self.sessions[msg.sender].send(pong_msg.serialize())
         else:
@@ -228,46 +231,46 @@ class WebSocketManager:
 
     async def broadcast(self, msg):
         if self.clients:
-            # 创建发送任务列表
+            # Create a list to hold all send tasks
             tasks = []
             for client in self.clients:
-                # 为每个客户端创建一个发送任务，并添加异常处理
+                # Create a task for each send operation
                 task = asyncio.create_task(self._safe_send(client, msg.serialize()))
                 tasks.append(task)
-            # 等待所有任务完成
+            # Wait for all send operations to complete
             await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _safe_send(self, client, message):
         """
-        安全地向客户端发送消息，处理可能的异常
+        Safe send method to handle exceptions during sending messages.
         """
-        # 导入更新用户在线状态的函数
+        # Update user online status function
         from AloneChat.web.routes import update_user_online_status
         try:
             await client.send(message)
         except Exception as e:
-            # 记录错误但不中断其他消息发送
-            print(f"发送消息失败: {e}")
-            # 从客户端集合中移除无效连接
+            # Record the error and remove the client, but do not raise further exceptions
+            print(f"Send message failed: {e}")
+            # Remove invaild client from active clients
             if client in self.clients:
                 self.clients.discard(client)
-            # 查找并移除对应的会话
+            # Remove from sessions
             for username, ws in list(self.sessions.items()):
                 if ws == client:
                     del self.sessions[username]
-                    # 更新用户在线状态
+                    # Update user online status
                     update_user_online_status(username, False)
-                    # 广播用户离开的消息
-                    leave_msg = Message(MessageType.LEAVE, username, "用户离开了聊天室")
+                    # Boadcast leave message
+                    leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     await self.broadcast(leave_msg)
                     break
 
     async def run(self):
         # noinspection PyTypeChecker
-        # 适配websockets 15.0.1版本API
+        # websocket higher versions require 'host' and 'port' parameters
         async with websockets.serve(
-                self.handler,
-                self.host, self.port
+            self.handler,
+            self.host, self.port
         ):
             print(f"Server running on ws://{self.host}:{self.port}")
             await asyncio.Future()

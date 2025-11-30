@@ -217,6 +217,7 @@ class StandardCommandlineClient(Client):
             return False
 
 
+# type: ignore
 class CursesClient(Client):
     """
     Curses-based chat client implementation with message history navigation.
