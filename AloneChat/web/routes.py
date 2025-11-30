@@ -26,12 +26,11 @@ from starlette.responses import Response
 from AloneChat import __version__ as __main_version__
 from AloneChat.config import config
 from AloneChat.core.client.command import CommandSystem
-from AloneChat.core.server.manager import WebSocketManager
 from ..core.message.protocol import Message, MessageType
 
 # Default server address configuration file
 SERVER_CONFIG_FILE = "server_config.json"
-# 反馈数据文件路径
+# Feedback file path
 FEEDBACK_FILE = "feedback.json"
 USER_DB_FILE = config.USER_DB_FILE
 
@@ -193,8 +192,8 @@ class FeedbackReplyRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     success: bool
-    token: str = None
-    message: str = None
+    token: str | None = None
+    message: str | None = None
 
 
 # Load server address and port from configuration
@@ -539,7 +538,8 @@ async def admin_required(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-# Get singleton instance of WebSocketManager
+# Get singleton instance of WebSocketManager (imported lazily to avoid circular import)
+from AloneChat.core.server.manager import WebSocketManager
 ws_manager = WebSocketManager.get_instance()
 
 
@@ -712,7 +712,7 @@ async def get_system_status():
     # noinspection PyGlobalUndefined
     global server_start_time
     try:
-        uptime_seconds = time.time() - server_start_time
+        uptime_seconds = time.time() - server_start_time # type: ignore
         uptime = str(datetime.timedelta(seconds=int(uptime_seconds)))
     except NameError:
         # If server start time is not defined, set to current time
