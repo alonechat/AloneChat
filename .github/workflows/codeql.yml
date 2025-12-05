@@ -17,7 +17,7 @@ on:
   pull_request:
     branches: [ "master", "develop", "canary" ]
   schedule:
-    - cron: '0 0,4,8,12,16,20 * * *'
+    - cron: '0 0,20 * * *'
 
 jobs:
   analyze:
@@ -62,8 +62,13 @@ jobs:
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
     # or others). This is typically only required for manual builds.
-    # - name: Setup runtime (example)
-    #   uses: actions/setup-example@v1
+    - name: Setup runtime (example)
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        grep -vi '^windows-curses\b' requirements.txt > requirements-clean.txt
+        pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-dev.txt  | sort -u)
+        pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-clean.txt | sort -u)
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
