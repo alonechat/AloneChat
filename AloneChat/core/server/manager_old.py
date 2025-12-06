@@ -13,7 +13,7 @@ import websockets
 from AloneChat.core.client.command import COMMANDS as COMMANDS
 from ..message.protocol import Message, MessageType
 
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs
 import jwt
 from AloneChat.config import config
 # Note: avoid importing `update_user_online_status` at module import time
@@ -160,7 +160,7 @@ class WebSocketManager:
                 print(f"User {username} connected")
 
                 # Update user online status (lazy import to avoid circular import)
-                from AloneChat.web.routes import update_user_online_status
+                from AloneChat.web.routes_base import update_user_online_status
                 update_user_online_status(username, True)
 
                 # Send a join message to all clients
@@ -172,9 +172,9 @@ class WebSocketManager:
                 await websocket.close(code=1008, reason="Token expired")
                 return
             except jwt.InvalidTokenError as e:
-                error_msg = Message(MessageType.TEXT, "SERVER", f"Invaild token: {str(e)}")
+                error_msg = Message(MessageType.TEXT, "SERVER", f"Invalid token: {str(e)}")
                 await websocket.send(error_msg.serialize())
-                await websocket.close(code=1008, reason="Invaild token")
+                await websocket.close(code=1008, reason="Invalid token")
                 return
         except Exception as e:
             error_msg = Message(MessageType.TEXT, "SERVER", f"Error during auth: {str(e)}")
@@ -206,7 +206,7 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions[username]
                     # Update user online status (lazy import)
-                    from AloneChat.web.routes import update_user_online_status
+                    from AloneChat.web.routes_base import update_user_online_status
                     update_user_online_status(username, False)
                     break
 
@@ -216,7 +216,7 @@ class WebSocketManager:
         """
         # Check if sender is logged in
         if msg.sender not in self.sessions:
-            print(f"Warning: Get message from unlogined user {msg.sender}, ignore it.")
+            print(f"Warning: Get message from un-login user {msg.sender}, ignore it.")
             return
 
         if msg.type == MessageType.COMMAND:
@@ -248,13 +248,13 @@ class WebSocketManager:
         Safe send method to handle exceptions during sending messages.
         """
         # Update user online status function
-        from AloneChat.web.routes import update_user_online_status
+        from AloneChat.web.routes_base import update_user_online_status
         try:
             await client.send(message)
         except Exception as e:
             # Record the error and remove the client, but do not raise further exceptions
             print(f"Send message failed: {e}")
-            # Remove invaild client from active clients
+            # Remove invalid client from active clients
             if client in self.clients:
                 self.clients.discard(client)
             # Remove from sessions
@@ -263,7 +263,7 @@ class WebSocketManager:
                     del self.sessions[username]
                     # Update user online status
                     update_user_online_status(username, False)
-                    # Boadcast leave message
+                    # Broadcast leave message
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     await self.broadcast(leave_msg)
                     break
