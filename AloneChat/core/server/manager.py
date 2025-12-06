@@ -1,273 +1,295 @@
 """
-Server session management module for AloneChat application.
-Handles user sessions and their lifecycle management.
+Refactored server session and WebSocket manager for AloneChat.
+
+This file is a cleaned-up, better-typed and better-logged refactor
+of the original `manager.py`. It preserves the original behavior
+but separates concerns and adds safer send/broadcast logic.
 """
+from __future__ import annotations
 
 import asyncio
 import time
+import logging
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional, Set
 
 import websockets
+# Import for type checkers only (pylance/static analyzers).
+# `websockets.server` exposes `WebSocketServerProtocol` in recent versions.
+from websockets.server import WebSocketServerProtocol  # type: ignore
 
-from AloneChat.core.client.command import COMMANDS as COMMANDS
+from AloneChat.core.client.command import COMMANDS
 from ..message.protocol import Message, MessageType
+from urllib.parse import parse_qs
+import jwt
+from AloneChat.config import config
+# Avoid importing `update_user_online_status` at module import time to prevent
+# circular imports with `AloneChat.web.routes`. We'll import it lazily where needed.
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 
 @dataclass
 class UserSession:
-    """
-    Data class representing a user session.
-
-    Attributes:
-        user_id (str): Unique identifier for the user
-        last_active (float): Timestamp of last user activity
-    """
     user_id: str
-    last_active: float
+    last_active: float = 0.0
+
 
 class SessionManager:
-    """
-    Manages user sessions and their states in the chat server.
-    Handles session creation, removal, and activity monitoring.
-    """
-    def __init__(self):
-        """Initialize an empty session manager."""
+    """Maintain user sessions and last activity times."""
+
+    def __init__(self) -> None:
         self.sessions: Dict[str, UserSession] = {}
 
-    def add_session(self, user_id: str):
-        """
-        Add a new user session.
+    def add(self, user_id: str) -> None:
+        self.sessions[user_id] = UserSession(user_id=user_id, last_active=time.time())
+        logger.debug("Added session for %s", user_id)
 
-        Args:
-            user_id (str): Unique identifier for the user
-        """
-        self.sessions[user_id] = UserSession(
-            user_id=user_id,
-            last_active=time.time()
-        )
+    def remove(self, user_id: str) -> None:
+        if user_id in self.sessions:
+            del self.sessions[user_id]
+            logger.debug("Removed session for %s", user_id)
 
-    def remove_session(self, user_id: str):
-        """
-        Remove a user session.
+    def touch(self, user_id: str) -> None:
+        if user_id in self.sessions:
+            self.sessions[user_id].last_active = time.time()
 
-        Args:
-            user_id (str): Unique identifier for the user to remove
-        """
-        self.sessions.pop(user_id, None)
+    def inactive(self, timeout: int = 300) -> list[str]:
+        now = time.time()
+        inactive_users = [uid for uid, s in self.sessions.items() if now - s.last_active > timeout]
+        for uid in inactive_users:
+            self.remove(uid)
+        return inactive_users
 
-    def check_inactive(self, timeout: int = 300):
-        """
-        Check for inactive sessions based on a timeout period.
-
-        Args:
-            timeout (int): Timeout period in seconds (default: 300)
-
-        Returns:
-            list: List of inactive user IDs
-        """
-        current = time.time()
-        inactive = [
-            uid for uid, session in self.sessions.items()
-            if current - session.last_active > timeout
-        ]
-        for uid in inactive:
-            self.remove_session(uid)
-        return inactive
-    
 
 class WebSocketManager:
-    _instance = None
+    """Singleton manager handling WebSocket connections and message routing."""
+
+    _instance: Optional[WebSocketManager] = None
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(WebSocketManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> WebSocketManager:
         if WebSocketManager._instance is None:
             return WebSocketManager()
         return WebSocketManager._instance
-    
-    def __init__(self, host="localhost", port=8765):
+
+    def __init__(self, host: str = "localhost", port: int = 8765) -> None:
+        if hasattr(self, "initialized") and self.initialized:
+            return
         self.host = host
         self.port = port
-        if not hasattr(self, 'clients'):
-            self.clients = set()
-        if not hasattr(self, 'sessions'):
-            self.sessions = {}
-        # 确保每次初始化都更新端口
-        print(f"WebSocketManager initialized with port: {self.port}")
+        self.clients: Set[WebSocketServerProtocol] = set()
+        # Map username -> websocket
+        self.sessions_ws: Dict[str, WebSocketServerProtocol] = {}
+        # Track last activity per user
+        self.session_mgr = SessionManager()
+        self.initialized = True
+        logger.info("WebSocketManager initialized on %s:%s", host, port)
 
-    async def handler(self, websocket):
-        # 验证认证令牌
-        try:
-            from urllib.parse import urlparse, parse_qs
-            import jwt
-            from AloneChat.config import config
-            # 导入更新用户在线状态的函数
-            from AloneChat.web.routes import update_user_online_status
-            JWT_SECRET = config.JWT_SECRET
-            JWT_ALGORITHM = config.JWT_ALGORITHM
+    # --- Helper methods ---
+    @staticmethod
+    def _extract_token(websocket: WebSocketServerProtocol) -> Optional[str]:
+        # Try to obtain the request path
+        token = None
+        request_path = getattr(websocket, "request", None)
+        path = None
+        if request_path is not None:
+            # older/newer websockets expose request with path
+            path = getattr(websocket.request, "path", None)
+        if not path:
+            path = getattr(websocket, "path", None)
 
-            print("开始WebSocket连接认证")
-            # 尝试从URL参数获取令牌
-            request_path = websocket.request.path
-            print(f"请求路径: {request_path}")
-            query_params = {}
-            if '?' in request_path:
-                path_part, query_part = request_path.split('?', 1)
-                query_params = parse_qs(query_part)
-                print(f"查询参数: {query_params}")
-            token = query_params.get('token', [None])[0]
-            print(f"从URL获取的令牌: {token}")
+        if path and "?" in path:
+            try:
+                _, query = path.split("?", 1)
+                params = parse_qs(query)
+                token = params.get("token", [None])[0]
+            except Exception:
+                token = None
 
-            # 如果URL中没有令牌，尝试从请求头的Cookie中获取
-            if not token:
-                cookie_header = websocket.request.headers.get('Cookie', '')
-                print(f"Cookie头: {cookie_header}")
-                for cookie in cookie_header.split(';'):
-                    if 'authToken=' in cookie:
-                        token = cookie.split('=')[1].strip()
-                        print(f"从Cookie获取的令牌: {token}")
+        if not token:
+            cookie_header = ""
+            try:
+                cookie_header = websocket.request.headers.get("Cookie", "")
+            except Exception:
+                # fallback: some versions expose headers directly on websocket
+                cookie_header = getattr(websocket, "request", {}).get("headers", {}) if websocket else ""
+            if cookie_header:
+                for cookie in cookie_header.split(";"):
+                    if "authToken=" in cookie:
+                        token = cookie.split("=", 1)[1].strip()
                         break
 
-                if not token:
-                    error_msg = Message(MessageType.TEXT, "SERVER", "缺少认证令牌，请先登录")
-                    await websocket.send(error_msg.serialize())
-                    await websocket.close(code=1008, reason="未授权访问")
-                    return
+        return token
 
-            # 验证令牌
+    def _verify_jwt(self, token: str) -> Optional[str]:
+        try:
+            payload = jwt.decode(token, config.JWT_SECRET, algorithms=[config.JWT_ALGORITHM])
+            return payload.get("sub")
+        except jwt.ExpiredSignatureError:
+            raise
+        except Exception:
+            raise
+
+    # --- WebSocket handler ---
+    async def handler(self, websocket: WebSocketServerProtocol) -> None:
+        # Authenticate connection
+        try:
+            logger.debug("Starting auth for incoming websocket")
+            token = self._extract_token(websocket)
+            if not token:
+                msg = Message(MessageType.TEXT, "SERVER", "No verify token provided, please login first")
+                await websocket.send(msg.serialize())
+                await websocket.close(code=1008, reason="Unauthorized: No token")
+                return
+
             try:
-                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-                username = payload.get('sub')
-                if not username:
-                    raise ValueError("令牌中缺少用户名")
-
-                # 使用令牌中的用户名注册会话
-                if username in self.sessions:
-                    error_msg = Message(MessageType.TEXT, "SERVER", f"用户名 '{username}' 已在其他地方登录")
-                    await websocket.send(error_msg.serialize())
-                    await websocket.close(code=1008, reason="用户名已登录")
-                    return
-                self.sessions[username] = websocket
-                print(f"User {username} connected")
-
-                # 更新用户在线状态为在线
-                update_user_online_status(username, True)
-
-                # 发送用户加入消息
-                join_msg = Message(MessageType.JOIN, username, "用户加入了聊天室")
-                await self.broadcast(join_msg)
+                username = self._verify_jwt(token)
             except jwt.ExpiredSignatureError:
-                error_msg = Message(MessageType.TEXT, "SERVER", "令牌已过期，请重新登录")
-                await websocket.send(error_msg.serialize())
-                await websocket.close(code=1008, reason="令牌过期")
+                msg = Message(MessageType.TEXT, "SERVER", "The token has expired.")
+                await websocket.send(msg.serialize())
+                await websocket.close(code=1008, reason="Token expired")
                 return
-            except jwt.InvalidTokenError as e:
-                error_msg = Message(MessageType.TEXT, "SERVER", f"无效的令牌: {str(e)}")
-                await websocket.send(error_msg.serialize())
-                await websocket.close(code=1008, reason="无效令牌")
+            except Exception as e:
+                msg = Message(MessageType.TEXT, "SERVER", f"Invalid token: {e}")
+                await websocket.send(msg.serialize())
+                await websocket.close(code=1008, reason="Invalid token")
                 return
+
+            if not username:
+                msg = Message(MessageType.TEXT, "SERVER", "There is no username in token")
+                await websocket.send(msg.serialize())
+                await websocket.close(code=1008, reason="Invalid token payload")
+                return
+
+            if username in self.sessions_ws:
+                msg = Message(MessageType.TEXT, "SERVER", f"User '{username}' already logged in at another location.")
+                await websocket.send(msg.serialize())
+                await websocket.close(code=1008, reason="User already logged in")
+                return
+
+            self.sessions_ws[username] = websocket
+            self.session_mgr.add(username)
+            # Lazy import to avoid circular import
+            from AloneChat.web.routes import update_user_online_status
+            update_user_online_status(username, True)
+            logger.info("User %s connected", username)
+
+            join_msg = Message(MessageType.JOIN, username, "User joined the chat")
+            await self.broadcast(join_msg)
         except Exception as e:
-            error_msg = Message(MessageType.TEXT, "SERVER", f"认证过程出错: {str(e)}")
-            await websocket.send(error_msg.serialize())
-            await websocket.close(code=1011, reason="服务器错误")
+            logger.exception("Unexpected error during websocket auth: %s", e)
+            try:
+                err = Message(MessageType.TEXT, "SERVER", f"Error during auth: {e}")
+                await websocket.send(err.serialize())
+                await websocket.close(code=1011, reason="Server error during auth")
+            except Exception:
+                pass
             return
 
+        # Add to client set and listen
         self.clients.add(websocket)
         try:
-            async for message in websocket:
-                msg = Message.deserialize(message)
-                # 忽略JOIN消息，已通过令牌验证用户名
+            async for raw in websocket:
+                try:
+                    msg = Message.deserialize(raw)
+                except Exception:
+                    logger.debug("Received non-Message payload; ignoring")
+                    continue
+
                 if msg.type == MessageType.JOIN:
                     continue
-                elif msg.type == MessageType.HEARTBEAT:
-                    # 处理心跳消息，更新用户活动时间
-                    if msg.sender in self.sessions:
-                        # 可以在这里添加用户活动时间更新逻辑
-                        pass
+                if msg.type == MessageType.HEARTBEAT:
+                    # update last active
+                    self.session_mgr.touch(msg.sender)
+                    # reply pong
+                    pong = Message(MessageType.HEARTBEAT, "SERVER", "pong")
+                    ws = self.sessions_ws.get(msg.sender)
+                    if ws:
+                        await self._safe_send(ws, pong.serialize())
+                    continue
+
                 await self.process_message(msg)
+
         except websockets.exceptions.ConnectionClosedError:
-            # 处理连接关闭错误
-            pass
+            logger.debug("ConnectionClosedError for a client")
+        except Exception:
+            logger.exception("Unexpected error in websocket receive loop")
         finally:
-            # 确保移除客户端
+            # Cleanup any sessions that referenced this websocket
             self.clients.discard(websocket)
-            # 移除会话
-            for username, ws in list(self.sessions.items()):
+            for username, ws in list(self.sessions_ws.items()):
                 if ws == websocket:
-                    del self.sessions[username]
-                    # 更新用户在线状态
+                    del self.sessions_ws[username]
+                    self.session_mgr.remove(username)
+                    from AloneChat.web.routes import update_user_online_status
                     update_user_online_status(username, False)
+                    leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
+                    await self.broadcast(leave_msg)
+                    logger.info("User %s disconnected and cleaned up", username)
                     break
 
-    async def process_message(self, msg):
-        """
-        Process incoming messages based on their type.
-        """
-        # 检查发送者是否在会话中
-        if msg.sender not in self.sessions:
-            print(f"警告: 收到来自未登录用户 {msg.sender} 的消息")
+    async def process_message(self, msg: Message) -> None:
+        # Verify sender session
+        if msg.sender not in self.sessions_ws:
+            logger.warning("Message from unlogged user %s, ignoring", msg.sender)
             return
 
         if msg.type == MessageType.COMMAND:
             parts = msg.content.split(maxsplit=1)
             cmd = parts[0]
-            if cmd in list(COMMANDS.keys()):
-                command_msg = Message(MessageType.TEXT, "COMMAND", COMMANDS[cmd]["handler"]())
-                await self.sessions[msg.sender].send(command_msg.serialize())
-        elif msg.type == MessageType.HEARTBEAT:  # 处理心跳消息
-            # 回复pong消息以保持连接活跃
-            pong_msg = Message(MessageType.HEARTBEAT, "SERVER", "pong")
-            await self.sessions[msg.sender].send(pong_msg.serialize())
-        else:
-            await self.broadcast(msg)
+            handler = COMMANDS.get(cmd, {}).get("handler")
+            if handler:
+                response = Message(MessageType.TEXT, "COMMAND", handler())
+                ws = self.sessions_ws.get(msg.sender)
+                if ws:
+                    await self._safe_send(ws, response.serialize())
+            return
 
-    async def broadcast(self, msg):
-        if self.clients:
-            # 创建发送任务列表
-            tasks = []
-            for client in self.clients:
-                # 为每个客户端创建一个发送任务，并添加异常处理
-                task = asyncio.create_task(self._safe_send(client, msg.serialize()))
-                tasks.append(task)
-            # 等待所有任务完成
-            await asyncio.gather(*tasks, return_exceptions=True)
+        if msg.type == MessageType.HEARTBEAT:
+            # handled earlier; keep here as fallback
+            ws = self.sessions_ws.get(msg.sender)
+            if ws:
+                await self._safe_send(ws, Message(MessageType.HEARTBEAT, "SERVER", "pong").serialize())
+            return
 
-    async def _safe_send(self, client, message):
-        """
-        安全地向客户端发送消息，处理可能的异常
-        """
-        # 导入更新用户在线状态的函数
-        from AloneChat.web.routes import update_user_online_status
+        # Broadcast other messages
+        await self.broadcast(msg)
+
+    async def broadcast(self, msg: Message) -> None:
+        if not self.clients:
+            return
+        data = msg.serialize()
+        tasks = [asyncio.create_task(self._safe_send(client, data)) for client in list(self.clients)]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _safe_send(self, client: WebSocketServerProtocol, message: str) -> None:
         try:
             await client.send(message)
         except Exception as e:
-            # 记录错误但不中断其他消息发送
-            print(f"发送消息失败: {e}")
-            # 从客户端集合中移除无效连接
+            logger.warning("Failed to send to client: %s", e)
+            # best-effort cleanup
             if client in self.clients:
                 self.clients.discard(client)
-            # 查找并移除对应的会话
-            for username, ws in list(self.sessions.items()):
+            for username, ws in list(self.sessions_ws.items()):
                 if ws == client:
-                    del self.sessions[username]
-                    # 更新用户在线状态
+                    del self.sessions_ws[username]
+                    self.session_mgr.remove(username)
+                    from AloneChat.web.routes import update_user_online_status
                     update_user_online_status(username, False)
-                    # 广播用户离开的消息
-                    leave_msg = Message(MessageType.LEAVE, username, "用户离开了聊天室")
-                    await self.broadcast(leave_msg)
+                    leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
+                    # schedule a broadcast but don't await here to avoid recursion issues
+                    asyncio.create_task(self.broadcast(leave_msg))
                     break
 
-    async def run(self):
-        # noinspection PyTypeChecker
-        # 适配websockets 15.0.1版本API
-        async with websockets.serve(
-                self.handler,
-                self.host, self.port
-        ):
-            print(f"Server running on ws://{self.host}:{self.port}")
+    async def run(self) -> None:
+        async with websockets.serve(self.handler, self.host, self.port):
+            logger.info("Server running on ws://%s:%s", self.host, self.port)
             await asyncio.Future()

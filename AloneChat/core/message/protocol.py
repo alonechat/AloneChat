@@ -34,8 +34,8 @@ class Message:
     type: MessageType
     sender: str
     content: str
-    target: str = None
-    command: str = None
+    target: str | None = None
+    command: str | None = None
 
     def serialize(self) -> str:
         """

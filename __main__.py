@@ -5,11 +5,11 @@ This module provides a command-line interface to start either a server or client
 
 import argparse
 
-from AloneChat.start import client, server, web
+from AloneChat.start import client, server, web, API
 from AloneChat.test import main as test_main
 
 
-def main():
+def parse():
     # Initialize argument parser for command line interface
     parser = argparse.ArgumentParser(prog='AloneChat', description='AloneChat starter')
     subparsers = parser.add_subparsers(dest='command', required=True, help='Available commands')
@@ -24,6 +24,10 @@ def main():
     client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8766)')
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
+
+    # Add 'api' command
+    api_parser = subparsers.add_parser('api', help='Startup API')
+    api_parser.add_argument('--port', type=int, default=8767, help='API server port (default: 8767)')
 
     # Add 'web-only' command
     web_parser = subparsers.add_parser('srv-only', help='Startup web (alias for api)')
@@ -40,6 +44,12 @@ def main():
 
     args = parser.parse_args()
 
+    return args
+
+
+def main():
+    args = parse()
+
     # Launch either server or client based on command line arguments
     if args.command == 'server':
         server.server(port=args.port)
@@ -48,6 +58,8 @@ def main():
             client.client(host=args.host, port=args.port, ui='tui')
         elif args.ui == 'text':
             client.client(host=args.host, port=args.port, ui='text')
+    elif args.command == 'api':
+        API.API(port=args.port)
     elif args.command == 'srv-only':
         server.server(port=args.port, srv_only=True)
     elif args.command == 'web-only':

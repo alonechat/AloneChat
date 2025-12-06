@@ -1,7 +1,7 @@
 NOTICE
 
 AlneChat AloneChat
-Copyright 2025 The AloneChat team at GitHub (@alonechat)
+Copyright 2025 The AloneChat team (@alonechat)
 
 This product will be used in software developed at
 The AloneChat Team (http://github.com/alonechat).
@@ -60,14 +60,14 @@ AloneChat includes third-party software components licensed under the following 
    Source: https://github.com/zephyrproject-rtos/windows-curses
 
 11. PyInstaller
-    Copyright (c) 2005-2024 PyInstaller contributors
-    Licensed under the GPL v2 or later license with PyInstaller exception.
-    Source: https://github.com/pyinstaller/pyinstaller
+   Copyright (c) 2005-2024 PyInstaller contributors
+   Licensed under the GPL v2 or later license with PyInstaller exception.
+   Source: https://github.com/pyinstaller/pyinstaller
 
 12. requests
-    Copyright (c) 2019 Kenneth Reitz and contributors
-    Licensed under the Apache License 2.0.
-    Source: https://github.com/psf/requests
+   Copyright (c) 2019 Kenneth Reitz and contributors
+   Licensed under the Apache License 2.0.
+   Source: https://github.com/psf/requests
 
 ---
 

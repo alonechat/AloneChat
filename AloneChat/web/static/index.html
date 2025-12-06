@@ -6,7 +6,7 @@
     <title>AloneChat - 聊天界面</title>
     <script>
         // 检查是否已登录
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // 从localStorage获取authToken
             const authToken = localStorage.getItem('authToken');
             const username = localStorage.getItem('username');
@@ -160,6 +160,7 @@
             font-size: 0.9em;
             margin-top: 5px;
         }
+
         .feedback-container {
             position: fixed;
             bottom: 20px;
@@ -177,7 +178,7 @@
             height: 50px;
             font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
         }
 
@@ -189,7 +190,7 @@
         .feedback-form {
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
             padding: 20px;
             margin-top: 10px;
             display: none;
@@ -241,7 +242,7 @@
             color: white;
             padding: 15px;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -276,7 +277,7 @@
             <button class="cancel-btn" onclick="closeFeedbackForm()">取消</button>
         </div>
     </div>
-    </div>
+</div>
 <div class="feedback-notification" id="feedbackNotification">反馈已提交，感谢您的意见！</div>
 
 <script src="/static/client.js"></script>

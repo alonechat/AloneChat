@@ -1,23 +1,23 @@
 import requests
 
-# 测试获取默认服务器地址API
+# Try to get server address
 url = 'http://localhost:8766/api/get_default_server'
 
 try:
     response = requests.get(url)
-    response.raise_for_status()  # 如果响应状态码不是200，抛出异常
+    response.raise_for_status()  # If the status code is not 200 then raise error
     try:
         data = response.json()
-        print('API响应:', data)
+        print('API respond:', data)
         if data.get('success'):
-            print(f'成功获取默认服务器地址: {data.get("default_server_address")}')
+            print(f'Successfully get address: {data.get("default_server_address")}')
         else:
-            print('获取默认服务器地址失败')
+            print('Failed getting default server address!')
     except ValueError as e:
-        print(f'JSON解析错误: {e}')
-        print(f'响应内容: {response.text}')
+        print(f'JSON parsing error: {e}')
+        print(f'Res text: {response.text}')
 except requests.exceptions.RequestException as e:
-    print(f'API调用错误: {e}')
+    print(f'API invoke error: {e}')
     if 'response' in locals():
         # noinspection PyUnboundLocalVariable
-        print(f'响应内容: {response.text}')
+        print(f'Text: {response.text}')
