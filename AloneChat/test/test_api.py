@@ -1,6 +1,6 @@
 import requests
 
-# Try get server address
+# Try to get server address
 url = 'http://localhost:8766/api/get_default_server'
 
 try:
