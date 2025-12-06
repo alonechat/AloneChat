@@ -178,7 +178,7 @@ class WebSocketManager:
             self.sessions_ws[username] = websocket
             self.session_mgr.add(username)
             # Lazy import to avoid circular import
-            from AloneChat.web.routes_base import update_user_online_status
+            from AloneChat.web.routes import update_user_online_status
             update_user_online_status(username, True)
             logger.info("User %s connected", username)
 
@@ -229,7 +229,7 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    from AloneChat.web.routes_base import update_user_online_status
+                    from AloneChat.web.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     await self.broadcast(leave_msg)
@@ -282,7 +282,7 @@ class WebSocketManager:
                 if ws == client:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    from AloneChat.web.routes_base import update_user_online_status
+                    from AloneChat.web.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     # schedule a broadcast but don't await here to avoid recursion issues
