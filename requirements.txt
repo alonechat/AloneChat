@@ -1,5 +1,7 @@
+starlette
+requests
 websockets>=15.0.1
-fastapi>=0.95.0
+fastapi>=0.100.0
 uvicorn>=0.22.0
 websockets>=15.0.1
 pydantic>=2.0.0
