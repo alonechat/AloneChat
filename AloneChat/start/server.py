@@ -6,8 +6,8 @@ Provides the entry point for starting the chat server and web services.
 import asyncio
 import uvicorn
 import threading
-from AloneChat.core.server import WebSocketManager
 from AloneChat.web.routes import app
+from AloneChat.core.server.manager import WebSocketManager
 
 
 def server(port=8765, srv_only=False):
@@ -18,7 +18,7 @@ def server(port=8765, srv_only=False):
         port (int): Port number to listen on (default: 8765)
         srv_only (bool): If True, serve only the web services only.
     """
-    # 重置所有用户的在线状态为离线
+    # Reset all online to offline
     from AloneChat.web.routes import load_user_credentials, save_user_credentials
     user_credentials = load_user_credentials()
     for username in user_credentials:
@@ -26,7 +26,7 @@ def server(port=8765, srv_only=False):
     save_user_credentials(user_credentials)
     print("All user credentials saved. All status reseted to 'leaved'.")
 
-    # Create WebSocket manager
+    # Initialize WebSocket manager
     ws_manager = WebSocketManager(port=port)
 
     # Start WebSocket server in a separate task

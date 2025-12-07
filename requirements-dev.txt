@@ -1,2 +1,3 @@
 pyinstaller
 requests
+pylint>=2.15.0

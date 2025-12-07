@@ -14,55 +14,66 @@ __all__ = ['client']
 def client(host="localhost", port=8765, ui="tui", auto_connect=False):
     """
     Start the chat client with specified connection parameters.
-
     Args:
         host (str): Server hostname to connect to (default: localhost)
         port (int): Server port number (default: 8765)
         ui (str): User interface type ("text" for command-line, "tui" for Textual UI)
         auto_connect (bool): Whether to automatically connect to the server (default: False)
     """
-    print("欢迎使用 AloneChat 客户端!")
-    print(f"当前设置: 服务器={host}:{port}, UI={ui}")
-
+    print("Welcome AloneChat Client!")
+    print(f"Current setting: server={host}:{port}, UI={ui}")
     if auto_connect:
         _connect_to_server(host, port, ui)
     else:
-        print("输入 'connect' 连接到服务器，'set host <hostname>' 设置服务器地址，'set port <port>' 设置端口，'exit' 退出")
+        print(
+            "Type 'connect' to connect to the server, "
+            "'set host <hostname>' to set the server address, \n"
+            "'set port <port>' to set the server port, "
+            "and 'exit' to exit."
+        )
         while True:
             command = input(">> ").strip().lower()
+            command_parts = command.split()
 
-            if command == "exit":
-                print("再见!")
-                break
+            match command_parts:
+                case ["exit"]:
+                    print("Bye!")
+                    break
 
-            elif command == "connect":
-                _connect_to_server(host, port, ui)
+                case ["connect"]:
+                    _connect_to_server(host, port, ui)
 
-            elif command.startswith("set host"):
-                parts = command.split()
-                if len(parts) >= 3:
-                    host = parts[2]
-                    print(f"服务器地址已设置为: {host}")
-                else:
-                    print("用法: set host <hostname>")
+                case ["set", "host", hostname]:
+                    host = hostname
+                    print(f"Server address setted to: {host}")
 
-            elif command.startswith("set port"):
-                parts = command.split()
-                if len(parts) >= 3 and parts[2].isdigit():
-                    port = int(parts[2])
-                    print(f"端口已设置为: {port}")
-                else:
-                    print("用法: set port <port>")
+                case ["set", "port", port_str] if port_str.isdigit():
+                    port = int(port_str)
+                    print(f"Port setted to: {port}")
 
-            elif command == "help":
-                print("可用命令:")
-                print("  connect - 连接到服务器")
-                print("  set host <hostname> - 设置服务器地址")
-                print("  set port <port> - 设置服务器端口")
-                print("  exit - 退出客户端")
+                case ["set", "host"]:
+                    print("Usage: set host <hostname>")
 
-            else:
-                print(f"未知命令: {command}，输入 'help' 查看可用命令")
+                case ["set", "port"]:
+                    print("Usage: set port <port>")
+
+                case ["set", "port", _]:
+                    print("Port must be a number")
+
+                case ["help"]:
+                    print("Commands:")
+                    print("  connect - Connect to server")
+                    print("  set host <hostname> - Set server address")
+                    print("  set port <port> - Set server port")
+                    print("  exit - Exit the client")
+
+                case ["set", _]:
+                    print("Use case: set host <hostname> or set port <port>")
+
+                case _:
+                    print(
+                        f"Unknown command: {command}, try type command 'help' "
+                        "to check commands")
 
 
 def _connect_to_server(host, port, ui):
@@ -76,12 +87,12 @@ def _connect_to_server(host, port, ui):
             _client.run()
         else:
             print(
-                "Sorry. But we don't have such a beautiful UI yet."
+                f"Sorry. But we don't have a {ui} UI yet."
                 "We apologize, but we just have a text-based (ugly) UI and a curses-based TUI."
                 "No need? You are a geek! Why not join us in developing a new UI?"
                 "GitHub: https://github.com/alonechat/AloneChat , welcome you!"
             )
     except KeyboardInterrupt:
-        print("已断开连接.")
+        print("Connect reseted.")
     except Exception as e:
-        print(f"连接失败: {e}")
+        print(f"Failed to connect: {e}")

@@ -1,4 +1,5 @@
 let ws = null;
+
 // 从cookie获取认证令牌
 function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -81,82 +82,82 @@ function login() {
             password: loginPassword
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 存储登录信息到localStorage
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('username', loginUsername);
-            authToken = data.token;
-            
-            // 同时存储认证令牌到cookie，有效期1小时
-            const expiration = new Date();
-            expiration.setTime(expiration.getTime() + (60 * 60 * 1000));
-            document.cookie = `authToken=${data.token}; expires=${expiration.toUTCString()}; path=/; SameSite=Lax`;
-            console.log('Cookie已设置:', document.cookie);
-            
-            // 解码JWT令牌以获取角色信息
-            try {
-                const tokenParts = data.token.split('.');
-                console.log('JWT令牌部分:', tokenParts);
-                
-                // 确保令牌有足够的部分
-                if (tokenParts.length < 3) {
-                    throw new Error('JWT令牌格式不正确');
-                }
-                
-                // 解码payload部分
-                const payload = JSON.parse(atob(tokenParts[1]));
-                console.log('JWT payload:', payload);
-                
-                // 获取角色信息
-                const role = payload.role || 'user';
-                console.log('用户角色:', role);
-                
-                // 根据角色重定向到相应页面
-                if (role.toLowerCase() === 'admin') {
-                    console.log('重定向到管理员页面');
-                    // 添加短暂延迟以便查看日志
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 存储登录信息到localStorage
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('username', loginUsername);
+                authToken = data.token;
+
+                // 同时存储认证令牌到cookie，有效期1小时
+                const expiration = new Date();
+                expiration.setTime(expiration.getTime() + (60 * 60 * 1000));
+                document.cookie = `authToken=${data.token}; expires=${expiration.toUTCString()}; path=/; SameSite=Lax`;
+                console.log('Cookie已设置:', document.cookie);
+
+                // 解码JWT令牌以获取角色信息
+                try {
+                    const tokenParts = data.token.split('.');
+                    console.log('JWT令牌部分:', tokenParts);
+
+                    // 确保令牌有足够的部分
+                    if (tokenParts.length < 3) {
+                        throw new Error('JWT令牌格式不正确');
+                    }
+
+                    // 解码payload部分
+                    const payload = JSON.parse(atob(tokenParts[1]));
+                    console.log('JWT payload:', payload);
+
+                    // 获取角色信息
+                    const role = payload.role || 'user';
+                    console.log('用户角色:', role);
+
+                    // 根据角色重定向到相应页面
+                    if (role.toLowerCase() === 'admin') {
+                        console.log('重定向到管理员页面');
+                        // 添加短暂延迟以便查看日志
+                        setTimeout(() => {
+                            console.log('即将重定向到/admin.html，当前cookie:', document.cookie);
+                            window.location.href = '/admin.html';
+                        }, 1000);
+                    } else {
+                        console.log('重定向到用户页面');
+                        window.location.href = '/index.html';
+                    }
+                } catch (e) {
+                    console.error('解析JWT令牌失败:', e);
+                    // 显示错误信息给用户
+                    document.getElementById('loginStatus').textContent = '登录成功，但无法确定用户角色: ' + e.message;
+                    document.getElementById('loginStatus').style.color = 'orange';
+                    // 不立即重定向，让用户看到错误信息
                     setTimeout(() => {
-                        console.log('即将重定向到/admin.html，当前cookie:', document.cookie);
-                        window.location.href = '/admin.html';
-                    }, 1000);
-                } else {
-                    console.log('重定向到用户页面');
-                    window.location.href = '/index.html';
+                        window.location.href = '/index.html';
+                    }, 3000);
                 }
-            } catch (e) {
-                console.error('解析JWT令牌失败:', e);
-                // 显示错误信息给用户
-                document.getElementById('loginStatus').textContent = '登录成功，但无法确定用户角色: ' + e.message;
-                document.getElementById('loginStatus').style.color = 'orange';
-                // 不立即重定向，让用户看到错误信息
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 3000);
+            } else {
+                document.getElementById('loginStatus').textContent = data.message || '登录失败';
+                document.getElementById('loginStatus').style.color = 'red';
             }
-        } else {
-            document.getElementById('loginStatus').textContent = data.message || '登录失败';
+        })
+        .catch(error => {
+            console.error('登录请求失败:', error);
+            document.getElementById('loginStatus').textContent = '登录请求失败，请检查网络连接';
             document.getElementById('loginStatus').style.color = 'red';
-        }
-    })
-    .catch(error => {
-        console.error('登录请求失败:', error);
-        document.getElementById('loginStatus').textContent = '登录请求失败，请检查网络连接';
-        document.getElementById('loginStatus').style.color = 'red';
-    });
+        });
 }
 
 // 连接到服务器
 function connect() {
     // 检查是否在管理员页面
     const isAdminPage = window.location.pathname.includes('admin.html');
-    
+
     // 管理员页面也需要连接WebSocket以获取在线用户状态
     if (isAdminPage) {
         console.log('管理员页面连接WebSocket');
     }
-    
+
     // 从localStorage获取服务器地址
     // 优先从defaultServer读取（管理员页面设置的值）
     let serverAddress = localStorage.getItem('defaultServer');
@@ -219,13 +220,18 @@ function connect() {
             addSystemMessage('成功连接到服务器');
 
             // 提示输入用户名
-            username = document.getElementById('username').value.trim() || '匿名用户';
+            try {
+                username = document.getElementById('username').value.trim() || '匿名用户';
+            } catch (e) { // Catch for error: Cannot read properties of null (reading 'value')
+                ws.close();
+                return;
+            }
             if (username) {
                 // 已通过令牌验证，无需发送JOIN消息
             } else {
                 // 登录失败，不应继续连接流程
                 ws.close();
-                return;
+
             }
         };
 
@@ -270,15 +276,15 @@ function connect() {
         };
 
         // 定期检查连接状态，防止连接断开
-function checkConnectionStatus() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.log('连接已断开，尝试重新连接');
-        connect();
-    }
-}
+        function checkConnectionStatus() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.log('连接已断开，尝试重新连接');
+                connect();
+            }
+        }
 
 // 每30秒检查一次连接状态
-setInterval(checkConnectionStatus, 30000);
+        setInterval(checkConnectionStatus, 30000);
 
 // 添加心跳机制，定期发送ping消息保持连接
         setInterval(() => {
@@ -331,14 +337,14 @@ function submitFeedbackToServer(feedback) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${window.authToken}`
         },
-        body: JSON.stringify({ content: feedback.content })
+        body: JSON.stringify({content: feedback.content})
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('提交反馈失败');
-        }
-        return response.json();
-    });
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('提交反馈失败');
+            }
+            return response.json();
+        });
 }
 
 
@@ -356,26 +362,26 @@ function submitFeedback() {
 
     // 提交反馈到服务器
     submitFeedbackToServer(feedback)
-    .then(data => {
-        if (data.success) {
-            // 清空输入框
-            document.getElementById('feedbackContent').value = '';
-            // 关闭表单
-            closeFeedbackForm();
-            // 显示通知
-            showFeedbackNotification('反馈已提交，感谢您的意见！');
-        } else {
-            showFeedbackNotification('保存反馈失败: ' + (data.message || '未知错误'));
-        }
-    })
-    .catch(error => {
-        console.error('提交反馈失败:', error);
-        showFeedbackNotification('提交反馈失败，请稍后重试');
-    });
+        .then(data => {
+            if (data.success) {
+                // 清空输入框
+                document.getElementById('feedbackContent').value = '';
+                // 关闭表单
+                closeFeedbackForm();
+                // 显示通知
+                showFeedbackNotification('反馈已提交，感谢您的意见！');
+            } else {
+                showFeedbackNotification('保存反馈失败: ' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('提交反馈失败:', error);
+            showFeedbackNotification('提交反馈失败，请稍后重试');
+        });
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // 如果存在反馈按钮，则添加点击事件
     const feedbackButton = document.getElementById('feedbackButton');
     if (feedbackButton) {
@@ -673,31 +679,31 @@ function displayMessage(message) {
     const messageElement = document.createElement('div');
 
     switch (message.type) {
-            case 2:
-                messageElement.className = 'message message-system';
-                messageElement.textContent = `${message.sender} 加入了聊天`;
-                break;
-            case 1:
-                if (message.sender === username) {
-                    messageElement.className = 'message outgoing';
-                    // 使用innerHTML并将换行符转换为<br>标签
-                    messageElement.innerHTML = message.content.replace(/\n/g, '<br>');
-                } else {
-                    messageElement.className = 'message incoming';
-                    // 使用innerHTML并将换行符转换为<br>标签
-                    messageElement.innerHTML = `[${message.sender}] ${message.content.replace(/\n/g, '<br>')}`;
-                }
-                break;
-            case 3:
-                messageElement.className = 'message message-system';
-                messageElement.textContent = `${message.sender} 离开了聊天`;
-                break;
-            case 7:
-                // 忽略心跳消息
-                return;
-            default:
-                messageElement.className = 'message message-system';
-                messageElement.textContent = `[系统] ${message.content || JSON.stringify(message)}`;
+        case 2:
+            messageElement.className = 'message message-system';
+            messageElement.textContent = `${message.sender} 加入了聊天`;
+            break;
+        case 1:
+            if (message.sender === username) {
+                messageElement.className = 'message outgoing';
+                // 使用innerHTML并将换行符转换为<br>标签
+                messageElement.innerHTML = message.content.replace(/\n/g, '<br>');
+            } else {
+                messageElement.className = 'message incoming';
+                // 使用innerHTML并将换行符转换为<br>标签
+                messageElement.innerHTML = `[${message.sender}] ${message.content.replace(/\n/g, '<br>')}`;
+            }
+            break;
+        case 3:
+            messageElement.className = 'message message-system';
+            messageElement.textContent = `${message.sender} 离开了聊天`;
+            break;
+        case 7:
+            // 忽略心跳消息
+            return;
+        default:
+            messageElement.className = 'message message-system';
+            messageElement.textContent = `[系统] ${message.content || JSON.stringify(message)}`;
     }
 
     messagesElement.appendChild(messageElement);
@@ -741,23 +747,23 @@ function kickUser(username) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ username })
+            body: JSON.stringify({username})
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('踢出用户失败');
-            }
-            return response.json();
-        })
-        .then(data => {
-            alert(data.message || '踢出用户成功');
-            // 刷新用户列表
-            viewOnlineUsers();
-        })
-        .catch(error => {
-            console.error('踢出用户失败:', error);
-            alert(`踢出用户失败: ${error.message}`);
-        });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('踢出用户失败');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message || '踢出用户成功');
+                // 刷新用户列表
+                viewOnlineUsers();
+            })
+            .catch(error => {
+                console.error('踢出用户失败:', error);
+                alert(`踢出用户失败: ${error.message}`);
+            });
     }
 }
 
@@ -774,29 +780,29 @@ function viewChatHistory() {
             'Authorization': `Bearer ${authToken}`
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('获取聊天历史失败');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.messages && data.messages.length > 0) {
-            let html = '<table><tr><th>时间</th><th>发送者</th><th>内容</th></tr>';
-            data.messages.forEach(message => {
-                const time = new Date(message.timestamp).toLocaleString();
-                html += `<tr><td>${time}</td><td>${message.sender}</td><td>${message.content}</td></tr>`;
-            });
-            html += '</table>';
-            chatHistoryElement.innerHTML = html;
-        } else {
-            chatHistoryElement.innerHTML = '<p>暂无聊天记录</p>';
-        }
-    })
-    .catch(error => {
-        console.error('获取聊天历史失败:', error);
-        chatHistoryElement.innerHTML = `<p>获取失败: ${error.message}</p>`;
-    });
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('获取聊天历史失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.messages && data.messages.length > 0) {
+                let html = '<table><tr><th>时间</th><th>发送者</th><th>内容</th></tr>';
+                data.messages.forEach(message => {
+                    const time = new Date(message.timestamp).toLocaleString();
+                    html += `<tr><td>${time}</td><td>${message.sender}</td><td>${message.content}</td></tr>`;
+                });
+                html += '</table>';
+                chatHistoryElement.innerHTML = html;
+            } else {
+                chatHistoryElement.innerHTML = '<p>暂无聊天记录</p>';
+            }
+        })
+        .catch(error => {
+            console.error('获取聊天历史失败:', error);
+            chatHistoryElement.innerHTML = `<p>获取失败: ${error.message}</p>`;
+        });
 }
 
 // 查看系统状态
@@ -812,30 +818,30 @@ function viewSystemStatus() {
             'Authorization': `Bearer ${authToken}`
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('获取系统状态失败');
-        }
-        return response.json();
-    })
-    .then(data => {
-        let html = '';
-        html += `<div class="system-info-item"><span class="system-info-label">服务器版本:</span> ${data.version || '未知'}</div>`;
-        html += `<div class="system-info-item"><span class="system-info-label">运行时间:</span> ${data.uptime || '未知'}</div>`;
-        html += `<div class="system-info-item"><span class="system-info-label">在线用户数:</span> ${data.online_users || 0}</div>`;
-        html += `<div class="system-info-item"><span class="system-info-label">总用户数:</span> ${data.total_users || 0}</div>`;
-        html += `<div class="system-info-item"><span class="system-info-label">CPU使用率:</span> ${data.cpu_usage || '未知'}</div>`;
-        html += `<div class="system-info-item"><span class="system-info-label">内存使用:</span> ${data.memory_usage || '未知'}</div>`;
-        systemStatusElement.innerHTML = html;
-    })
-    .catch(error => {
-        console.error('获取系统状态失败:', error);
-        systemStatusElement.innerHTML = `<p>获取失败: ${error.message}</p>`;
-    });
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('获取系统状态失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            let html = '';
+            html += `<div class="system-info-item"><span class="system-info-label">服务器版本:</span> ${data.version || '未知'}</div>`;
+            html += `<div class="system-info-item"><span class="system-info-label">运行时间:</span> ${data.uptime || '未知'}</div>`;
+            html += `<div class="system-info-item"><span class="system-info-label">在线用户数:</span> ${data.online_users || 0}</div>`;
+            html += `<div class="system-info-item"><span class="system-info-label">总用户数:</span> ${data.total_users || 0}</div>`;
+            html += `<div class="system-info-item"><span class="system-info-label">CPU使用率:</span> ${data.cpu_usage || '未知'}</div>`;
+            html += `<div class="system-info-item"><span class="system-info-label">内存使用:</span> ${data.memory_usage || '未知'}</div>`;
+            systemStatusElement.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('获取系统状态失败:', error);
+            systemStatusElement.innerHTML = `<p>获取失败: ${error.message}</p>`;
+        });
 }
 
 // 确保DOM加载完成后再添加事件监听器
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // 添加登出按钮事件监听
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -875,7 +881,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 添加textarea自动调整高度功能
-        messageInput.addEventListener('input', function() {
+        messageInput.addEventListener('input', function () {
             // 重置高度
             this.style.height = 'auto';
             // 设置新高度，基于内容.scrollHeight

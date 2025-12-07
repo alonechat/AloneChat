@@ -23,7 +23,7 @@ class CommandSystem:
     loaded_modules = load()
 
     if loaded_modules is not None:
-        COMMANDS.update(load())
+        COMMANDS.update(load()) # type: ignore
 
     @classmethod
     def process(cls, input_str, sender, target=None):

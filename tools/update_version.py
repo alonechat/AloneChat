@@ -1,46 +1,74 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-版本号更新工具
-支持4位版本号格式(主版本.次版本.补丁版本.构建版本)
+Version number updating tool
+Support 4 digit (Main.Sub.Patch.Build)
+Usage:
+  - Default: increment Build and write back
+  - --just-show: only print current version
+  - --set-version X.Y.Z[.B]: set version (3 or 4 parts)
 """
 import os
 import re
+import argparse
+import sys
 
-# 定义版本号文件路径
 VERSION_FILE = os.path.join(os.path.dirname(__file__), 'AloneChat', '__init__.py')
 
-# 读取当前版本号
-with open(VERSION_FILE, 'r') as f:
-    content = f.read()
+def read_content(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
 
-# 提取版本号（支持3位或4位格式）
-version_match = re.search(r'__version__ = "([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?)"', content)
-if not version_match:
-    print("未找到版本号定义")
-    exit(1)
+def write_content(path, content):
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
 
-current_version = version_match.group(1)
-print(f"当前版本: {current_version}")
+def extract_version(content):
+    m = re.search(r'__version__ = "([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?)"', content)
+    if not m:
+        print("Cannot find version number")
+        sys.exit(1)
+    return m.group(1)
 
-# 分解版本号并增加构建版本
-version_parts = list(map(int, current_version.split('.')))
+def normalize_parts(parts):
+    parts = list(map(int, parts))
+    while len(parts) < 4:
+        parts.append(0)
+    return parts
 
-# 确保版本号至少有3位
-while len(version_parts) < 4:
-    version_parts.append(0)
+def main():
+    parser = argparse.ArgumentParser(description="Update version in `AloneChat/__init__.py`")
+    parser.add_argument("--just-show", action="store_true", default=False, help="Only show current version")
+    parser.add_argument("--set-version", type=str, help="Set version to X.Y.Z or X.Y.Z.B")
+    args = parser.parse_args()
 
-# 增加构建版本号
-version_parts[3] += 1
+    if args.just_show and args.set_version:
+        raise SystemExit("You can't use both --just-show and --set-version.")
 
-# 构建新版本号
-new_version = '.'.join(map(str, version_parts))
-print(f"新版本: {new_version}")
+    content = read_content(VERSION_FILE)
+    current_version = extract_version(content)
+    print(f"Current version: {current_version}")
 
-# 更新版本号
-new_content = re.sub(r'__version__ = "[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?"', f'__version__ = "{new_version}"', content)
+    if args.just_show:
+        return
 
-# 写回文件
-with open(VERSION_FILE, 'w') as f:
-    f.write(new_content)
+    if args.set_version:
+        if not re.fullmatch(r'[0-9]+(?:\.[0-9]+){2,3}', args.set_version):
+            raise SystemExit("Invalid version format. Use X.Y.Z or X.Y.Z.B")
+        parts = normalize_parts(args.set_version.split('.'))
+        new_version = '.'.join(map(str, parts))
+    else:
+        parts = normalize_parts(current_version.split('.'))
+        parts[3] += 1
+        new_version = '.'.join(map(str, parts))
 
-print(f"版本号已更新至 {new_version}")
+    new_content = re.sub(
+        r'__version__ = "[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?"',
+        f'__version__ = "{new_version}"',
+        content
+    )
+    write_content(VERSION_FILE, new_content)
+    print(f"Version number updated to {new_version}")
+
+if __name__ == "__main__":
+    main()

@@ -217,6 +217,7 @@ class StandardCommandlineClient(Client):
             return False
 
 
+# type: ignore
 class CursesClient(Client):
     """
     Curses-based chat client implementation with message history navigation.
@@ -375,7 +376,7 @@ class CursesClient(Client):
             self.stdscr.addstr(3, 0, "Please enter your choice (1/2): ")
             self.stdscr.refresh()
 
-            choice = self._get_input(3, 19)
+            choice = self._get_input(3, 32)
 
             if choice == "1":
                 # noinspection PyUnresolvedReferences
@@ -465,11 +466,11 @@ class CursesClient(Client):
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Username: ")
         self.stdscr.refresh()
-        username = self._get_input(0, 9)
+        username = self._get_input(0, 10)
 
         self.stdscr.addstr(1, 0, "Password: ")
         self.stdscr.refresh()
-        password = self._get_password(1, 9)
+        password = self._get_password(1, 10)
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -510,15 +511,15 @@ class CursesClient(Client):
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Username: ")
         self.stdscr.refresh()
-        username = self._get_input(0, 9)
+        username = self._get_input(0, 10)
 
         self.stdscr.addstr(1, 0, "Password: ")
         self.stdscr.refresh()
-        password = self._get_password(1, 9)
+        password = self._get_password(1, 10)
 
         self.stdscr.addstr(2, 0, "Confirm password: ")
         self.stdscr.refresh()
-        confirm_password = self._get_password(2, 19)
+        confirm_password = self._get_password(2, 18)
 
         if password != confirm_password:
             self.stdscr.addstr(4, 0, "Passwords do not match")

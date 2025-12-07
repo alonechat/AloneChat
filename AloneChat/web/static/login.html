@@ -3,7 +3,7 @@
 <head>
     <script>
         // 检查是否已登录
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // 从localStorage获取authToken
             const authToken = localStorage.getItem('authToken');
             const username = localStorage.getItem('username');
@@ -259,7 +259,7 @@
 
     // 覆盖client.js中的login函数
     const originalLogin = window.login;
-    window.login = function() {
+    window.login = function () {
         // 先保存服务器地址
         const serverAddress = document.getElementById('serverAddress').value.trim();
         localStorage.setItem('serverAddress', serverAddress);
@@ -339,23 +339,23 @@
                 password: password
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('registerStatus').textContent = '注册成功，请登录';
-                document.getElementById('registerStatus').style.color = 'green';
-                // 切换到登录选项卡
-                setTimeout(() => switchTab('login'), 1500);
-            } else {
-                document.getElementById('registerStatus').textContent = data.message || '注册失败';
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('registerStatus').textContent = '注册成功，请登录';
+                    document.getElementById('registerStatus').style.color = 'green';
+                    // 切换到登录选项卡
+                    setTimeout(() => switchTab('login'), 1500);
+                } else {
+                    document.getElementById('registerStatus').textContent = data.message || '注册失败';
+                    document.getElementById('registerStatus').style.color = 'red';
+                }
+            })
+            .catch(error => {
+                console.error('注册请求失败:', error);
+                document.getElementById('registerStatus').textContent = '注册请求失败，请检查网络连接';
                 document.getElementById('registerStatus').style.color = 'red';
-            }
-        })
-        .catch(error => {
-            console.error('注册请求失败:', error);
-            document.getElementById('registerStatus').textContent = '注册请求失败，请检查网络连接';
-            document.getElementById('registerStatus').style.color = 'red';
-        });
+            });
     }
 </script>
 </body>
