@@ -41,6 +41,21 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod a+x dist/AloneChat
 
+      - name: Package for Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Compress-Archive -Path 'dist/AloneChat.exe' -DestinationPath 'AloneChat-Windows.zip'
+
+      - name: Package for Linux and macOS
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Use tar to create a gzipped archive.
+          # -C dist changes the directory to 'dist' before adding files,
+          # so the archive contains 'AloneChat' at the root level.
+          tar -czvf AloneChat-${{ runner.os }}.tar.gz -C dist AloneChat
+
       # Step 1: Upload the binary as a build artifact
       # This is useful for testing and downloading before a release is made
       - name: Upload Build Artifact
@@ -49,7 +64,9 @@ jobs:
           # Name the artifact based on the OS, e.g., "AloneChat-ubuntu-latest"
           name: AloneChat-${{ runner.os }}
           # The path is now consistent thanks to our updated packing.py script
-          path: dist/AloneChat*
+          path: |
+            AloneChat-Windows.zip
+            AloneChat-*.tar.gz
 
       # Step 2: Attach the binary to a GitHub Release
       # This step only runs if the workflow was triggered by a 'release' event
