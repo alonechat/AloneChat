@@ -6,6 +6,7 @@ Creates standalone executable using PyInstaller.
 import os
 import shutil
 import subprocess
+import sys
 from argparse import ArgumentParser
 
 
@@ -98,7 +99,8 @@ def postprocessing():
     # Move the built executable to a desired location if needed
     clean()
     # Clean up the dist directory after moving
-    shutil.move('dist/__main__.exe', 'dist/AloneChat.exe')
+    name_back = '.exe' if sys.platform == 'win32' else ''
+    shutil.move('dist/__main__' + name_back, 'dist/AloneChat' + name_back)
 
 
 if __name__ == "__main__":
