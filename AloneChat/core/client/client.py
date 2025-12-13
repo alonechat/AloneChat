@@ -288,8 +288,10 @@ class CursesClient(Client):
                         self.input_buffer = ""
                         self.auto_scroll = True  # Auto-scroll after sending
 
-                elif key == curses.KEY_BACKSPACE or key == 8:  # Backspace key
+                elif key == curses.KEY_BACKSPACE or key == curses.KEY_DC or key in [8, 127]:  # Backspace key
                     # The backspace key in windows is "8"...
+                    # And the curses.KEY_BACKSPACE is "263"...
+                    # This inconsistency...
                     # Remove the last character from input buffer
                     self.input_buffer = self.input_buffer[:-1] \
                         if self.input_buffer != "" \
