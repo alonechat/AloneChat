@@ -1,13 +1,14 @@
 import asyncio
-import aiohttp
 import getpass
 
+import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed
 
 from AloneChat.core.message.protocol import Message, MessageType
-from .command import CommandSystem
 from .client_base import Client
+from .command import CommandSystem
+
 
 class StandardCommandlineClient(Client):
     """

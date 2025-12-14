@@ -4,17 +4,15 @@ Provides base client functionality and standard command-line client implementati
 """
 
 import asyncio
-
-import aiohttp
 import curses
 
+import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed
 
 from AloneChat.core.message.protocol import Message, MessageType
-
-from .command import CommandSystem
 from .client_base import Client
+from .command import CommandSystem
 
 __all__ = [
     'CommandSystem',
