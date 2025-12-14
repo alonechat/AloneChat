@@ -24,7 +24,7 @@ from urllib.parse import parse_qs
 import jwt
 from AloneChat.config import config
 # Avoid importing `update_user_online_status` at module import time to prevent
-# circular imports with `AloneChat.web.routes`. We'll import it lazily where needed.
+# circular imports with `AloneChat.api.routes`. We'll import it lazily where needed.
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -178,7 +178,7 @@ class WebSocketManager:
             self.sessions_ws[username] = websocket
             self.session_mgr.add(username)
             # Lazy import to avoid circular import
-            from AloneChat.web.routes import update_user_online_status
+            from AloneChat.api.routes import update_user_online_status
             update_user_online_status(username, True)
             logger.info("User %s connected", username)
 
@@ -229,7 +229,7 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    from AloneChat.web.routes import update_user_online_status
+                    from AloneChat.api.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     await self.broadcast(leave_msg)
@@ -282,7 +282,7 @@ class WebSocketManager:
                 if ws == client:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    from AloneChat.web.routes import update_user_online_status
+                    from AloneChat.api.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
                     # schedule a broadcast but don't await here to avoid recursion issues

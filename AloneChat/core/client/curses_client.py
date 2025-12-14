@@ -279,7 +279,7 @@ class CursesClient(Client):
 
         try:
             async with aiohttp.ClientSession() as session:
-                # HTTP web runs on port+1
+                # HTTP api runs on port+1
                 # noinspection HttpUrlsUsage
                 async with session.post(f"http://{self.host}:{self.port + 1}/api/login", json={
                     "username": username,
@@ -334,7 +334,7 @@ class CursesClient(Client):
 
         try:
             async with aiohttp.ClientSession() as session:
-                # HTTP web runs on port+1
+                # HTTP api runs on port+1
                 # noinspection HttpUrlsUsage
                 async with session.post(f"http://{self.host}:{self.port + 1}/api/register", json={
                     "username": username,

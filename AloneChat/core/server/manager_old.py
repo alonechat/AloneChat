@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 import jwt
 from AloneChat.config import config
 # Note: avoid importing `update_user_online_status` at module import time
-# to prevent circular imports with `AloneChat.web.routes`. Import it
+# to prevent circular imports with `AloneChat.api.routes`. Import it
 # lazily inside methods where it's needed.
 
 
@@ -160,7 +160,7 @@ class WebSocketManager:
                 print(f"User {username} connected")
 
                 # Update user online status (lazy import to avoid circular import)
-                from AloneChat.web.routes import update_user_online_status
+                from AloneChat.api.routes import update_user_online_status
                 update_user_online_status(username, True)
 
                 # Send a join message to all clients
@@ -206,7 +206,7 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions[username]
                     # Update user online status (lazy import)
-                    from AloneChat.web.routes import update_user_online_status
+                    from AloneChat.api.routes import update_user_online_status
                     update_user_online_status(username, False)
                     break
 
@@ -248,7 +248,7 @@ class WebSocketManager:
         Safe send method to handle exceptions during sending messages.
         """
         # Update user online status function
-        from AloneChat.web.routes import update_user_online_status
+        from AloneChat.api.routes import update_user_online_status
         try:
             await client.send(message)
         except Exception as e:

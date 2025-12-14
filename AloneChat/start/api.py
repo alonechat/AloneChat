@@ -1,12 +1,12 @@
-import AloneChat.web as _web
+import AloneChat.api as _api
 
 
 # noinspection PyPep8Naming
-def web(port=8767):
+def api(port=8766):
     """
     Start the static server for AloneChat.
 
     Args:
         port (int): Port number for the static server (default: 8766).
     """
-    _web.run(api_port=port)
+    _api.run(api_port=port)

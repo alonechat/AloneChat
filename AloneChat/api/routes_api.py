@@ -4,7 +4,7 @@ from typing import List
 # Third-party imports
 import psutil
 import websockets
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Query
 
 # Local imports
 from AloneChat import __version__ as __main_version__
@@ -357,5 +357,5 @@ async def get_system_status():
         "total_users": total_users,
         "cpu_usage": cpu_usage,
         "memory_usage": memory_usage,
-        "note": "To see real online users, please ensure both WebSocket server and web server are running"
+        "note": "To see real online users, please ensure both WebSocket server and api server are running"
     }

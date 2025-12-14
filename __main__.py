@@ -5,7 +5,7 @@ This module provides a command-line interface to start either a server or client
 
 import argparse
 
-from AloneChat.start import client, server, web
+from AloneChat.start import client, server, api
 from AloneChat.test import main as test_main
 
 
@@ -25,13 +25,13 @@ def parse():
     client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
                                help='User interface type (default: text)')
 
-    # Add 'web-only' command
-    web_parser = subparsers.add_parser('srv-only', help='Startup web (alias for api)')
-    web_parser.add_argument('--port', type=int, default=8765, help='server port (default: 8765)')
+    # Add 'srv-only' command
+    srv_parser = subparsers.add_parser('srv-only', help='Startup server (ws server)')
+    srv_parser.add_argument('--port', type=int, default=8765, help='server port (default: 8765)')
 
-    # Add 'web-only' command
-    web_parser = subparsers.add_parser('web-only', help='Startup web (alias for api)')
-    web_parser.add_argument('--port', type=int, default=8766, help='web server port (default: 8766)')
+    # Add 'api-only' command
+    api_parser = subparsers.add_parser('api-only', help='Startup api (alias for api)')
+    api_parser.add_argument('--port', type=int, default=8766, help='api server port (default: 8766)')
 
     test_parser = subparsers.add_parser('test', help='Run Test')
     test_parser.add_argument('--host', default='localhost', help='Test server listening address (default: localhost)')
@@ -56,8 +56,8 @@ def main():
             client.client(host=args.host, port=args.port, ui='text')
     elif args.command == 'srv-only':
         server.server(port=args.port, srv_only=True)
-    elif args.command == 'web-only':
-        web.web(port=args.port)
+    elif args.command == 'api-only':
+        api.api(port=args.port)
     elif args.command == 'test':
         test_main(args.message, host=args.host, port=args.port)
     else:
