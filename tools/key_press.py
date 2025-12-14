@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import time
 import curses
 
 def main(stdscr):
