@@ -126,7 +126,7 @@ async def get_default_server():
 
 
 # Set default server address
-@app.post("/api/set_default_server")
+# @app.post("/api/set_default_server")
 async def set_default_server(server_address: str = Query(..., description="Default server address")):
     # Validate server address format
     if not server_address.startswith("ws://") and not server_address.startswith("wss://"):
