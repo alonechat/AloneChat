@@ -235,7 +235,10 @@ async def get_all_users():
 
     return {
         "users": users_list,
-        "note": "Passwords are stored as bcrypt hashes and cannot be recovered. For security reasons, please do not disclose this information to unauthorized personnel."
+        "note": (
+            "Passwords are stored as bcrypt hashes and cannot be recovered. "
+            "For security reasons, please do not disclose this information to unauthorized personnel."
+        )
     }
 
 
