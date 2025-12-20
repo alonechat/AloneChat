@@ -17,7 +17,7 @@ def load_plugins(path):
         if filename.endswith('.py'):
             mod = __import__(filename[:-3])
             try:
-                plugins['/' + filename[:-3]] = \
+                plugins[filename[:-3]] = \
                     {"type": MessageType.COMMAND, "handler": mod.PluginImpl}
             except AttributeError:
                 pass

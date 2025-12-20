@@ -1,5 +1,4 @@
 # Standard library imports
-from typing import List
 
 # Third-party imports
 import psutil
@@ -9,7 +8,7 @@ from urllib.parse import quote_plus  # 新增，用于对 token 编码
 
 # Local imports
 from AloneChat import __version__ as __main_version__
-from AloneChat.core.client.command import CommandSystem
+from AloneChat.core.server.command import CommandSystem
 from .routes_base import *
 from ..core.message.protocol import Message, MessageType
 
@@ -173,7 +172,8 @@ async def send_message(request: Request):
         if not message:
             raise HTTPException(status_code=400, detail="Missing message")
 
-        msg = CommandSystem.process(message, sender, target)
+        # msg = CommandSystem.process(message, sender, target)
+        msg = Message(MessageType.TEXT, sender, message, target)
 
         # From Authorization extract token，and as ?token=... add to WS URL
         auth = request.headers.get("Authorization")

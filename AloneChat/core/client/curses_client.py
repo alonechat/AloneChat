@@ -12,10 +12,8 @@ from websockets.exceptions import ConnectionClosed
 
 from AloneChat.core.message.protocol import Message, MessageType
 from .client_base import Client
-from .command import CommandSystem
 
 __all__ = [
-    'CommandSystem',
     'Client', 'CursesClient'
 ]
 
@@ -88,7 +86,8 @@ class CursesClient(Client):
                 match key:
                     case curses.KEY_ENTER | 10 | 13:  # Enter key
                         if self.input_buffer:
-                            msg = CommandSystem.process(self.input_buffer, self.username)
+                            # CommandSystem.process(self.input_buffer, self.username)
+                            msg = Message(MessageType.TEXT, self.username, self.input_buffer)
                             await websocket.send(msg.serialize())
                             self.input_buffer = ""
                             self.auto_scroll = True  # Auto-scroll after sending

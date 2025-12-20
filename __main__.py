@@ -22,8 +22,8 @@ def parse():
     client_parser = subparsers.add_parser('client', help='Startup CLIENT')
     client_parser.add_argument('--host', default='localhost', help='CLIENT listening address (default: localhost)')
     client_parser.add_argument('--port', type=int, default=8765, help='CLIENT port (default: 8766)')
-    client_parser.add_argument('--ui', choices=['text', 'tui'], default='tui',
-                               help='User interface type (default: text)')
+    client_parser.add_argument('--ui', choices=['tui'], default='tui',
+                               help='User interface type (default: tui)')
 
     # Add 'srv-only' command
     srv_parser = subparsers.add_parser('srv-only', help='Startup server (ws server)')
@@ -52,8 +52,6 @@ def main():
     elif args.command == 'client':
         if args.ui == 'tui':
             client.client(host=args.host, port=args.port, ui='tui')
-        elif args.ui == 'text':
-            client.client(host=args.host, port=args.port, ui='text')
     elif args.command == 'srv-only':
         server.server(port=args.port, srv_only=True)
     elif args.command == 'api-only':

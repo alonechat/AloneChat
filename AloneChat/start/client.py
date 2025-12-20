@@ -6,7 +6,6 @@ Provides the entry point for starting the chat client.
 import asyncio
 
 from AloneChat.core.client import CursesClient
-from AloneChat.core.client import StandardCommandlineClient
 
 __all__ = ['client']
 
@@ -79,10 +78,7 @@ def client(host="localhost", port=8765, ui="tui", auto_connect=False):
 def _connect_to_server(host, port, ui):
     """Helper function to connect to the server"""
     try:
-        if ui == "text":
-            _client = StandardCommandlineClient(host, port)
-            asyncio.run(_client.run())
-        elif ui == "tui":
+        if ui == "tui":
             _client = CursesClient(host, port)
             _client.run()
         else:

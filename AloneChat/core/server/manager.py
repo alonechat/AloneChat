@@ -18,7 +18,7 @@ import websockets
 # `websockets.server` exposes `WebSocketServerProtocol` in recent versions.
 from websockets.server import WebSocketServerProtocol  # type: ignore
 
-from AloneChat.core.client.command import COMMANDS
+from AloneChat.core.server.command import COMMANDS, CommandSystem
 from ..message.protocol import Message, MessageType
 from urllib.parse import parse_qs
 import jwt
@@ -184,6 +184,7 @@ class WebSocketManager:
 
             join_msg = Message(MessageType.JOIN, username, "User joined the chat")
             await self.broadcast(join_msg)
+
         except Exception as e:
             logger.exception("Unexpected error during websocket auth: %s", e)
             try:
@@ -242,23 +243,19 @@ class WebSocketManager:
             logger.warning("Message from unlogged user %s, ignoring", msg.sender)
             return
 
-        if msg.type == MessageType.COMMAND:
-            parts = msg.content.split(maxsplit=1)
-            cmd = parts[0]
-            handler = COMMANDS.get(cmd, {}).get("handler")
-            if handler:
-                response = Message(MessageType.TEXT, "COMMAND", handler())
-                ws = self.sessions_ws.get(msg.sender)
-                if ws:
-                    await self._safe_send(ws, response.serialize())
-            return
-
         if msg.type == MessageType.HEARTBEAT:
             # handled earlier; keep here as fallback
             ws = self.sessions_ws.get(msg.sender)
             if ws:
                 await self._safe_send(ws, Message(MessageType.HEARTBEAT, "SERVER", "pong").serialize())
             return
+        else:
+            # Preprocessing, just use process for commands
+            response = CommandSystem.process(msg.content, msg.sender, msg.target)
+            ws = self.sessions_ws.get(msg.sender)
+            if ws:
+                await self._safe_send(ws, response.serialize())
+                return
 
         # Broadcast other messages
         await self.broadcast(msg)

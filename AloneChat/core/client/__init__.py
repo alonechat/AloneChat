@@ -4,12 +4,8 @@ Provides base client functionality and standard command-line client implementati
 """
 
 from .client_base import Client
-from .command import CommandSystem
-from .command_line_client import StandardCommandlineClient
 from .curses_client import CursesClient
-# from .neo_curses_client import CursesClient
 
 __all__ = [
-    'CommandSystem',
-    'Client', 'StandardCommandlineClient', 'CursesClient'
+    'Client', 'CursesClient'
 ]
