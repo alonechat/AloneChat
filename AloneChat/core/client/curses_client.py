@@ -187,7 +187,7 @@ class CursesClient(Client):
                 else:
                     pass
 
-                # We create a new `token` variable to avoid re-login issues or what what
+                # We create a new `token` variable to avoid re-login issues or what
                 token = self._token
             elif choice == "2":
                 success = await self._register()
