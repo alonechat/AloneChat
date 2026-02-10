@@ -6,11 +6,6 @@ Provides base client functionality and standard command-line client implementati
 import asyncio
 import curses
 
-import aiohttp
-import websockets
-from websockets.exceptions import ConnectionClosed
-
-from AloneChat.core.message.protocol import Message, MessageType
 from .client_base import Client
 from AloneChat.api.client import AloneChatAPIClient
 
@@ -82,6 +77,9 @@ class CursesClient(Client):
 
     async def handle_input_api(self):
         """Handle user input from curses interface using API endpoints."""
+        self.api_client.token = self._token
+        self.api_client.username = self.username
+        
         while True:
             try:
                 key = self.stdscr.getch()
@@ -89,16 +87,7 @@ class CursesClient(Client):
                 match key:
                     case curses.KEY_ENTER | 10 | 13:  # Enter key
                         if self.input_buffer:
-                            # Use API to send message
                             try:
-                                # Set the token in the API client
-                                self.api_client.token = self._token
-                                self.api_client.username = self.username
-                                
-                                # Create message and send via API
-                                msg = Message(MessageType.TEXT, self.username, self.input_buffer)
-                                
-                                # Use API client to send message
                                 response = await self.api_client.send_message(self.input_buffer)
                                 if not response.get("success"):
                                     self.messages.append(f"Error sending message: {response.get('message')}")
@@ -160,98 +149,33 @@ class CursesClient(Client):
 
     async def handle_messages_api(self):
         """Handle incoming messages from server using API endpoint."""
-        try:
-            while True:
-                try:
-                    # Use API to receive message
-                    self.api_client.token = self._token
-                    self.api_client.username = self.username
-                    
-                    # Use API client to receive message
-                    try:
-                        msg_data = await self.api_client.receive_message()
-                        # Handle the new JSON response format
-                        if isinstance(msg_data, dict):
-                            if msg_data.get("success"):
-                                # Get message details
-                                sender = msg_data.get("sender")
-                                content = msg_data.get("content")
-                                if sender and content:
-                                    # Display formatted message
-                                    self.messages.append(f"[{sender}] {content}")
-                                    self.update_display()
-                            else:
-                                # Handle error responses
-                                error = msg_data.get("error")
-                                if error and error != "Timeout waiting for message":
-                                    self.messages.append(f"! Error receiving message: {error}")
-                                    self.update_display()
-                        elif isinstance(msg_data, str):
-                            # Fallback for old format (backward compatibility)
-                            if not msg_data or msg_data.strip() == "":
-                                continue
-                            try:
-                                msg = Message.deserialize(msg_data)
-                                self.messages.append(f"[{msg.sender}] {msg.content}")
-                                self.update_display()
-                            except Exception:
-                                # If deserialization fails, just display the raw message
-                                self.messages.append(f"[Server] {msg_data}")
-                                self.update_display()
-                    except Exception as e:
-                        # If the API client method fails, fall back to direct request
-                        try:
-                            async with aiohttp.ClientSession() as session:
-                                url = f"http://{self.host}:{self.port + 1}/recv"
-                                headers = {"Authorization": f"Bearer {self._token}"}
-                                async with session.get(url, headers=headers) as response:
-                                    if response.status == 200:
-                                        try:
-                                            # Try to parse as JSON first (new format)
-                                            msg_data = await response.json()
-                                            if isinstance(msg_data, dict):
-                                                if msg_data.get("success"):
-                                                    # Get message details
-                                                    sender = msg_data.get("sender")
-                                                    content = msg_data.get("content")
-                                                    if sender and content:
-                                                        # Display formatted message
-                                                        self.messages.append(f"[{sender}] {content}")
-                                                        self.update_display()
-                                                else:
-                                                    # Handle error responses
-                                                    error = msg_data.get("error")
-                                                    if error and error != "Timeout waiting for message":
-                                                        self.messages.append(f"! Error receiving message: {error}")
-                                                        self.update_display()
-                                        except Exception:
-                                            # Fallback to old format
-                                            msg_data = await response.text()
-                                            # Discard empty messages
-                                            if not msg_data or msg_data.strip() == "":
-                                                continue
-                                            try:
-                                                msg = Message.deserialize(msg_data)
-                                                self.messages.append(f"[{msg.sender}] {msg.content}")
-                                                self.update_display()
-                                            except Exception:
-                                                # If deserialization fails, just display the raw message
-                                                self.messages.append(f"[Server] {msg_data}")
-                                                self.update_display()
-                                    elif response.status == 401:
-                                        self.messages.append("! Authentication failed, please login again")
-                                        self.update_display()
-                                        break
-                        except Exception as fallback_error:
-                            # Ignore fallback errors to prevent the client from crashing
-                            await asyncio.sleep(0.1)
-                except Exception as e:
-                    # Ignore connection errors since the API endpoint might not have messages
-                    # This is expected in a polling-based approach
+        self.api_client.token = self._token
+        self.api_client.username = self.username
+        
+        while True:
+            try:
+                msg_data = await self.api_client.receive_message()
+                
+                if not isinstance(msg_data, dict):
                     await asyncio.sleep(0.1)
-        except Exception as e:
-            self.messages.append(f"Receive error: {e}")
-            self.update_display()
+                    continue
+                    
+                if not msg_data.get("success"):
+                    error = msg_data.get("error")
+                    if error and error != "Timeout waiting for message":
+                        self.messages.append(f"! Error receiving message: {error}")
+                        self.update_display()
+                    await asyncio.sleep(0.1)
+                    continue
+                
+                sender = msg_data.get("sender")
+                content = msg_data.get("content")
+                if sender and content:
+                    self.messages.append(f"[{sender}] {content}")
+                    self.update_display()
+                    
+            except Exception:
+                await asyncio.sleep(0.1)
 
     async def async_run(self, stdscr):
         """Asynchronous main method for curses client."""
