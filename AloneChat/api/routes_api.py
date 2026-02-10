@@ -4,11 +4,10 @@
 import psutil
 import websockets
 from fastapi import Depends, HTTPException, Query
-from urllib.parse import quote_plus  # 新增，用于对 token 编码
+from urllib.parse import quote_plus
 
 # Local imports
 from AloneChat import __version__ as __main_version__
-from AloneChat.core.server.command import CommandSystem
 from .routes_base import *
 from ..core.message.protocol import Message, MessageType
 
@@ -118,7 +117,9 @@ async def logout(request: Request):
         pass
 
     try:
+        # noinspection ExceptionTooBroad
         if username and username in ws_manager.sessions:
+            # noinspection PyUnresolvedReferences
             websocket = ws_manager.sessions.get(username)
             try:
                 notice = Message(MessageType.TEXT, "SERVER", "You have been logged out by API").serialize()
@@ -172,23 +173,27 @@ async def send_message(request: Request):
         if not message:
             raise HTTPException(status_code=400, detail="Missing message")
 
-        # msg = CommandSystem.process(message, sender, target)
-        msg = Message(MessageType.TEXT, sender, message, target)
-
-        # From Authorization extract token，and as ?token=... add to WS URL
+        # From Authorization extract token
         auth = request.headers.get("Authorization")
         token = None
         if auth and auth.startswith("Bearer "):
             token = auth.split(" ", 1)[1]
 
-        if token:
-            sep = "&" if "?" in SERVER else "?"
-            ws_url = f"{SERVER}{sep}token={quote_plus(token)}"
-        else:
-            ws_url = SERVER
+        if not token:
+            raise HTTPException(status_code=401, detail="No valid authentication token provided")
 
-        async with websockets.connect(ws_url) as websocket:
-            await websocket.send(msg.serialize())
+        # Verify token and get username
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            username = payload.get("sub")
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Create message
+        msg = Message(MessageType.TEXT, sender or username, message, target)
+
+        # Broadcast message directly using WebSocket manager
+        await ws_manager.broadcast(msg)
 
         return {"success": True}
     except HTTPException:
@@ -210,16 +215,45 @@ async def recv_messages(request: Request):
         if auth and auth.startswith("Bearer "):
             token = auth.split(" ", 1)[1]
 
-        if token:
-            sep = "&" if "?" in SERVER else "?"
-            ws_url = f"{SERVER}{sep}token={quote_plus(token)}"
-        else:
-            ws_url = SERVER
+        if not token:
+            raise HTTPException(status_code=401, detail="No valid authentication token provided")
 
-        async with websockets.connect(ws_url) as websocket:
-            msg = await websocket.recv()
+        # Verify token and get username
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            username = payload.get("sub")
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
 
-        return msg
+        # Create message queue for user if it doesn't exist
+        if username not in ws_manager.message_queues:
+            ws_manager.message_queues[username] = asyncio.Queue()
+
+        # Wait for a message from the queue
+        try:
+            # Wait for message with a timeout
+            msg_data = await asyncio.wait_for(
+                ws_manager.message_queues[username].get(),
+                timeout=30.0
+            )
+            # Deserialize the message
+            try:
+                msg = Message.deserialize(msg_data)
+                # Return formatted message as JSON
+                return {
+                    "success": True,
+                    "sender": msg.sender,
+                    "content": msg.content,
+                    "type": msg.type.value
+                }
+            except Exception as e:
+                # If deserialization fails, return error
+                return {"success": False, "error": f"Failed to deserialize message: {str(e)}"}
+        except asyncio.TimeoutError:
+            # Return empty response on timeout
+            return {"success": False, "error": "Timeout waiting for message"}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error listing messages: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

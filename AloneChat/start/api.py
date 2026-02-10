@@ -1,8 +1,8 @@
 import AloneChat.api as _api
-
+import AloneChat.config as config
 
 # noinspection PyPep8Naming
-def api(port=8766):
+def api(port=config.config.DEFAULT_API_PORT):
     """
     Start the static server for AloneChat.
 

@@ -12,6 +12,7 @@ from websockets.exceptions import ConnectionClosed
 
 from AloneChat.core.message.protocol import Message, MessageType
 from .client_base import Client
+from AloneChat.api.client import AloneChatAPIClient
 
 __all__ = [
     'Client', 'CursesClient'
@@ -34,6 +35,8 @@ class CursesClient(Client):
         self.scroll_offset = 0  # For message history navigation
         self.auto_scroll = True  # Auto-scroll to new messages by default
         self._token = None
+        # Initialize API client (API server typically runs on port + 1)
+        self.api_client = AloneChatAPIClient(host, port + 1)
 
     def init_curses(self, stdscr):
         """Initialize curses settings."""
@@ -77,8 +80,8 @@ class CursesClient(Client):
 
         self.stdscr.refresh()
 
-    async def handle_input(self, websocket):
-        """Handle user input from curses interface."""
+    async def handle_input_api(self):
+        """Handle user input from curses interface using API endpoints."""
         while True:
             try:
                 key = self.stdscr.getch()
@@ -86,9 +89,22 @@ class CursesClient(Client):
                 match key:
                     case curses.KEY_ENTER | 10 | 13:  # Enter key
                         if self.input_buffer:
-                            # CommandSystem.process(self.input_buffer, self.username)
-                            msg = Message(MessageType.TEXT, self.username, self.input_buffer)
-                            await websocket.send(msg.serialize())
+                            # Use API to send message
+                            try:
+                                # Set the token in the API client
+                                self.api_client.token = self._token
+                                self.api_client.username = self.username
+                                
+                                # Create message and send via API
+                                msg = Message(MessageType.TEXT, self.username, self.input_buffer)
+                                
+                                # Use API client to send message
+                                response = await self.api_client.send_message(self.input_buffer)
+                                if not response.get("success"):
+                                    self.messages.append(f"Error sending message: {response.get('message')}")
+                            except Exception as e:
+                                self.messages.append(f"Error sending message: {e}")
+                            
                             self.input_buffer = ""
                             self.auto_scroll = True  # Auto-scroll after sending
 
@@ -138,26 +154,101 @@ class CursesClient(Client):
                 self.update_display()
                 await asyncio.sleep(0.01)
 
-            except ConnectionClosed:
-                break
-
             except Exception as e:
                 self.messages.append(f"Input error: {e}")
                 self.update_display()
 
-    async def handle_messages(self, websocket):
-        """Handle incoming messages from server."""
+    async def handle_messages_api(self):
+        """Handle incoming messages from server using API endpoint."""
         try:
             while True:
                 try:
-                    msg_data = await websocket.recv()
-                    msg = Message.deserialize(msg_data)
-                    self.messages.append(f"[{msg.sender}] {msg.content}")
-                    self.update_display()
-                except ConnectionClosed:
-                    self.messages.append("! Server connection closed")
-                    self.update_display()
-                    break
+                    # Use API to receive message
+                    self.api_client.token = self._token
+                    self.api_client.username = self.username
+                    
+                    # Use API client to receive message
+                    try:
+                        msg_data = await self.api_client.receive_message()
+                        # Handle the new JSON response format
+                        if isinstance(msg_data, dict):
+                            if msg_data.get("success"):
+                                # Get message details
+                                sender = msg_data.get("sender")
+                                content = msg_data.get("content")
+                                if sender and content:
+                                    # Display formatted message
+                                    self.messages.append(f"[{sender}] {content}")
+                                    self.update_display()
+                            else:
+                                # Handle error responses
+                                error = msg_data.get("error")
+                                if error and error != "Timeout waiting for message":
+                                    self.messages.append(f"! Error receiving message: {error}")
+                                    self.update_display()
+                        elif isinstance(msg_data, str):
+                            # Fallback for old format (backward compatibility)
+                            if not msg_data or msg_data.strip() == "":
+                                continue
+                            try:
+                                msg = Message.deserialize(msg_data)
+                                self.messages.append(f"[{msg.sender}] {msg.content}")
+                                self.update_display()
+                            except Exception:
+                                # If deserialization fails, just display the raw message
+                                self.messages.append(f"[Server] {msg_data}")
+                                self.update_display()
+                    except Exception as e:
+                        # If the API client method fails, fall back to direct request
+                        try:
+                            async with aiohttp.ClientSession() as session:
+                                url = f"http://{self.host}:{self.port + 1}/recv"
+                                headers = {"Authorization": f"Bearer {self._token}"}
+                                async with session.get(url, headers=headers) as response:
+                                    if response.status == 200:
+                                        try:
+                                            # Try to parse as JSON first (new format)
+                                            msg_data = await response.json()
+                                            if isinstance(msg_data, dict):
+                                                if msg_data.get("success"):
+                                                    # Get message details
+                                                    sender = msg_data.get("sender")
+                                                    content = msg_data.get("content")
+                                                    if sender and content:
+                                                        # Display formatted message
+                                                        self.messages.append(f"[{sender}] {content}")
+                                                        self.update_display()
+                                                else:
+                                                    # Handle error responses
+                                                    error = msg_data.get("error")
+                                                    if error and error != "Timeout waiting for message":
+                                                        self.messages.append(f"! Error receiving message: {error}")
+                                                        self.update_display()
+                                        except Exception:
+                                            # Fallback to old format
+                                            msg_data = await response.text()
+                                            # Discard empty messages
+                                            if not msg_data or msg_data.strip() == "":
+                                                continue
+                                            try:
+                                                msg = Message.deserialize(msg_data)
+                                                self.messages.append(f"[{msg.sender}] {msg.content}")
+                                                self.update_display()
+                                            except Exception:
+                                                # If deserialization fails, just display the raw message
+                                                self.messages.append(f"[Server] {msg_data}")
+                                                self.update_display()
+                                    elif response.status == 401:
+                                        self.messages.append("! Authentication failed, please login again")
+                                        self.update_display()
+                                        break
+                        except Exception as fallback_error:
+                            # Ignore fallback errors to prevent the client from crashing
+                            await asyncio.sleep(0.1)
+                except Exception as e:
+                    # Ignore connection errors since the API endpoint might not have messages
+                    # This is expected in a polling-based approach
+                    await asyncio.sleep(0.1)
         except Exception as e:
             self.messages.append(f"Receive error: {e}")
             self.update_display()
@@ -188,6 +279,9 @@ class CursesClient(Client):
 
                 # We create a new `token` variable to avoid re-login issues or what
                 token = self._token
+                # Update API client with token and username
+                self.api_client.token = token
+                self.api_client.username = self.username
             elif choice == "2":
                 success = await self._register()
                 if success:
@@ -199,21 +293,17 @@ class CursesClient(Client):
                 self.stdscr.refresh()
                 await asyncio.sleep(1)
 
-        # Connect with token
-        uri = f"ws://{self.host}:{self.port}?token={token}"
+        # Using API endpoints for messaging
+        self.messages.append("Connected to server using API")
+        self.update_display()
 
         while True:
             try:
-                async with websockets.connect(uri) as websocket:
-                    # Send `join` message
-                    join_msg = Message(MessageType.JOIN, self.username, "").serialize()
-                    await websocket.send(join_msg)
-
-                    # Start tasks
-                    await asyncio.gather(
-                        self.handle_messages(websocket),
-                        self.handle_input(websocket)
-                    )
+                # Start tasks using API client
+                await asyncio.gather(
+                    self.handle_messages_api(),
+                    self.handle_input_api()
+                )
 
             except ConnectionRefusedError:
                 self.messages.append("Server not available, retrying in 3 seconds...")
@@ -279,29 +369,19 @@ class CursesClient(Client):
         password = self._get_password(1, 10)
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"http://{self.host}:{self.port + 1}/api/login", json={
-                    "username": username,
-                    "password": password
-                }) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data.get("success"):
-                            self.stdscr.addstr(3, 0, "Login successful")
-                            self.stdscr.refresh()
-                            await asyncio.sleep(1)
-                            self.username = username
-                            return data.get("token")
-                        else:
-                            self.stdscr.addstr(3, 0, f"Login failed: {data.get('message')}")
-                            self.stdscr.refresh()
-                            await asyncio.sleep(2)
-                            return None
-                    else:
-                        self.stdscr.addstr(3, 0, f"Login request failed, status code: {response.status}")
-                        self.stdscr.refresh()
-                        await asyncio.sleep(2)
-                        return None
+            response = await self.api_client.login(username, password)
+            if response.get("success"):
+                self.stdscr.addstr(3, 0, "Login successful")
+                self.stdscr.refresh()
+                await asyncio.sleep(1)
+                self.username = username
+                self._token = response.get("token")
+                return self._token
+            else:
+                self.stdscr.addstr(3, 0, f"Login failed: {response.get('message')}")
+                self.stdscr.refresh()
+                await asyncio.sleep(2)
+                return None
         except Exception as e:
             self.stdscr.addstr(3, 0, f"Error during login: {str(e)}")
             self.stdscr.refresh()
@@ -330,28 +410,17 @@ class CursesClient(Client):
             return False
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"http://{self.host}:{self.port + 1}/api/register", json={
-                    "username": username,
-                    "password": password
-                }) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data.get("success"):
-                            self.stdscr.addstr(4, 0, "Registration successful")
-                            self.stdscr.refresh()
-                            await asyncio.sleep(1)
-                            return True
-                        else:
-                            self.stdscr.addstr(4, 0, f"Registration failed: {data.get('message')}")
-                            self.stdscr.refresh()
-                            await asyncio.sleep(2)
-                            return False
-                    else:
-                        self.stdscr.addstr(4, 0, f"Registration request failed, status code: {response.status}")
-                        self.stdscr.refresh()
-                        await asyncio.sleep(2)
-                        return False
+            response = await self.api_client.register(username, password)
+            if response.get("success"):
+                self.stdscr.addstr(4, 0, "Registration successful")
+                self.stdscr.refresh()
+                await asyncio.sleep(1)
+                return True
+            else:
+                self.stdscr.addstr(4, 0, f"Registration failed: {response.get('message')}")
+                self.stdscr.refresh()
+                await asyncio.sleep(2)
+                return False
         except Exception as e:
             self.stdscr.addstr(4, 0, f"Error during registration: {str(e)}")
             self.stdscr.refresh()
@@ -364,15 +433,15 @@ class CursesClient(Client):
         """
         if not self._token or not self.username:
             return
-        url = f"http://{self.host}:{self.port + 1}/api/logout"
-        headers = {"Authorization": f"Bearer {self._token}"}
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json={"username": self.username}, timeout=3) as resp:
-                    if resp.status == 200:
-                        self.messages.append("Logged out via HTTP API")
-                    else:
-                        self.messages.append(f"! Logout HTTP status: {resp.status}")
+            # Set the token in the API client before logging out
+            self.api_client.token = self._token
+            self.api_client.username = self.username
+            response = await self.api_client.logout()
+            if response.get("success"):
+                self.messages.append("Logged out via HTTP API")
+            else:
+                self.messages.append(f"! Logout failed: {response.get('message')}")
         except Exception:
             self.messages.append("! Logout request failed (ignored)")
         try:

@@ -56,8 +56,6 @@ def main():
         server.server(port=args.port, srv_only=True)
     elif args.command == 'api-only':
         api.api(port=args.port)
-    elif args.command == 'test':
-        test_main(args.message, host=args.host, port=args.port)
     else:
         raise Exception('Unknown command')
 

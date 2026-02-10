@@ -4,7 +4,11 @@ Refactored server session and WebSocket manager for AloneChat.
 This file is a cleaned-up, better-typed and better-logged refactor
 of the original `manager.py`. It preserves the original behavior
 but separates concerns and adds safer send/broadcast logic.
+
+Warning: DO NOT EXPOSE THIS SERVER TO THE PUBLIC INTERNET
+THIS IS JUST A MIDIAN SERVER FOR LOCAL NETWORK USAGE ONLY
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -65,7 +69,9 @@ class SessionManager:
 
 
 class WebSocketManager:
-    """Singleton manager handling WebSocket connections and message routing."""
+    """
+    Singleton manager handling WebSocket connections and message routing.
+    """
 
     _instance: Optional[WebSocketManager] = None
 
@@ -90,6 +96,8 @@ class WebSocketManager:
         self.sessions_ws: Dict[str, WebSocketServerProtocol] = {}
         # Track last activity per user
         self.session_mgr = SessionManager()
+        # Message queues for each user (for HTTP /recv endpoint)
+        self.message_queues: Dict[str, asyncio.Queue] = {}
         self.initialized = True
         logger.info("WebSocketManager initialized on %s:%s", host, port)
 
@@ -197,6 +205,10 @@ class WebSocketManager:
 
         # Add to client set and listen
         self.clients.add(websocket)
+        # Create message queue for this user if it doesn't exist
+        if username not in self.message_queues:
+            self.message_queues[username] = asyncio.Queue()
+        
         try:
             async for raw in websocket:
                 try:
@@ -230,6 +242,9 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
+                    # Remove message queue for this user
+                    if username in self.message_queues:
+                        del self.message_queues[username]
                     from AloneChat.api.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
@@ -261,11 +276,20 @@ class WebSocketManager:
         await self.broadcast(msg)
 
     async def broadcast(self, msg: Message) -> None:
-        if not self.clients:
-            return
         data = msg.serialize()
-        tasks = [asyncio.create_task(self._safe_send(client, data)) for client in list(self.clients)]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Send to connected WebSocket clients
+        if self.clients:
+            tasks = [asyncio.create_task(self._safe_send(client, data)) for client in list(self.clients)]
+            await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Add message to all users' message queues
+        for username in self.message_queues:
+            try:
+                await self.message_queues[username].put(data)
+            except Exception:
+                # Ignore errors when adding to queue
+                pass
 
     async def _safe_send(self, client: WebSocketServerProtocol, message: str) -> None:
         try:

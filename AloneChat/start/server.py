@@ -6,11 +6,12 @@ Provides the entry point for starting the chat server and api services.
 import asyncio
 import uvicorn
 import threading
+import AloneChat.config as config
 from AloneChat.api.routes import app
 from AloneChat.core.server.manager import WebSocketManager
 
 
-def server(port=8765, srv_only=False):
+def server(port=config.config.DEFAULT_SERVER_PORT, srv_only=False):
     """
     Start the chat server and api services on the specified port.
 
