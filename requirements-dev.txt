@@ -1,6 +1,5 @@
 # includes requirements.txt:
--r requirements.txt
-
+# -r requirements.txt
 pyinstaller
 requests
 pylint>=2.15.0
