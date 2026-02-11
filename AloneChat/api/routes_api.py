@@ -247,8 +247,9 @@ async def recv_messages(request: Request):
                     "type": msg.type.value
                 }
             except Exception as e:
-                # If deserialization fails, return error
-                return {"success": False, "error": f"Failed to deserialize message: {str(e)}"}
+                # Log internal error details but return a generic message to the client
+                print(f"Error deserializing message: {e}")
+                return {"success": False, "error": "Failed to deserialize message"}
         except asyncio.TimeoutError:
             # Return empty response on timeout
             return {"success": False, "error": "Timeout waiting for message"}
