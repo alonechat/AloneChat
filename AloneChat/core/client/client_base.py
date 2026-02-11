@@ -3,7 +3,7 @@ class Client:
     Base client class providing core websocket client functionality.
     """
 
-    def __init__(self, host: str = "localhost", port: int = 8765):
+    def __init__(self, host: str = "localhost", port: int = 8766):
         """
         Initialize client with connection parameters.
 

@@ -1,9 +1,10 @@
 import uvicorn
+from AloneChat.core.client.utils import DEFAULT_API_PORT
 
 from .routes_api import *
 
 
-def run(api_port=SERVER_PORT + 1):
+def run(api_port=DEFAULT_API_PORT):
     """
     Run the FastAPI application with Uvicorn server.
 

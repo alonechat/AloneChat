@@ -11,7 +11,7 @@ from .client_base import Client
 from .ui import CursesRenderer, MessageBuffer
 from .input import InputHandler, InputResult
 from .auth import AuthFlow
-from .utils import DEFAULT_HOST, DEFAULT_PORT, REFRESH_RATE_HZ
+from .utils import DEFAULT_HOST, DEFAULT_API_PORT, REFRESH_RATE_HZ
 from AloneChat.api.client import AloneChatAPIClient
 
 __all__ = ['Client', 'CursesClient']
@@ -33,7 +33,7 @@ class CursesClient(Client):
     def __init__(
         self,
         host: str = DEFAULT_HOST,
-        port: int = DEFAULT_PORT,
+        port: int = DEFAULT_API_PORT,
         max_history: int = 1000
     ):
         """
@@ -52,8 +52,8 @@ class CursesClient(Client):
         self._input_handler: Optional[InputHandler] = None
         self._auth_flow: Optional[AuthFlow] = None
 
-        # API client (API server typically runs on port + 1)
-        self._api_client = AloneChatAPIClient(host, port + 1)
+        # API client
+        self._api_client = AloneChatAPIClient(host, port)
 
         # State
         self._username: str = ""

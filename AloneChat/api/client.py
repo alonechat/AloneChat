@@ -7,6 +7,7 @@ import asyncio
 import aiohttp
 from typing import Optional, Dict, Any
 
+from AloneChat.core.client.utils import DEFAULT_API_PORT
 from AloneChat.core.message.protocol import Message, MessageType
 
 
@@ -15,7 +16,7 @@ class AloneChatAPIClient:
     High-level API client for AloneChat application.
     """
 
-    def __init__(self, host: str = "localhost", port: int = 8766):
+    def __init__(self, host: str = "localhost", port: int = DEFAULT_API_PORT):
         """
         Initialize the API client.
 
