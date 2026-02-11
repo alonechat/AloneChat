@@ -1,25 +1,26 @@
 """
 Server startup module for AloneChat application.
-Provides the entry point for starting the chat server and web services.
+Provides the entry point for starting the chat server and api services.
 """
 
 import asyncio
 import uvicorn
 import threading
-from AloneChat.web.routes import app
+import AloneChat.config as config
+from AloneChat.api.routes import app
 from AloneChat.core.server.manager import WebSocketManager
 
 
-def server(port=8765, srv_only=False):
+def server(port=config.config.DEFAULT_SERVER_PORT, srv_only=False):
     """
-    Start the chat server and web services on the specified port.
+    Start the chat server and api services on the specified port.
 
     Args:
         port (int): Port number to listen on (default: 8765)
-        srv_only (bool): If True, serve only the web services only.
+        srv_only (bool): If True, serve only the api services only.
     """
     # Reset all online to offline
-    from AloneChat.web.routes import load_user_credentials, save_user_credentials
+    from AloneChat.api.routes import load_user_credentials, save_user_credentials
     user_credentials = load_user_credentials()
     for username in user_credentials:
         user_credentials[username]['is_online'] = False

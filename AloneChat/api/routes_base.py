@@ -4,12 +4,13 @@ import json
 import os
 import sys
 import time
+import asyncio
 from typing import Dict
 
 # Third-party imports
 import bcrypt
 import jwt
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
@@ -213,9 +214,9 @@ except Exception as e:
     sys.exit(1)
 
 app = FastAPI(
-    title="AloneChat web",
+    title="AloneChat api",
     version=__main_version__,
-    description="web for AloneChat, a simple chat application.",
+    description="api for AloneChat, a simple chat application.",
     contact={
         "name": "AloneChat Team"
     }

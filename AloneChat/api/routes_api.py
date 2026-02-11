@@ -1,14 +1,13 @@
 # Standard library imports
-from typing import List
 
 # Third-party imports
 import psutil
 import websockets
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Query
+from urllib.parse import quote_plus
 
 # Local imports
 from AloneChat import __version__ as __main_version__
-from AloneChat.core.client.command import CommandSystem
 from .routes_base import *
 from ..core.message.protocol import Message, MessageType
 
@@ -74,42 +73,188 @@ async def login(credentials: LoginRequest):
         return TokenResponse(success=True, token=token, message="Login successful")
 
 
+@app.post("/api/logout")
+async def logout(request: Request):
+    """
+    Logout endpoint
+    - Extracts token from Authorization header
+    - Updates user online status
+    - Notifies WebSocket server of user logout
+    - Closes user's WebSocket connection if exists
+    """
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No valid authentication token provided")
+
+    token = auth.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        username = payload.get("sub")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    if username:
+        try:
+            update_user_online_status(username, False)
+        except Exception:
+            pass
+
+    try:
+        if token:
+            sep = "&" if "?" in SERVER else "?"
+            ws_url = f"{SERVER}{sep}token={quote_plus(token)}"
+            try:
+                async with websockets.connect(ws_url) as websocket:
+                    leave_msg = Message(MessageType.LEAVE, username or "", "").serialize()
+                    await websocket.send(leave_msg)
+                    try:
+                        await websocket.close(code=1000, reason="User logged out via API")
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    try:
+        # noinspection ExceptionTooBroad
+        if username and username in ws_manager.sessions:
+            # noinspection PyUnresolvedReferences
+            websocket = ws_manager.sessions.get(username)
+            try:
+                notice = Message(MessageType.TEXT, "SERVER", "You have been logged out by API").serialize()
+                await websocket.send(notice)
+            except Exception:
+                pass
+            try:
+                await websocket.close(code=1000, reason="User logged out via API")
+            except Exception:
+                pass
+            try:
+                del ws_manager.sessions[username]
+            except Exception:
+                pass
+            try:
+                ws_manager.clients.discard(websocket)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return {"success": True, "message": "Logout successful"}
+
+
 SERVER_ADDR = "localhost"
 
-
 @app.post("/send")
-async def send_message(sender: str, message: str, target: str | None = None):
+async def send_message(request: Request):
     """
     Send a message to the connected WebSocket.
-
-    Args:
-        sender : The sender of the message.
-        message (str): The message to send.
-        target (str, optional): Target user for the message, if needed
+    Accept JSON body or query params，request Authorization token
+    As URL parameter `token` give back to WebSocket server.
     """
-    # noinspection PyShadowingNames
     try:
-        msg = CommandSystem.process(message, sender, target)
-        async with websockets.connect(SERVER) as websocket:
-            await websocket.send(msg.serialize())
+        sender = None
+        message = None
+        target = None
+
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            sender = body.get("sender")
+            message = body.get("message")
+            target = body.get("target")
+        else:
+            params = request.query_params
+            sender = params.get("sender")
+            message = params.get("message")
+            target = params.get("target")
+
+        if not message:
+            raise HTTPException(status_code=400, detail="Missing message")
+
+        # From Authorization extract token
+        auth = request.headers.get("Authorization")
+        token = None
+        if auth and auth.startswith("Bearer "):
+            token = auth.split(" ", 1)[1]
+
+        if not token:
+            raise HTTPException(status_code=401, detail="No valid authentication token provided")
+
+        # Verify token and get username
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            username = payload.get("sub")
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Create message
+        msg = Message(MessageType.TEXT, sender or username, message, target)
+
+        # Broadcast message directly using WebSocket manager
+        await ws_manager.broadcast(msg)
+
+        return {"success": True}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error sending message: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @app.get("/recv")
-async def recv_messages():
+async def recv_messages(request: Request):
     """
-    List all messages in the chat.
-
-    Returns:
-        List[Message]: List of all messages.
+    Poll WebSocket server to receive one message and send back to HTTP client。
+    Put Authorization token as a URL parameter `token` give back to WS。
     """
-    # noinspection PyShadowingNames
     try:
-        async with websockets.connect(SERVER) as websocket:
-            msg = await websocket.recv()
-        return msg
+        auth = request.headers.get("Authorization")
+        token = None
+        if auth and auth.startswith("Bearer "):
+            token = auth.split(" ", 1)[1]
+
+        if not token:
+            raise HTTPException(status_code=401, detail="No valid authentication token provided")
+
+        # Verify token and get username
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            username = payload.get("sub")
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Create message queue for user if it doesn't exist
+        if username not in ws_manager.message_queues:
+            ws_manager.message_queues[username] = asyncio.Queue()
+
+        # Wait for a message from the queue
+        try:
+            # Wait for message with a timeout
+            msg_data = await asyncio.wait_for(
+                ws_manager.message_queues[username].get(),
+                timeout=30.0
+            )
+            # Deserialize the message
+            try:
+                msg = Message.deserialize(msg_data)
+                # Return formatted message as JSON
+                return {
+                    "success": True,
+                    "sender": msg.sender,
+                    "content": msg.content,
+                    "type": msg.type.value
+                }
+            except Exception as e:
+                # Log internal error details but return a generic message to the client
+                print(f"Error deserializing message: {e}")
+                return {"success": False, "error": "Failed to deserialize message"}
+        except asyncio.TimeoutError:
+            # Return empty response on timeout
+            return {"success": False, "error": "Timeout waiting for message"}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error listing messages: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -126,7 +271,7 @@ async def get_default_server():
 
 
 # Set default server address
-@app.post("/api/set_default_server")
+# @app.post("/api/admin/set_default_server")
 async def set_default_server(server_address: str = Query(..., description="Default server address")):
     # Validate server address format
     if not server_address.startswith("ws://") and not server_address.startswith("wss://"):
@@ -235,7 +380,10 @@ async def get_all_users():
 
     return {
         "users": users_list,
-        "note": "Passwords are stored as bcrypt hashes and cannot be recovered. For security reasons, please do not disclose this information to unauthorized personnel."
+        "note": (
+            "Passwords are stored as bcrypt hashes and cannot be recovered. "
+            "For security reasons, please do not disclose this information to unauthorized personnel."
+        )
     }
 
 
@@ -357,5 +505,5 @@ async def get_system_status():
         "total_users": total_users,
         "cpu_usage": cpu_usage,
         "memory_usage": memory_usage,
-        "note": "To see real online users, please ensure both WebSocket server and web server are running"
+        "note": "To see real online users, please ensure both WebSocket server and api server are running"
     }

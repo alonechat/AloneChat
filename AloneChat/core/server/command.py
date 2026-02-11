@@ -38,19 +38,9 @@ class CommandSystem:
         Returns:
             Message: Processed message object
         """
-        if input_str.startswith('/'):
-            # Split command and content
-            parts = input_str.split(maxsplit=1)
-            cmd = parts[0]
-
-            # Check if command exists and create the appropriate message
-            if cmd in COMMANDS:
-                return Message(
-                    type=MessageType.COMMAND,
-                    sender=sender,
-                    content=input_str,
-                    target=target
-                )
+        # Check if command exists and create the appropriate message
+        for cmd in COMMANDS:
+            input_str = cmd["handler"].execute(input_str)
 
         # Return as a regular text message if not a command
         return Message(MessageType.TEXT, sender, input_str)
