@@ -12,3 +12,8 @@ aiohttp>=3.8.4
 # jinja2>=3.1.2
 # python-multipart>=0.0.6
 windows-curses>=2.3 ; sys_platform == "win32" or sys_platform == "cygwin"
+sv-ttk
+
+# Its license system is COMPLETELY A MESS and it causes more problems
+# than it solves, so I won't be using it for now.
+# PySide6>=6.0.0

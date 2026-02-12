@@ -97,9 +97,27 @@ class WebSocketManager:
         # Track last activity per user
         self.session_mgr = SessionManager()
         # Message queues for each user (for HTTP /recv endpoint)
+        # Important for reliability: keep queues even if the user disconnects,
+        # so they can pull missed messages after reconnect.
         self.message_queues: Dict[str, asyncio.Queue] = {}
+        self._queue_maxsize: int = 500  # small, bounded backlog per user
+
+        # Best-effort: pre-create queues for all known users at startup.
+        # This avoids missing messages for users who are currently offline.
+        try:
+            from AloneChat.api.routes_base import load_user_credentials  # lazy import
+            for _u in load_user_credentials().keys():
+                self._ensure_queue(_u)
+        except Exception:
+            # If API module isn't ready yet, queues will be created on demand.
+            pass
         self.initialized = True
         logger.info("WebSocketManager initialized on %s:%s", host, port)
+
+    def _ensure_queue(self, username: str) -> None:
+        """Ensure a bounded asyncio.Queue exists for the given user."""
+        if username not in self.message_queues:
+            self.message_queues[username] = asyncio.Queue(maxsize=self._queue_maxsize)
 
     # --- Helper methods ---
     @staticmethod
@@ -205,9 +223,8 @@ class WebSocketManager:
 
         # Add to client set and listen
         self.clients.add(websocket)
-        # Create message queue for this user if it doesn't exist
-        if username not in self.message_queues:
-            self.message_queues[username] = asyncio.Queue()
+        # Ensure message queue exists for this user
+        self._ensure_queue(username)
         
         try:
             async for raw in websocket:
@@ -242,9 +259,7 @@ class WebSocketManager:
                 if ws == websocket:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    # Remove message queue for this user
-                    if username in self.message_queues:
-                        del self.message_queues[username]
+                    # Keep message queue for reliability (offline backlog)
                     from AloneChat.api.routes import update_user_online_status
                     update_user_online_status(username, False)
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
@@ -272,24 +287,80 @@ class WebSocketManager:
                 await self._safe_send(ws, response.serialize())
                 return
 
-        # Broadcast other messages
-        await self.broadcast(msg)
+        # Private message routing
+        if msg.target:
+            await self._send_to_target(msg)
+        else:
+            await self.broadcast(msg)
 
     async def broadcast(self, msg: Message) -> None:
         data = msg.serialize()
-        
+
         # Send to connected WebSocket clients
         if self.clients:
             tasks = [asyncio.create_task(self._safe_send(client, data)) for client in list(self.clients)]
             await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Add message to all users' message queues
-        for username in self.message_queues:
+
+        # Add message to users' message queues (used by HTTP /recv polling).
+        # Reliability goal: if a user is offline, we still enqueue messages so
+        # they can pull missed messages after reconnect.
+        try:
+            from AloneChat.api.routes_base import load_user_credentials  # lazy import
+            for _u in load_user_credentials().keys():
+                self._ensure_queue(_u)
+        except Exception:
+            # Fall back to whatever queues already exist.
+            pass
+
+        for username, q in list(self.message_queues.items()):
             try:
-                await self.message_queues[username].put(data)
+                q.put_nowait(data)
+            except asyncio.QueueFull:
+                # Drop the oldest message to keep bounded memory.
+                try:
+                    _ = q.get_nowait()
+                except Exception:
+                    pass
+                try:
+                    q.put_nowait(data)
+                except Exception:
+                    pass
             except Exception:
-                # Ignore errors when adding to queue
                 pass
+
+    async def _send_to_target(self, msg: Message) -> None:
+        """
+        Send message only to target user and sender (private chat).
+        """
+        # Security: check if target user exists
+        if msg.target not in self.sessions_ws and msg.target not in self.message_queues:
+            logger.warning("Target user %s does not exist, ignoring private message", msg.target)
+            return
+
+        data = msg.serialize()
+
+        sender_ws = self.sessions_ws.get(msg.sender)
+        target_ws = self.sessions_ws.get(msg.target)
+
+        # Send to target if online
+        if target_ws:
+            await self._safe_send(target_ws, data)
+
+        # Also echo back to sender (so sender sees their own message via WS)
+        if sender_ws and sender_ws != target_ws:
+            await self._safe_send(sender_ws, data)
+
+        # Queue message for target (offline reliability)
+        if msg.target:
+            self._ensure_queue(msg.target)
+            try:
+                self.message_queues[msg.target].put_nowait(data)
+            except asyncio.QueueFull:
+                try:
+                    _ = self.message_queues[msg.target].get_nowait()
+                    self.message_queues[msg.target].put_nowait(data)
+                except Exception:
+                    pass
 
     async def _safe_send(self, client: WebSocketServerProtocol, message: str) -> None:
         try:

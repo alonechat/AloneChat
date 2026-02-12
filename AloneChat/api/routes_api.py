@@ -192,8 +192,11 @@ async def send_message(request: Request):
         # Create message
         msg = Message(MessageType.TEXT, sender or username, message, target)
 
-        # Broadcast message directly using WebSocket manager
-        await ws_manager.broadcast(msg)
+        # Private message routing
+        if target:
+            await ws_manager._send_to_target(msg)
+        else:
+            await ws_manager.broadcast(msg)
 
         return {"success": True}
     except HTTPException:
@@ -225,9 +228,12 @@ async def recv_messages(request: Request):
         except jwt.PyJWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        # Create message queue for user if it doesn't exist
-        if username not in ws_manager.message_queues:
-            ws_manager.message_queues[username] = asyncio.Queue()
+        # Ensure bounded message queue exists for user
+        try:
+            ws_manager._ensure_queue(username)  # type: ignore[attr-defined]
+        except Exception:
+            if username not in ws_manager.message_queues:
+                ws_manager.message_queues[username] = asyncio.Queue()
 
         # Wait for a message from the queue
         try:

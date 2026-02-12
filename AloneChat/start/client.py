@@ -3,15 +3,11 @@ Client startup module for AloneChat application.
 Provides the entry point for starting the chat client with multiple UI options.
 """
 
-import asyncio
-
 from AloneChat.core.client import CursesClient, SimpleGUIClient
-from AloneChat.core.client.curses_cli_client import CursesCLIClient
-from AloneChat.core.client.gui_cli_client import GUICLIClient
 from AloneChat.core.client.cli import CLISelector, ConsoleBackend
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 
-__all__ = ['client', 'cli_client', 'curses_cli_client', 'gui_cli_client']
+__all__ = ['client', 'cli_client']
 
 
 def client(host=DEFAULT_HOST, port=DEFAULT_API_PORT, ui="tui", auto_connect=False):
@@ -76,30 +72,6 @@ def cli_client(host=DEFAULT_HOST, port=DEFAULT_API_PORT):
     selector.run()
 
 
-def curses_cli_client(host=DEFAULT_HOST, port=DEFAULT_API_PORT):
-    """
-    Start the curses-based CLI client.
-
-    Args:
-        host (str): Server hostname
-        port (int): Server API port
-    """
-    client = CursesCLIClient(host=host, port=port, ui_type="tui")
-    client.run()
-
-
-def gui_cli_client(host=DEFAULT_HOST, port=DEFAULT_API_PORT):
-    """
-    Start the GUI-based CLI client.
-
-    Args:
-        host (str): Server hostname
-        port (int): Server API port
-    """
-    client = GUICLIClient(host=host, port=port, ui_type="gui")
-    client.run()
-
-
 def _connect_to_server(host, port, ui):
     """Helper function to connect to the server with the specified UI."""
     try:
@@ -118,23 +90,12 @@ def _connect_to_server(host, port, ui):
                 ui_type="text"
             )
             selector.run()
-        elif ui == "curses-cli":
-            # Curses-based CLI
-            client = CursesCLIClient(host=host, port=port, ui_type="tui")
-            client.run()
-        elif ui == "gui-cli":
-            # GUI-based CLI
-            client = GUICLIClient(host=host, port=port, ui_type="gui")
-            client.run()
         else:
             print(
                 f"Sorry. But we don't have a {ui} UI yet.\n"
                 "We apologize, but we have the following options:\n"
                 "  - tui: Curses-based TUI (full chat interface)\n"
                 "  - gui: Modern GUI (full chat interface)\n"
-                "  - text: Console-based CLI (command-line interface)\n"
-                "  - curses-cli: Curses-based CLI (terminal-style in curses)\n"
-                "  - gui-cli: GUI-based CLI (terminal-style in GUI window)\n"
                 "\n"
                 "No need? You are a geek! Why not join us in developing a new UI?\n"
                 "GitHub: https://github.com/alonechat/AloneChat , welcome you!"
@@ -200,7 +161,7 @@ def old_client(host="localhost", port=8765, ui="tui", auto_connect=False):
                     print("  exit - Exit the client")
 
                 case ["set", _]:
-                    print("Use case: set host <hostname> or set port <port>")
+                    print("Use case: set host <hostname> or set port <port)")
 
                 case _:
                     print(

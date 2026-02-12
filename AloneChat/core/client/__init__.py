@@ -7,10 +7,6 @@ from .client_base import Client
 from .curses_client import CursesClient
 from .gui_client import SimpleGUIClient
 
-# CLI clients
-from .curses_cli_client import CursesCLIClient
-from .gui_cli_client import GUICLIClient
-
 # Import submodules for easy access
 from . import ui
 from . import input
@@ -23,7 +19,6 @@ __all__ = [
     'CursesClient',
     'SimpleGUIClient',
     'CursesCLIClient',
-    'GUICLIClient',
     'ui',
     'input',
     'auth',

@@ -69,6 +69,11 @@ AloneChat includes third-party software components licensed under the following 
    Licensed under the Apache License 2.0.
    Source: https://github.com/psf/requests
 
+13. sv_ttk
+   Copyright (c) 2021-2025 sv_ttk contributors
+   Licensed under the MIT License.
+   Source: https://github.com/rdbende/Sun-Valley-ttk-theme
+
 ---
 
 The full text of each license is included in the LICENSE file or can be found

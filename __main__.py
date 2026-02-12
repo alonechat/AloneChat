@@ -27,7 +27,7 @@ def parse():
         '--ui',
         choices=['tui', 'gui', 'gui-cli'],
         default='tui',
-        help='User interface type: tui (curses chat), gui (modern GUI), gui-cli (terminal in GUI window) (default: tui)'
+        help='User interface type: tui (curses chat), gui (modern GUI) (default: tui)'
     )
     client_parser.add_argument(
         '--auto-connect',
@@ -69,7 +69,9 @@ def main():
     elif args.command == 'api-only':
         api.api(port=args.port)
     elif args.command == 'test':
-        test_main(host=args.host, port=args.port, message=args.message)
+        # test_main(context, host="localhost", port=8765)
+        # test_main(args.message, host=args.host, port=args.port)
+        pass
     else:
         raise Exception('Unknown command')
 
