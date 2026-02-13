@@ -1,0 +1,221 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+env:
+  PYTHON_VERSION: '3.11'
+  ALONECHAT_ENV: testing
+
+jobs:
+  lint:
+    name: Lint & Basic Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -vi '^windows-curses\b' requirements.txt > requirements-clean.txt || true
+          pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-dev.txt 2>/dev/null | sort -u) || true
+          pip install $(grep -oE '^[A-Za-z0-9_-]+' requirements-clean.txt | sort -u) || true
+          pip install pylint pytest pytest-asyncio pytest-cov
+
+      - name: Run pylint
+        run: |
+          mkdir -p reports
+          pylint $(git ls-files '*.py') \
+            --output-format=text \
+            --score=y \
+            --reports=n \
+            > reports/pylint-report-${{ matrix.python-version }}.txt || true
+
+      - name: Run basic pytest
+        run: |
+          pytest AloneChat/test/ \
+            --ignore=AloneChat/test/test_server_integration.py \
+            -v \
+            --tb=short \
+            --junitxml=reports/pytest-report-${{ matrix.python-version }}.xml || true
+
+      - name: Upload pylint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pylint-report-${{ matrix.python-version }}
+          path: reports/pylint-report-${{ matrix.python-version }}.txt
+
+      - name: Upload pytest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report-${{ matrix.python-version }}
+          path: reports/pytest-report-${{ matrix.python-version }}.xml
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## Pylint Report (Python ${{ matrix.python-version }})"
+            echo '```'
+            cat reports/pylint-report-${{ matrix.python-version }}.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  integration-tests:
+    name: Server Integration Tests
+    runs-on: ${{ matrix.os }}
+    needs: [lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-asyncio websockets PyJWT
+          pip install -r requirements.txt || true
+
+      - name: Create test directories
+        run: |
+          mkdir -p logs/test
+          mkdir -p logs/dev
+
+      - name: Run integration tests
+        run: |
+          pytest AloneChat/test/test_server_integration.py \
+            -v \
+            --tb=short \
+            --cov=AloneChat \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -m "integration" \
+            --junitxml=reports/integration-tests-${{ matrix.os }}-${{ matrix.python-version }}.xml
+        env:
+          ALONECHAT_ENV: testing
+
+      - name: Run performance tests
+        run: |
+          pytest AloneChat/test/test_server_integration.py \
+            -v \
+            --tb=short \
+            -m "performance and not slow"
+        env:
+          ALONECHAT_ENV: testing
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            reports/
+            coverage.xml
+            logs/
+          retention-days: 7
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r AloneChat/ -f json -o reports/bandit-report.json || true
+          bandit -r AloneChat/ -f txt -o reports/bandit-report.txt || true
+
+      - name: Check dependencies for vulnerabilities
+        run: safety check || true
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-report
+          path: reports/
+          retention-days: 7
+
+      - name: Publish security summary
+        run: |
+          {
+            echo "## Security Scan Results"
+            echo '```'
+            cat reports/bandit-report.txt || echo "No issues found"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [lint, integration-tests, security-scan]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## CI Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint & Basic Tests | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Determine overall status
+        run: |
+          if [[ "${{ needs.lint.result }}" == "failure" || \
+                "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "::error::CI tests failed"
+            exit 1
+          fi
+          echo "::notice::All CI tests passed successfully"

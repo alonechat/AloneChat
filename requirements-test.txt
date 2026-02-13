@@ -1,0 +1,26 @@
+# Test dependencies for AloneChat
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-asyncio>=0.21.0
+pytest-timeout>=2.2.0
+
+# Async support
+pytest-aiohttp>=1.0.0
+
+# Code quality
+ruff>=0.1.0
+black>=23.0.0
+mypy>=1.0.0
+
+# Security
+bandit>=1.7.0
+safety>=2.3.0
+
+# Coverage
+coverage>=7.0.0
+codecov>=2.1.0
+
+# Type stubs
+types-requests>=2.28.0
