@@ -187,6 +187,7 @@ We deeply appreciate *any* input—whether it’s:
 - **Proposing features**: Edit README to shape our roadmap!
 - **Reporting bugs**: File an issue!
 - **Submitting code**: Fork → PR!
+- **We need to hear you**: File an issue！We are happy to and some new things according to you!
 
 ## Acknowledgments
 
