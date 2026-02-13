@@ -2,7 +2,6 @@
 Utility functions and shared components for the curses client.
 """
 
-from .exceptions import ClientError, AuthenticationError, ConnectionError
 from .constants import (
     DEFAULT_HOST,
     DEFAULT_PORT,
@@ -10,11 +9,12 @@ from .constants import (
     MAX_RECONNECT_ATTEMPTS,
     REFRESH_RATE_HZ,
 )
+from .exceptions import ClientError, AuthenticationError, WsConnectionError
 
 __all__ = [
     'ClientError',
     'AuthenticationError',
-    'ConnectionError',
+    'WsConnectionError',
     'DEFAULT_HOST',
     'DEFAULT_PORT',
     'DEFAULT_API_PORT',

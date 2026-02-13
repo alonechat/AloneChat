@@ -22,7 +22,7 @@ class AuthenticationError(ClientError):
     pass
 
 
-class ConnectionError(ClientError):
+class WsConnectionError(ClientError):
     """Exception raised for connection-related errors."""
     pass
 

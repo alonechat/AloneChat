@@ -3,9 +3,9 @@ Message buffer management for curses client.
 Handles message storage, scrolling, and navigation.
 """
 
-from typing import List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Optional
 
 
 class ScrollDirection(Enum):

@@ -1,7 +1,8 @@
 """
 Search service for finding messages.
 """
-from typing import List, Callable, Optional
+from typing import List, Optional
+
 from ..components.message_card import WinUI3MessageCard
 
 

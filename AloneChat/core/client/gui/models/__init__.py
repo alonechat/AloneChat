@@ -1,8 +1,8 @@
 """
 GUI Models package.
 """
-from .theme import Theme, WinUI3Styles, ModernStyles
 from .data import MessageItem, Conversation, ReplyContext
+from .theme import Theme, WinUI3Styles, ModernStyles
 
 __all__ = [
     'Theme',

@@ -1,68 +1,87 @@
 """
-Refactored server session and WebSocket manager for AloneChat.
+Legacy WebSocket manager for backward compatibility.
 
-This file is a cleaned-up, better-typed and better-logged refactor
-of the original `manager.py`. It preserves the original behavior
-but separates concerns and adds safer send/broadcast logic.
+This file is DEPRECATED. Use UnifiedWebSocketManager instead.
+
+Migration Guide:
+    # Old way (deprecated):
+    from AloneChat.core.server import WebSocketManager
+    manager = WebSocketManager()
+    await manager.run()
+    
+    # New way (recommended):
+    from AloneChat.core.server import UnifiedWebSocketManager
+    manager = UnifiedWebSocketManager()
+    async with manager.run("localhost", 8765):
+        await asyncio.Future()
 
 Warning: DO NOT EXPOSE THIS SERVER TO THE PUBLIC INTERNET
-THIS IS JUST A MIDIAN SERVER FOR LOCAL NETWORK USAGE ONLY
+THIS IS JUST A MEDIUM SERVER FOR LOCAL NETWORK USAGE ONLY
 """
 
 from __future__ import annotations
 
 import asyncio
-import time
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Dict, Optional, Set
 
-import websockets
-# Import for type checkers only (pylance/static analyzers).
-# `websockets.server` exposes `WebSocketServerProtocol` in recent versions.
-from websockets.server import WebSocketServerProtocol  # type: ignore
+from websockets.server import WebSocketServerProtocol
 
-from AloneChat.core.server.command import COMMANDS, CommandSystem
-from ..message.protocol import Message, MessageType
-from urllib.parse import parse_qs
-import jwt
-from AloneChat.config import config
-# Avoid importing `update_user_online_status` at module import time to prevent
-# circular imports with `AloneChat.api.routes`. We'll import it lazily where needed.
+from AloneChat.core.message.protocol import Message, MessageType
+from AloneChat.core.server.websocket_manager import UnifiedWebSocketManager
 
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
+
+
+def _deprecated_warning(message: str) -> None:
+    """Issue deprecation warning."""
+    warnings.warn(
+        message,
+        DeprecationWarning,
+        stacklevel=3
+    )
 
 
 @dataclass
 class UserSession:
+    """Legacy user session dataclass. Use session.UserSession instead."""
     user_id: str
     last_active: float = 0.0
 
 
 class SessionManager:
-    """Maintain user sessions and last activity times."""
-
+    """
+    Legacy session manager.
+    
+    Deprecated: Use session.SessionManager instead.
+    """
+    
     def __init__(self) -> None:
         self.sessions: Dict[str, UserSession] = {}
-
+    
     def add(self, user_id: str) -> None:
-        self.sessions[user_id] = UserSession(user_id=user_id, last_active=time.time())
+        self.sessions[user_id] = UserSession(user_id=user_id)
         logger.debug("Added session for %s", user_id)
-
+    
     def remove(self, user_id: str) -> None:
         if user_id in self.sessions:
             del self.sessions[user_id]
             logger.debug("Removed session for %s", user_id)
-
+    
     def touch(self, user_id: str) -> None:
+        import time
         if user_id in self.sessions:
             self.sessions[user_id].last_active = time.time()
-
+    
     def inactive(self, timeout: int = 300) -> list[str]:
+        import time
         now = time.time()
-        inactive_users = [uid for uid, s in self.sessions.items() if now - s.last_active > timeout]
+        inactive_users = [
+            uid for uid, s in self.sessions.items()
+            if now - s.last_active > timeout
+        ]
         for uid in inactive_users:
             self.remove(uid)
         return inactive_users
@@ -70,68 +89,78 @@ class SessionManager:
 
 class WebSocketManager:
     """
-    Singleton manager handling WebSocket connections and message routing.
+    Legacy WebSocket manager.
+    
+    DEPRECATED: Use UnifiedWebSocketManager instead.
+    
+    This class provides backward compatibility with the old API
+    while delegating to the new UnifiedWebSocketManager internally.
     """
-
+    
     _instance: Optional[WebSocketManager] = None
-
+    
     def __new__(cls, *args, **kwargs):
+        _deprecated_warning(
+            "WebSocketManager is deprecated. Use UnifiedWebSocketManager instead."
+        )
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-
+    
     @staticmethod
     def get_instance() -> WebSocketManager:
+        """Get singleton instance."""
+        _deprecated_warning(
+            "WebSocketManager.get_instance() is deprecated. "
+            "Create UnifiedWebSocketManager directly."
+        )
         if WebSocketManager._instance is None:
             return WebSocketManager()
         return WebSocketManager._instance
-
+    
     def __init__(self, host: str = "localhost", port: int = 8765) -> None:
         if hasattr(self, "initialized") and self.initialized:
             return
+        
         self.host = host
         self.port = port
         self.clients: Set[WebSocketServerProtocol] = set()
-        # Map username -> websocket
         self.sessions_ws: Dict[str, WebSocketServerProtocol] = {}
-        # Track last activity per user
         self.session_mgr = SessionManager()
-        # Message queues for each user (for HTTP /recv endpoint)
-        # Important for reliability: keep queues even if the user disconnects,
-        # so they can pull missed messages after reconnect.
         self.message_queues: Dict[str, asyncio.Queue] = {}
-        self._queue_maxsize: int = 500  # small, bounded backlog per user
-
-        # Best-effort: pre-create queues for all known users at startup.
-        # This avoids missing messages for users who are currently offline.
+        self._queue_maxsize: int = 500
+        
+        self._unified_manager: Optional[UnifiedWebSocketManager] = None
+        
         try:
-            from AloneChat.api.routes_base import load_user_credentials  # lazy import
+            from AloneChat.api.routes_base import load_user_credentials
             for _u in load_user_credentials().keys():
                 self._ensure_queue(_u)
         except Exception:
-            # If API module isn't ready yet, queues will be created on demand.
             pass
+        
         self.initialized = True
-        logger.info("WebSocketManager initialized on %s:%s", host, port)
-
+        logger.info("WebSocketManager initialized on %s:%s (DEPRECATED)", host, port)
+    
     def _ensure_queue(self, username: str) -> None:
         """Ensure a bounded asyncio.Queue exists for the given user."""
         if username not in self.message_queues:
             self.message_queues[username] = asyncio.Queue(maxsize=self._queue_maxsize)
-
-    # --- Helper methods ---
+    
     @staticmethod
     def _extract_token(websocket: WebSocketServerProtocol) -> Optional[str]:
-        # Try to obtain the request path
+        """Extract JWT token from WebSocket connection."""
+        from urllib.parse import parse_qs
+        
         token = None
         request_path = getattr(websocket, "request", None)
         path = None
+        
         if request_path is not None:
-            # older/newer websockets expose request with path
             path = getattr(websocket.request, "path", None)
         if not path:
             path = getattr(websocket, "path", None)
-
+        
         if path and "?" in path:
             try:
                 _, query = path.split("?", 1)
@@ -139,91 +168,107 @@ class WebSocketManager:
                 token = params.get("token", [None])[0]
             except Exception:
                 token = None
-
+        
         if not token:
             cookie_header = ""
             try:
                 cookie_header = websocket.request.headers.get("Cookie", "")
             except Exception:
-                # fallback: some versions expose headers directly on websocket
-                cookie_header = getattr(websocket, "request", {}).get("headers", {}) if websocket else ""
+                cookie_header = getattr(
+                    websocket, "request", {}
+                ).get("headers", {}) if websocket else ""
+            
             if cookie_header:
                 for cookie in cookie_header.split(";"):
                     if "authToken=" in cookie:
                         token = cookie.split("=", 1)[1].strip()
                         break
-
+        
         return token
-
-    def _verify_jwt(self, token: str) -> Optional[str]:
+    
+    @staticmethod
+    def _verify_jwt(token: str) -> Optional[str]:
+        """Verify JWT token and return username."""
+        import jwt
+        from AloneChat.config import config
+        
         try:
-            payload = jwt.decode(token, config.JWT_SECRET, algorithms=[config.JWT_ALGORITHM])
+            payload = jwt.decode(
+                token, config.JWT_SECRET, algorithms=[config.JWT_ALGORITHM]
+            )
             return payload.get("sub")
         except jwt.ExpiredSignatureError:
             raise
         except Exception:
             raise
-
-    # --- WebSocket handler ---
+    
     async def handler(self, websocket: WebSocketServerProtocol) -> None:
-        # Authenticate connection
+        """
+        Handle WebSocket connection.
+        
+        Deprecated: This method is kept for backward compatibility.
+        """
+        _deprecated_warning(
+            "WebSocketManager.handler() is deprecated. "
+            "Use UnifiedWebSocketManager directly."
+        )
+        
         try:
-            logger.debug("Starting auth for incoming websocket")
             token = self._extract_token(websocket)
             if not token:
-                msg = Message(MessageType.TEXT, "SERVER", "No verify token provided, please login first")
+                msg = Message(
+                    MessageType.TEXT, "SERVER",
+                    "No verify token provided, please login first"
+                )
                 await websocket.send(msg.serialize())
                 await websocket.close(code=1008, reason="Unauthorized: No token")
                 return
-
+            
             try:
                 username = self._verify_jwt(token)
-            except jwt.ExpiredSignatureError:
-                msg = Message(MessageType.TEXT, "SERVER", "The token has expired.")
-                await websocket.send(msg.serialize())
-                await websocket.close(code=1008, reason="Token expired")
-                return
             except Exception as e:
                 msg = Message(MessageType.TEXT, "SERVER", f"Invalid token: {e}")
                 await websocket.send(msg.serialize())
                 await websocket.close(code=1008, reason="Invalid token")
                 return
-
+            
             if not username:
-                msg = Message(MessageType.TEXT, "SERVER", "There is no username in token")
+                msg = Message(
+                    MessageType.TEXT, "SERVER",
+                    "There is no username in token"
+                )
                 await websocket.send(msg.serialize())
                 await websocket.close(code=1008, reason="Invalid token payload")
                 return
-
+            
             if username in self.sessions_ws:
-                msg = Message(MessageType.TEXT, "SERVER", f"User '{username}' already logged in at another location.")
+                msg = Message(
+                    MessageType.TEXT, "SERVER",
+                    f"User '{username}' already logged in at another location."
+                )
                 await websocket.send(msg.serialize())
                 await websocket.close(code=1008, reason="User already logged in")
                 return
-
+            
             self.sessions_ws[username] = websocket
             self.session_mgr.add(username)
-            # Lazy import to avoid circular import
-            from AloneChat.api.routes import update_user_online_status
-            update_user_online_status(username, True)
-            logger.info("User %s connected", username)
-
-            join_msg = Message(MessageType.JOIN, username, "User joined the chat")
-            await self.broadcast(join_msg)
-
-        except Exception as e:
-            logger.exception("Unexpected error during websocket auth: %s", e)
+            
             try:
-                err = Message(MessageType.TEXT, "SERVER", f"Error during auth: {e}")
-                await websocket.send(err.serialize())
-                await websocket.close(code=1011, reason="Server error during auth")
+                from AloneChat.api.routes import update_user_online_status
+                update_user_online_status(username, True)
             except Exception:
                 pass
+            
+            logger.info("User %s connected", username)
+            
+            join_msg = Message(MessageType.JOIN, username, "User joined the chat")
+            await self.broadcast(join_msg)
+            
+        except Exception as e:
+            logger.exception("Unexpected error during websocket auth: %s", e)
             return
-
-        # Add to client set and listen
+        
         self.clients.add(websocket)
-        # Ensure message queue exists for this user
         self._ensure_queue(username)
         
         try:
@@ -231,92 +276,87 @@ class WebSocketManager:
                 try:
                     msg = Message.deserialize(raw)
                 except Exception:
-                    logger.debug("Received non-Message payload; ignoring")
                     continue
-
+                
                 if msg.type == MessageType.JOIN:
                     continue
                 if msg.type == MessageType.HEARTBEAT:
-                    # update last active
                     self.session_mgr.touch(msg.sender)
-                    # reply pong
                     pong = Message(MessageType.HEARTBEAT, "SERVER", "pong")
                     ws = self.sessions_ws.get(msg.sender)
                     if ws:
                         await self._safe_send(ws, pong.serialize())
                     continue
-
+                
                 await self.process_message(msg)
-
-        except websockets.exceptions.ConnectionClosedError:
-            logger.debug("ConnectionClosedError for a client")
+        
         except Exception:
-            logger.exception("Unexpected error in websocket receive loop")
+            logger.exception("Error in websocket receive loop")
         finally:
-            # Cleanup any sessions that referenced this websocket
             self.clients.discard(websocket)
-            for username, ws in list(self.sessions_ws.items()):
+            for uname, ws in list(self.sessions_ws.items()):
                 if ws == websocket:
-                    del self.sessions_ws[username]
-                    self.session_mgr.remove(username)
-                    # Keep message queue for reliability (offline backlog)
-                    from AloneChat.api.routes import update_user_online_status
-                    update_user_online_status(username, False)
-                    leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
+                    del self.sessions_ws[uname]
+                    self.session_mgr.remove(uname)
+                    try:
+                        from AloneChat.api.routes import update_user_online_status
+                        update_user_online_status(uname, False)
+                    except Exception:
+                        pass
+                    leave_msg = Message(MessageType.LEAVE, uname, "User left the chat")
                     await self.broadcast(leave_msg)
-                    logger.info("User %s disconnected and cleaned up", username)
+                    logger.info("User %s disconnected", uname)
                     break
-
+    
     async def process_message(self, msg: Message) -> None:
-        # Verify sender session
+        """Process incoming message."""
+        from AloneChat.core.server.command import CommandSystem
+        
         if msg.sender not in self.sessions_ws:
-            logger.warning("Message from unlogged user %s, ignoring", msg.sender)
+            logger.warning("Message from unlogged user %s", msg.sender)
             return
-
+        
         if msg.type == MessageType.HEARTBEAT:
-            # handled earlier; keep here as fallback
             ws = self.sessions_ws.get(msg.sender)
             if ws:
-                await self._safe_send(ws, Message(MessageType.HEARTBEAT, "SERVER", "pong").serialize())
+                await self._safe_send(
+                    ws, Message(MessageType.HEARTBEAT, "SERVER", "pong").serialize()
+                )
             return
         else:
-            # Preprocessing, just use process for commands
             response = CommandSystem.process(msg.content, msg.sender, msg.target)
             ws = self.sessions_ws.get(msg.sender)
             if ws:
                 await self._safe_send(ws, response.serialize())
                 return
-
-        # Private message routing
+        
         if msg.target:
             await self._send_to_target(msg)
         else:
             await self.broadcast(msg)
-
+    
     async def broadcast(self, msg: Message) -> None:
+        """Broadcast message to all clients."""
         data = msg.serialize()
-
-        # Send to connected WebSocket clients
+        
         if self.clients:
-            tasks = [asyncio.create_task(self._safe_send(client, data)) for client in list(self.clients)]
+            tasks = [
+                asyncio.create_task(self._safe_send(client, data))
+                for client in list(self.clients)
+            ]
             await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Add message to users' message queues (used by HTTP /recv polling).
-        # Reliability goal: if a user is offline, we still enqueue messages so
-        # they can pull missed messages after reconnect.
+        
         try:
-            from AloneChat.api.routes_base import load_user_credentials  # lazy import
+            from AloneChat.api.routes_base import load_user_credentials
             for _u in load_user_credentials().keys():
                 self._ensure_queue(_u)
         except Exception:
-            # Fall back to whatever queues already exist.
             pass
-
+        
         for username, q in list(self.message_queues.items()):
             try:
                 q.put_nowait(data)
             except asyncio.QueueFull:
-                # Drop the oldest message to keep bounded memory.
                 try:
                     _ = q.get_nowait()
                 except Exception:
@@ -325,32 +365,24 @@ class WebSocketManager:
                     q.put_nowait(data)
                 except Exception:
                     pass
-            except Exception:
-                pass
-
+    
     async def _send_to_target(self, msg: Message) -> None:
-        """
-        Send message only to target user and sender (private chat).
-        """
-        # Security: check if target user exists
+        """Send message to target user."""
         if msg.target not in self.sessions_ws and msg.target not in self.message_queues:
-            logger.warning("Target user %s does not exist, ignoring private message", msg.target)
+            logger.warning("Target user %s does not exist", msg.target)
             return
-
+        
         data = msg.serialize()
-
+        
         sender_ws = self.sessions_ws.get(msg.sender)
         target_ws = self.sessions_ws.get(msg.target)
-
-        # Send to target if online
+        
         if target_ws:
             await self._safe_send(target_ws, data)
-
-        # Also echo back to sender (so sender sees their own message via WS)
+        
         if sender_ws and sender_ws != target_ws:
             await self._safe_send(sender_ws, data)
-
-        # Queue message for target (offline reliability)
+        
         if msg.target:
             self._ensure_queue(msg.target)
             try:
@@ -361,27 +393,37 @@ class WebSocketManager:
                     self.message_queues[msg.target].put_nowait(data)
                 except Exception:
                     pass
-
+    
     async def _safe_send(self, client: WebSocketServerProtocol, message: str) -> None:
+        """Safely send message to client."""
         try:
             await client.send(message)
         except Exception as e:
             logger.warning("Failed to send to client: %s", e)
-            # best-effort cleanup
             if client in self.clients:
                 self.clients.discard(client)
             for username, ws in list(self.sessions_ws.items()):
                 if ws == client:
                     del self.sessions_ws[username]
                     self.session_mgr.remove(username)
-                    from AloneChat.api.routes import update_user_online_status
-                    update_user_online_status(username, False)
+                    try:
+                        from AloneChat.api.routes import update_user_online_status
+                        update_user_online_status(username, False)
+                    except Exception:
+                        pass
                     leave_msg = Message(MessageType.LEAVE, username, "User left the chat")
-                    # schedule a broadcast but don't await here to avoid recursion issues
                     asyncio.create_task(self.broadcast(leave_msg))
                     break
-
+    
     async def run(self) -> None:
+        """Run the WebSocket server."""
+        import websockets
+        
+        _deprecated_warning(
+            "WebSocketManager.run() is deprecated. "
+            "Use UnifiedWebSocketManager with async context manager."
+        )
+        
         async with websockets.serve(self.handler, self.host, self.port):
-            logger.info("Server running on ws://%s:%s", self.host, self.port)
+            logger.info("Server running on ws://%s:%s (DEPRECATED)", self.host, self.port)
             await asyncio.Future()

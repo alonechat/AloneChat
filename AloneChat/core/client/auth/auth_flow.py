@@ -3,10 +3,9 @@ Authentication flow handler for curses client.
 Manages login and registration workflows.
 """
 
-import asyncio
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
 from enum import Enum, auto
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from AloneChat.api.client import AloneChatAPIClient

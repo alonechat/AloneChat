@@ -17,21 +17,13 @@ Features:
 
 # Import the modular GUI client and re-export for backward compatibility
 from AloneChat.core.client.gui import GUIClient as SimpleGUIClient
-from AloneChat.core.client.gui.components import (
-    ModernButton,
-    ModernEntry,
-    MessageCard,
-    ScrollableFrame,
-)
+from AloneChat.core.client.gui.components import MessageCard
 from AloneChat.core.client.gui.models import Theme, ModernStyles
 
 # Maintain backward compatibility with old exports
 __all__ = [
     'SimpleGUIClient',
-    'ModernButton',
-    'ModernEntry',
     'MessageCard',
-    'ScrollableFrame',
     'Theme',
     'ModernStyles',
 ]

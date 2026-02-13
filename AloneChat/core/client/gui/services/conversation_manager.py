@@ -4,6 +4,7 @@ Handles conversations, DMs, and message routing.
 """
 import re
 from typing import Dict, List, Optional, Any, Tuple
+
 from ..models.data import Conversation, MessageItem
 
 
@@ -82,7 +83,8 @@ class ConversationManager:
                 labels.append(label)
         return labels
     
-    def pack_dm(self, to_user: str, body: str) -> str:
+    @staticmethod
+    def pack_dm(to_user: str, body: str) -> str:
         """Pack a DM message with header."""
         return f"[[DM to={to_user}]]\n{body}"
     

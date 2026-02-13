@@ -4,7 +4,7 @@ Async service for handling API calls and event loop.
 import asyncio
 import threading
 import time
-from typing import Optional, Callable, Any
+from typing import Optional
 
 
 class AsyncService:

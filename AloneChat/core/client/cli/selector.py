@@ -3,11 +3,10 @@ CLI Selector for AloneChat client.
 Provides a command-line interface that works with any UI backend.
 """
 
-import asyncio
-from typing import Optional, Callable, Any
 from abc import ABC, abstractmethod
+from typing import Optional, Callable
 
-from .parser import CommandParser, Command, CommandType, CommandExecutor
+from .parser import Command, CommandType, CommandExecutor
 from ..utils import DEFAULT_HOST, DEFAULT_API_PORT
 
 
@@ -141,7 +140,7 @@ class ConsoleBackend(UIBackend):
         return input(prompt)
     
     def clear(self) -> None:
-        """Clear console (best effort)."""
+        """Clear console (the best effort)."""
         print("\033[2J\033[H", end="")
     
     def run(self) -> None:

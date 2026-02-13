@@ -3,24 +3,6 @@ Components using sv_ttk (Sun Valley theme) - standard ttk widgets.
 """
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Callable
-
-
-class WinUI3Button(ttk.Frame):
-    """Button using ttk with sv_ttk theme."""
-    
-    def __init__(self, parent, text: str, command: Optional[Callable] = None,
-                 variant: str = "accent", width: int = 20, **kwargs):
-        super().__init__(parent, **kwargs)
-        
-        # Create ttk button
-        self.button = ttk.Button(self, text=text, command=command, width=width)
-        self.button.pack(fill="both", expand=True)
-
-
-class ModernButton(WinUI3Button):
-    """Backward compatibility."""
-    pass
 
 
 class WinUI3Entry(ttk.Frame):
@@ -63,30 +45,6 @@ class WinUI3Entry(ttk.Frame):
             pass
 
 
-class ModernEntry(WinUI3Entry):
-    """Backward compatibility."""
-    pass
-
-
-class BoundedFrame(ttk.Frame):
-    """Frame with bounds management."""
-    
-    def __init__(self, parent, min_width: int = 200, min_height: int = 100, **kwargs):
-        super().__init__(parent, **kwargs)
-        self.min_width = min_width
-        self.min_height = min_height
-        self._setup_responsive_behavior()
-    
-    def _setup_responsive_behavior(self):
-        """Setup responsive sizing behavior."""
-        def on_configure(event):
-            if event.width < self.min_width or event.height < self.min_height:
-                self.configure(width=max(event.width, self.min_width),
-                             height=max(event.height, self.min_height))
-        
-        self.bind('<Configure>', on_configure)
-
-
 class WinUI3ScrollableFrame(ttk.Frame):
     """Scrollable frame using ttk with sv_ttk theme."""
     
@@ -125,7 +83,11 @@ class WinUI3ScrollableFrame(ttk.Frame):
         self.canvas.bind('<Configure>', on_canvas_configure)
         
         def on_mousewheel(event):
-            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            try:
+                if self.canvas.winfo_exists():
+                    self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except tk.TclError:
+                pass
         
         self.canvas.bind_all("<MouseWheel>", on_mousewheel)
     
@@ -146,6 +108,4 @@ class WinUI3ScrollableFrame(ttk.Frame):
             pass
 
 
-class ScrollableFrame(WinUI3ScrollableFrame):
-    """Backward compatibility."""
-    pass
+

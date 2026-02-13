@@ -22,8 +22,10 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 from typing import Optional
 
-# DPI awareness disabled - letting Windows auto-scale for better compatibility
-# If you want crisp rendering on high-DPI, consider using DPI awareness with proper scaling
+# noinspection PyUnusedImports
+import darkdetect
+import pywinstyles
+import sv_ttk
 
 from AloneChat.api.client import AloneChatAPIClient
 from AloneChat.core.client.client_base import Client
@@ -33,10 +35,11 @@ from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
 from .controllers.search_dialog import SearchDialog
 from .models.data import MessageItem, ReplyContext
-from .models.theme import Theme
 from .services import ConversationManager, SearchService, PersistenceService, AsyncService
 
-import sv_ttk
+
+# DPI awareness disabled - letting Windows auto-scale for better compatibility
+# If you want crisp rendering on high-DPI, consider using DPI awareness with proper scaling
 
 class GUIClient(Client):
     """
@@ -49,11 +52,15 @@ class GUIClient(Client):
     - Responsive layout
     """
     
-    def __init__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_API_PORT):
-        super().__init__(host, port)
+    def __init__(self, api_host: str = DEFAULT_HOST, api_port: int = DEFAULT_API_PORT):
+        super().__init__(api_host, api_port)
+        
+        # API configuration
+        self._api_host = api_host
+        self._api_port = api_port
         
         # API client
-        self._api_client = AloneChatAPIClient(host, port)
+        self._api_client = AloneChatAPIClient(api_host, api_port)
         
         # State
         self._username = ""
@@ -80,17 +87,37 @@ class GUIClient(Client):
         self._poll_future = None
     
     # ==================== Lifecycle ====================
+
+    @staticmethod
+    def set_title_bar_color(root):
+        version = sys.getwindowsversion()
+
+        if version.major == 10 and version.build >= 22000:
+            # Set the title bar color to the background color on Windows 11 for better appearance
+            pywinstyles.change_header_color(root, "#1c1c1c" if sv_ttk.get_theme() == "dark" else "#fafafa")
+        elif version.major == 10:
+            pywinstyles.apply_style(root, "dark" if sv_ttk.get_theme() == "dark" else "normal")
+
+            # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
+            root.wm_attributes("-alpha", 0.99)
+            root.wm_attributes("-alpha", 1)
     
     def run(self):
         """Start the GUI client."""
         # Create main window
         self.root = tk.Tk()
         self.root.title("AloneChat")
-        self.root.geometry("1000x750")
-        self.root.minsize(800, 600)
+        self.root.geometry("1200x640")
+        self.root.minsize(800, 500)
         
         # Apply sv_ttk theme (Sun Valley Windows 11 theme) - handles DPI automatically
-        sv_ttk.set_theme("dark")
+        sv_ttk.set_theme(darkdetect.theme())
+        # self.set_title_bar_color(self.root)
+
+        # Enable DPI awareness for sharp rendering on high-DPI displays
+        # Note: sv_ttk uses image-based assets; Windows handles scaling automatically
+        # noinspection PyUnresolvedReferences
+        # ctypes.windll.shcore.SetProcessDpiAwareness(0)
         
         # Setup async
         self._async_service.start()
@@ -130,7 +157,10 @@ class GUIClient(Client):
         self._auth_view = AuthView(
             self.root,
             on_login=self._handle_login_request,
-            on_register=self._handle_register_request
+            on_register=self._handle_register_request,
+            on_server_settings_changed=self._handle_server_settings_changed,
+            default_api_host=self._api_host,
+            default_api_port=self._api_port
         )
         self._auth_view.show()
     
@@ -237,6 +267,14 @@ class GUIClient(Client):
         except Exception as e:
             if self._ui_alive():
                 self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+    
+    def _handle_server_settings_changed(self, api_host: str, api_port: int):
+        """Handle server settings change from auth view."""
+        self._api_host = api_host
+        self._api_port = api_port
+        # Recreate API client with new settings
+        self._api_client = AloneChatAPIClient(api_host, api_port)
+        print(f"Server settings updated: API at {api_host}:{api_port}")
     
     # ==================== Chat Handlers ====================
     

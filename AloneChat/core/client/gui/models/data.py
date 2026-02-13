@@ -2,8 +2,8 @@
 Data models for GUI client.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Callable, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List
 
 
 @dataclass

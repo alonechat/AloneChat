@@ -15,18 +15,13 @@ Features:
 """
 
 from .client import GUIClient
-from .models import Theme, WinUI3Styles, ModernStyles, MessageItem, Conversation, ReplyContext
 from .components import (
-    BoundedFrame,
-    ScrollableFrame, 
     WinUI3ScrollableFrame,
-    ModernButton,
-    WinUI3Button,
-    ModernEntry,
     WinUI3Entry,
     MessageCard,
     WinUI3MessageCard,
 )
+from .models import Theme, WinUI3Styles, ModernStyles, MessageItem, Conversation, ReplyContext
 
 __all__ = [
     'GUIClient',
@@ -36,12 +31,7 @@ __all__ = [
     'MessageItem',
     'Conversation',
     'ReplyContext',
-    'BoundedFrame',
-    'ScrollableFrame',
     'WinUI3ScrollableFrame',
-    'ModernButton',
-    'WinUI3Button',
-    'ModernEntry',
     'WinUI3Entry',
     'MessageCard',
     'WinUI3MessageCard',

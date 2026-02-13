@@ -5,8 +5,9 @@ Uses ttk.Combobox for conversation selection (TTK widget, not TK).
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional, List
-from ..models.data import MessageItem, ReplyContext
+
 from ..components import WinUI3ScrollableFrame, WinUI3MessageCard
+from ..models.data import MessageItem, ReplyContext
 from ..services.conversation_manager import ConversationManager
 
 
@@ -39,6 +40,8 @@ class ChatView:
         
         # UI Components
         self.frame: Optional[ttk.Frame] = None
+        self.header: Optional[ttk.Frame] = None
+        self.main_pane: Optional[ttk.Frame] = None
         self.messages_container: Optional[WinUI3ScrollableFrame] = None
         self.conv_combo: Optional[ttk.Combobox] = None
         self.msg_entry: Optional[ttk.Entry] = None
@@ -50,7 +53,8 @@ class ChatView:
     
     def show(self):
         """Display the chat view with sv_ttk styling."""
-        # Configure grid
+        # Configure grid - row 0 for header (no expand), row 1 for content (expand)
+        self.root.grid_rowconfigure(0, weight=0)
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         
@@ -65,16 +69,20 @@ class ChatView:
     
     def hide(self):
         """Hide the chat view."""
-        if self.frame:
-            self.frame.destroy()
-            self.frame = None
+        if self.header:
+            self.header.destroy()
+            self.header = None
+        if self.main_pane:
+            self.main_pane.destroy()
+            self.main_pane = None
+        self.frame = None
     
     def _build_header(self):
         """Build the header bar with sv_ttk styling."""
-        header = ttk.Frame(self.root, padding=(16, 12))
-        header.grid(row=0, column=0, sticky="ew")
+        self.header = ttk.Frame(self.root, padding=(16, 12))
+        self.header.grid(row=0, column=0, sticky="ew")
         
-        header_left = ttk.Frame(header)
+        header_left = ttk.Frame(self.header)
         header_left.pack(side="left")
         
         # App title - let sv_ttk handle fonts
@@ -86,7 +94,7 @@ class ChatView:
         user_label.pack(side="left")
         
         # Action buttons
-        btn_frame = ttk.Frame(header)
+        btn_frame = ttk.Frame(self.header)
         btn_frame.pack(side="right")
         
         ttk.Button(btn_frame, text="Export", 
@@ -96,17 +104,17 @@ class ChatView:
     
     def _build_main_pane(self):
         """Build the main content area."""
-        main_pane = ttk.Frame(self.root)
-        main_pane.grid(row=1, column=0, sticky="nsew", 
+        self.main_pane = ttk.Frame(self.root)
+        self.main_pane.grid(row=1, column=0, sticky="nsew", 
                       padx=16, pady=12)
-        main_pane.grid_rowconfigure(0, weight=1)
-        main_pane.grid_columnconfigure(1, weight=1)
+        self.main_pane.grid_rowconfigure(0, weight=1)
+        self.main_pane.grid_columnconfigure(1, weight=1)
         
         # Left sidebar: conversations
-        self._build_sidebar(main_pane)
+        self._build_sidebar(self.main_pane)
         
         # Right: chat area
-        self._build_chat_area(main_pane)
+        self._build_chat_area(self.main_pane)
     
     def _build_sidebar(self, parent: ttk.Frame):
         """Build the conversation sidebar with sv_ttk styling using Combobox."""

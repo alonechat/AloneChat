@@ -2,10 +2,9 @@
 Message card using pure ttk widgets for sv_ttk compatibility.
 Clean, modern design with Windows 11 styling.
 """
-import tkinter as tk
+from datetime import datetime
 from tkinter import ttk
 from typing import Optional, Callable
-from datetime import datetime
 
 
 class WinUI3MessageCard(ttk.Frame):
