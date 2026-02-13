@@ -292,12 +292,12 @@ logger.error("An error occurred", exc_info=True)
 
 ### HTTP Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/login` | POST | User authentication |
-| `/register` | POST | User registration |
-| `/users` | GET | List online users |
-| `/messages` | GET | Get message history |
+| Endpoint    | Method | Description         |
+|-------------|--------|---------------------|
+| `/login`    | POST   | User authentication |
+| `/register` | POST   | User registration   |
+| `/send`     | POST   | Send message        |
+| `/recv`     | GET    | Get message history |
 
 ### WebSocket Protocol
 
@@ -315,53 +315,29 @@ Messages are JSON-serialized with the following structure:
 
 ## Development
 
-### Running Tests
-
-```bash
-# Run all tests
-python -m pytest
-
-# Run with coverage
-python -m pytest --cov=AloneChat
-
-# Run specific test file
-python -m pytest test/test_server_refactor.py -v
-```
-
-### Code Style
-
-```bash
-# Format code
-black AloneChat/
-
-# Type checking
-mypy AloneChat/
-
-# Lint
-ruff check AloneChat/
-```
+TODO
 
 ## Project Structure
 
 ### Core Modules
 
-| Module | Description |
-|--------|-------------|
-| `core/server` | WebSocket server, authentication, routing |
-| `core/client` | Client UI and communication |
-| `core/message` | Message protocol definitions |
-| `core/logging` | Unified logging system |
-| `plugins` | Plugin system and built-in plugins |
-| `api` | HTTP REST API |
+| Module         | Description                               |
+|----------------|-------------------------------------------|
+| `core/server`  | WebSocket server, authentication, routing |
+| `core/client`  | Client UI and communication               |
+| `core/message` | Message protocol definitions              |
+| `core/logging` | Unified logging system                    |
+| `plugins`      | Plugin system and built-in plugins        |
+| `api`          | HTTP REST API                             |
 
 ### Key Classes
 
-| Class | Module | Description |
-|-------|--------|-------------|
-| `UnifiedWebSocketManager` | `core.server` | Main server orchestrator |
-| `PluginManager` | `plugins` | Plugin lifecycle management |
-| `LoggingManager` | `core.logging` | Centralized logging |
-| `CommandProcessor` | `core.server.commands` | Command handling |
+| Class                     | Module                 | Description                 |
+|---------------------------|------------------------|-----------------------------|
+| `UnifiedWebSocketManager` | `core.server`          | Main server orchestrator    |
+| `PluginManager`           | `plugins`              | Plugin lifecycle management |
+| `LoggingManager`          | `core.logging`         | Centralized logging         |
+| `CommandProcessor`        | `core.server.commands` | Command handling            |
 
 ## Security
 
@@ -386,6 +362,9 @@ ruff check AloneChat/
 3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+> [!NOTE] 
+> Do not study @hi-zcy... and his commit style -- @hi-zcy
 
 ## License
 
