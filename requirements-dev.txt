@@ -1,5 +1,6 @@
 # includes requirements.txt:
 # -r requirements.txt
-pyinstaller
-requests
-pylint>=2.15.0
+# These lines above will cause a GitHub Action error.
+
+requests # Better than urllib3 until now.
+pylint # If you like a project, lint it! -- @hi-zcy

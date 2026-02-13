@@ -3,7 +3,6 @@ Utility functions and helpers for the server module.
 """
 
 import logging
-from typing import Optional
 
 from AloneChat.core.message.protocol import Message, MessageType
 

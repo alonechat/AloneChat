@@ -4,11 +4,11 @@ Session management module for the server.
 Provides session tracking, activity monitoring, and cleanup functionality.
 """
 
-import time
 import logging
+import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Set
-from collections import defaultdict
 
 from AloneChat.core.server.interfaces import SessionStore
 

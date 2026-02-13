@@ -6,12 +6,12 @@ Handles message delivery to clients and provides broadcasting capabilities.
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Dict, List, Optional, Callable
 
-from AloneChat.core.server.transport import WebSocketConnectionRegistry
 from AloneChat.core.message.protocol import Message, MessageType
+from AloneChat.core.server.transport import WebSocketConnectionRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,6 @@ class MessageRouter:
                     logger.exception("Error in pre-send hook: %s", e)
         
         # Try to send via WebSocket
-        from AloneChat.core.server.transport import WebSocketConnection
         connection = self._registry.get_connection(user_id)
         if connection and connection.is_open():
             try:

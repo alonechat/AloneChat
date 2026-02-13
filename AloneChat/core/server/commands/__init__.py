@@ -3,15 +3,23 @@ Command processing system for the server.
 
 Provides a modular and extensible command architecture with
 support for plugins and custom command handlers.
+
+This module integrates the new plugin system with the command processing
+architecture, providing both new interfaces and backward compatibility.
 """
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Callable, Type
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional, Callable
 
 from AloneChat.core.message.protocol import Message, MessageType
+from AloneChat.plugins import (
+    PluginManager,
+    CommandPluginBase,
+    create_plugin_manager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +53,6 @@ class CommandHandler(ABC):
     Implement this class to create custom commands.
     """
     
-    # Command metadata
     name: str = ""
     description: str = ""
     aliases: List[str] = []
@@ -104,11 +111,9 @@ class CommandRegistry:
         self._handlers.append(handler)
         self._handlers_by_name[handler.name] = handler
         
-        # Register aliases
         for alias in handler.aliases:
             self._handlers_by_name[alias] = handler
         
-        # Sort handlers by priority
         self._handlers.sort(key=lambda h: h.priority.value)
         
         logger.debug("Registered command handler: %s", handler.name)
@@ -127,7 +132,6 @@ class CommandRegistry:
         if handler:
             self._handlers.remove(handler)
             
-            # Remove all aliases
             for alias in handler.aliases:
                 self._handlers_by_name.pop(alias, None)
             
@@ -162,6 +166,7 @@ class CommandProcessor:
     Processes incoming messages and executes commands.
     
     Coordinates command execution and message transformation.
+    Integrates with the new plugin system for extensibility.
     """
     
     def __init__(self, registry: Optional[CommandRegistry] = None):
@@ -174,6 +179,7 @@ class CommandProcessor:
         self._registry = registry or CommandRegistry()
         self._pre_processors: List[Callable[[CommandContext], CommandContext]] = []
         self._post_processors: List[Callable[[CommandContext, Optional[Message]], None]] = []
+        self._plugin_manager: Optional[PluginManager] = None
     
     def register_pre_processor(
         self,
@@ -199,6 +205,15 @@ class CommandProcessor:
         """
         self._post_processors.append(processor)
     
+    def set_plugin_manager(self, manager: PluginManager) -> None:
+        """
+        Set the plugin manager for command processing.
+        
+        Args:
+            manager: PluginManager instance
+        """
+        self._plugin_manager = manager
+    
     def process(
         self,
         content: str,
@@ -218,7 +233,6 @@ class CommandProcessor:
         Returns:
             Processed message or response
         """
-        # Create context
         context = CommandContext(
             content=content,
             sender=sender,
@@ -226,48 +240,54 @@ class CommandProcessor:
             original_message=original_message
         )
         
-        # Apply pre-processors
         for processor in self._pre_processors:
             try:
                 context = processor(context)
             except Exception as e:
                 logger.exception("Error in pre-processor: %s", e)
         
-        # Try to execute commands
+        if self._plugin_manager:
+            try:
+                processed_content = self._plugin_manager.process_command(
+                    content, sender, target
+                )
+                context = CommandContext(
+                    content=processed_content,
+                    sender=sender,
+                    target=target,
+                    original_message=original_message
+                )
+            except Exception as e:
+                logger.exception("Error in plugin command processing: %s", e)
+        
         result = None
         for handler in self._registry.get_all_handlers():
             try:
                 if handler.can_handle(context):
                     result = handler.execute(context)
                     if result is not None:
-                        # Command was executed and produced a result
                         break
             except Exception as e:
                 logger.exception("Error executing command %s: %s", handler.name, e)
                 result = context.reply(f"Error executing command: {e}")
                 break
         
-        # Apply post-processors
         for processor in self._post_processors:
             try:
                 processor(context, result)
             except Exception as e:
                 logger.exception("Error in post-processor: %s", e)
         
-        # Return result or default message
         if result is not None:
             return result
         
-        # No command handled it, return as regular text message
-        return Message(MessageType.TEXT, sender, content, target=target)
+        return Message(MessageType.TEXT, sender, context.content, target=target)
     
     @property
     def registry(self) -> CommandRegistry:
         """Get command registry."""
         return self._registry
 
-
-# Built-in command handlers
 
 class HelpCommandHandler(CommandHandler):
     """Handler for /help command."""
@@ -306,7 +326,7 @@ class EchoCommandHandler(CommandHandler):
     
     def execute(self, context: CommandContext) -> Message:
         """Echo the message content."""
-        text = context.content[6:].strip()  # Remove "/echo "
+        text = context.content[6:].strip()
         return context.reply(f"Echo: {text}")
 
 
@@ -326,7 +346,7 @@ class PluginCommandLoader:
         """
         self._processor = processor
     
-    def load_from_plugin_manager(self, plugin_manager) -> int:
+    def load_from_plugin_manager(self, plugin_manager: PluginManager) -> int:
         """
         Load commands from plugin manager.
         
@@ -338,44 +358,46 @@ class PluginCommandLoader:
         """
         count = 0
         try:
-            loaded = plugin_manager.load()
-            if loaded:
-                for cmd_spec in loaded:
-                    # Create handler from plugin spec
-                    handler = self._create_handler_from_spec(cmd_spec)
-                    if handler:
-                        self._processor.registry.register(handler)
-                        count += 1
+            command_plugins = plugin_manager.get_command_plugins()
+            
+            for plugin in command_plugins:
+                handler = self._create_handler_from_plugin(plugin)
+                if handler:
+                    self._processor.registry.register(handler)
+                    count += 1
+                    
         except Exception as e:
             logger.exception("Error loading plugin commands: %s", e)
         
         return count
     
-    def _create_handler_from_spec(self, spec: Dict) -> Optional[CommandHandler]:
+    @staticmethod
+    def _create_handler_from_plugin(plugin: CommandPluginBase) -> Optional[CommandHandler]:
         """
-        Create command handler from plugin specification.
+        Create command handler from plugin.
         
         Args:
-            spec: Plugin specification dictionary
+            plugin: Command plugin instance
             
         Returns:
             Command handler or None
         """
-        # This is a simplified version - extend based on actual plugin format
         class PluginHandler(CommandHandler):
-            name = spec.get("name", "unknown")
-            description = spec.get("description", "")
+            name = plugin.get_name()
+            description = plugin.metadata.description
+            priority = CommandPriority(plugin.metadata.priority.value)
             
             def can_handle(self, context: CommandContext) -> bool:
-                cmd = spec.get("command", "")
-                return context.content.strip().lower().startswith(f"/{cmd}")
+                return plugin.can_handle(context.content)
             
             def execute(self, context: CommandContext) -> Optional[Message]:
-                handler_fn = spec.get("handler")
-                if handler_fn:
-                    result = handler_fn(context.content)
-                    if result:
-                        return context.reply(result)
+                result = plugin.execute(
+                    context.content,
+                    context.sender,
+                    context.target
+                )
+                if result and result != context.content:
+                    return context.reply(result)
                 return None
         
         return PluginHandler()
@@ -390,15 +412,19 @@ def create_default_processor() -> CommandProcessor:
     """
     processor = CommandProcessor()
     
-    # Register built-in commands
     processor.registry.register(HelpCommandHandler(processor))
     processor.registry.register(EchoCommandHandler())
     
-    # Try to load plugin commands
     try:
-        from AloneChat.core.client.plugin_loader import PluginManager
+        manager = create_plugin_manager(
+            plugin_paths=["./AloneChat/plugins"],
+            auto_load=True,
+            auto_init=True
+        )
+        processor.set_plugin_manager(manager)
+        
         loader = PluginCommandLoader(processor)
-        count = loader.load_from_plugin_manager(PluginManager())
+        count = loader.load_from_plugin_manager(manager)
         if count > 0:
             logger.info("Loaded %d plugin commands", count)
     except Exception as e:

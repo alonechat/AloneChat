@@ -3,12 +3,11 @@ High-level API client for AloneChat application.
 Provides a clean interface for interacting with the AloneChat API endpoints.
 """
 
-import asyncio
-import aiohttp
 from typing import Optional, Dict, Any
 
+import aiohttp
+
 from AloneChat.core.client.utils import DEFAULT_API_PORT
-from AloneChat.core.message.protocol import Message, MessageType
 
 
 class AloneChatAPIClient:

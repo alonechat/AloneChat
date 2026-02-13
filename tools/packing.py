@@ -66,9 +66,6 @@ def rm_all():
     with open('feedback.json', 'w') as feedback:
         feedback.write('{"feedbacks": []}')
 
-    with open('server_config.json', 'w') as server_config:
-        server_config.write('{"default_server_address": "ws://localhost:8765"}')
-
     with open('user_credentials.json', 'w') as user_credentials:
         user_credentials.write("{}")
 

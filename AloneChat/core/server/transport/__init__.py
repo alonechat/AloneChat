@@ -7,13 +7,11 @@ handles transport-specific details.
 
 import asyncio
 import logging
-from typing import Dict, Optional, Set, Any, Callable
-from collections import defaultdict
+from typing import Dict, Optional, Set, Callable
 
-import websockets
 from websockets.server import WebSocketServerProtocol
 
-from AloneChat.core.server.interfaces import TransportConnection, ConnectionRegistry
+from AloneChat.core.server.interfaces import ConnectionRegistry
 
 logger = logging.getLogger(__name__)
 

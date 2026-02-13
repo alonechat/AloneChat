@@ -1,10 +1,12 @@
 # Standard library imports
 
+import asyncio
+from urllib.parse import quote_plus
+
 # Third-party imports
 import psutil
 import websockets
-from fastapi import Depends, HTTPException, Query
-from urllib.parse import quote_plus
+from fastapi import Depends, HTTPException
 
 # Local imports
 from AloneChat import __version__ as __main_version__
@@ -124,17 +126,8 @@ async def logout(request: Request):
             try:
                 notice = Message(MessageType.TEXT, "SERVER", "You have been logged out by API").serialize()
                 await websocket.send(notice)
-            except Exception:
-                pass
-            try:
                 await websocket.close(code=1000, reason="User logged out via API")
-            except Exception:
-                pass
-            try:
                 del ws_manager.sessions[username]
-            except Exception:
-                pass
-            try:
                 ws_manager.clients.discard(websocket)
             except Exception:
                 pass
@@ -269,28 +262,15 @@ async def recv_messages(request: Request):
 # Get default server address
 @app.get("/api/get_default_server")
 async def get_default_server():
-    default_server = load_server_config()
+    """Get default WebSocket server address from configuration."""
     return {
         "success": True,
-        "default_server_address": default_server
+        "default_server_address": config.DEFAULT_SERVER_ADDRESS
     }
 
 
-# Set default server address
-# @app.post("/api/admin/set_default_server")
-async def set_default_server(server_address: str = Query(..., description="Default server address")):
-    # Validate server address format
-    if not server_address.startswith("ws://") and not server_address.startswith("wss://"):
-        raise HTTPException(status_code=400, detail="Server address must start with ws:// or wss://")
-
-    if save_server_config(server_address):
-        return {
-            "success": True,
-            "message": "Default server address updated",
-            "new_server_address": server_address
-        }
-    else:
-        raise HTTPException(status_code=500, detail="Failed to save default server address")
+# Set default server address - Removed: Server address is now managed via config.py
+# This endpoint is no longer available as server configuration is centralized in config.py
 
 
 # Admin permission verification dependency
