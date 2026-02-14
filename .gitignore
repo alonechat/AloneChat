@@ -209,5 +209,9 @@ marimo/_lsp/
 __marimo__/
 
 
-# AloneChat/web/static/admin.html
+# AloneChat/api/static/admin.html
+.DS_Store
 tools/*.exe
+logs/*.txt
+logs/gui_state.json
+logs/dev/*.log

@@ -1,3 +1,4 @@
-pyinstaller
-requests
-pylint>=2.15.0
+# Development dependencies for AloneChat
+
+# Code quality
+pylint

@@ -1,0 +1,92 @@
+name: Build and Release AloneChat
+
+on:
+  # Run on pushes to the main branch
+  push:
+    branches: [ "master", "develop", "canary" ]
+  # Run when a new Release is published
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    # Use a matrix strategy to run on multiple operating systems
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Build the executable
+        run: python tools/packing.py
+
+      # On Linux/macOS, ensure the binary is executable
+      - name: Make binary executable (Non-Windows)
+        if: runner.os != 'Windows'
+        run: chmod a+x dist/AloneChat
+
+      - name: Package for Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Compress-Archive -Path 'dist/AloneChat.exe' -DestinationPath 'AloneChat-Windows.zip'
+
+      - name: Package for Linux and macOS
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Use tar to create a gzipped archive.
+          # -C dist changes the directory to 'dist' before adding files,
+          # so the archive contains 'AloneChat' at the root level.
+          tar -czvf AloneChat-${{ runner.os }}.tar.gz -C dist AloneChat
+
+      # Step 1: Upload the binary as a build artifact
+      # This is useful for testing and downloading before a release is made
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Name the artifact based on the OS, e.g., "AloneChat-ubuntu-latest"
+          name: AloneChat-${{ runner.os }}
+          # The path is now consistent thanks to our updated packing.py script
+          path: |
+            AloneChat-Windows.zip
+            AloneChat-*.tar.gz
+
+      # Step 2: Attach the binary to a GitHub Release
+      # This step only runs if the workflow was triggered by a 'release' event
+      - name: Prepare Release Asset
+        if: github.event_name == 'release'
+        shell: bash
+        # Rename the file to be more descriptive for users downloading it
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            mv "dist/AloneChat.exe" "dist/AloneChat-Windows.exe"
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            mv "dist/AloneChat" "dist/AloneChat-macOS"
+          else # Linux
+            mv "dist/AloneChat" "dist/AloneChat-Linux"
+          fi
+
+      - name: Upload Release Asset
+        if: github.event_name == 'release'
+        # A modern and easy-to-use action for uploading release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          # The glob will find the correctly renamed file for each OS
+          files: dist/AloneChat-*
