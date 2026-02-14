@@ -1,14 +1,19 @@
+# Web technologies & related
+aiohttp
+fastapi
 starlette
-requests
-websockets>=15.0.1
-fastapi>=0.100.0
-uvicorn>=0.22.0
-websockets>=15.0.1
-pydantic>=2.0.0
-pyjwt>=2.4.0
-bcrypt>=4.0.1
-psutil>=5.9.0
-aiohttp>=3.8.4
-# jinja2>=3.1.2
-# python-multipart>=0.0.6
-windows-curses>=2.3 ; sys_platform == "win32" or sys_platform == "cygwin"
+pyjwt
+uvicorn
+websockets
+
+# Cryptography
+bcrypt
+
+# User interface
+darkdetect
+sv-ttk
+
+windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
+
+# System utilities
+psutil

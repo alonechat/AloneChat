@@ -6,6 +6,7 @@ Creates standalone executable using PyInstaller.
 import os
 import shutil
 import subprocess
+import sys
 from argparse import ArgumentParser
 
 
@@ -65,9 +66,6 @@ def rm_all():
     with open('feedback.json', 'w') as feedback:
         feedback.write('{"feedbacks": []}')
 
-    with open('server_config.json', 'w') as server_config:
-        server_config.write('{"default_server_address": "ws://localhost:8765"}')
-
     with open('user_credentials.json', 'w') as user_credentials:
         user_credentials.write("{}")
 
@@ -98,7 +96,8 @@ def postprocessing():
     # Move the built executable to a desired location if needed
     clean()
     # Clean up the dist directory after moving
-    shutil.move('dist/__main__.exe', 'dist/AloneChat.exe')
+    name_back = '.exe' if sys.platform == 'win32' else ''
+    shutil.move('dist/__main__' + name_back, 'dist/AloneChat' + name_back)
 
 
 if __name__ == "__main__":
