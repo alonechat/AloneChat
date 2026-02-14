@@ -1,7 +1,6 @@
 # Web technologies & related
 aiohttp
 fastapi
-requests
 starlette
 pyjwt
 uvicorn

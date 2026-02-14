@@ -1,6 +1,4 @@
-# includes requirements.txt:
-# -r requirements.txt
-# These lines above will cause a GitHub Action error.
+# Development dependencies for AloneChat
 
-requests # Better than urllib3 until now.
-pylint # If you like a project, lint it! -- @hi-zcy
+# Code quality
+pylint
