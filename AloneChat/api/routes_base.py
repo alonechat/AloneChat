@@ -242,7 +242,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
         # Check if it's a refresh operation (judged by Referer)
         referer = request.headers.get("referer")
-        is_refresh = bool(referer)  # Simplified judgment:只要有referer就认为是刷新操作
+        is_refresh = False # bool(referer)  # Simplified judgment
 
         # If it's a new access (non-refresh) and not a whitelist path, check JWT token
         if not is_refresh:
