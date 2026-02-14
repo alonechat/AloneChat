@@ -4,7 +4,6 @@ Provides base client functionality and standard command-line client implementati
 """
 
 import asyncio
-import curses
 from typing import Optional
 
 from AloneChat.api.client import AloneChatAPIClient
@@ -274,6 +273,7 @@ class CursesClient(Client):
         This is the main entry point that wraps the async execution.
         """
         try:
+            import curses  # type: ignore
             curses.wrapper(lambda stdscr: asyncio.run(self.async_run(stdscr)))
         except NameError:
             print(

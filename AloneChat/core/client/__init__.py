@@ -1,29 +1,41 @@
-"""
-Client module for AloneChat application.
-Provides base client functionality and standard command-line client implementation.
+"""AloneChat client package.
+
+This module intentionally avoids importing optional UI backends (curses / GUI)
+at import time so that starting the server does not require any GUI or terminal
+UI dependencies.
+
+UI backends are imported lazily by `run_client()`.
 """
 
-from . import auth
-from . import cli
-from . import input
-# Import submodules for easy access
-from . import ui
-from . import utils
 from .client_base import Client
-from .curses_client import CursesClient
-from .gui_client import SimpleGUIClient
-from .qt_client import QtClient
 from .runner import run_client
+
+# Optional UI backends (lazy/optional)
+try:
+    from .curses_client import CursesClient  # type: ignore
+except Exception:  # pragma: no cover
+    CursesClient = None  # type: ignore
+
+try:
+    from .qt_client import QtClient  # type: ignore
+except Exception:  # pragma: no cover
+    QtClient = None  # type: ignore
+
+try:
+    from .qt_gui_client import QtGUIClient  # type: ignore
+except Exception:  # pragma: no cover
+    QtGUIClient = None  # type: ignore
+
+try:
+    from .gui_client import SimpleGUIClient  # type: ignore
+except Exception:  # pragma: no cover
+    SimpleGUIClient = None  # type: ignore
 
 __all__ = [
     'Client',
-    'CursesClient',
-    'SimpleGUIClient',
-    'QtClient',
     'run_client',
-    'ui',
-    'input',
-    'auth',
-    'utils',
-    'cli',
+    'CursesClient',
+    'QtClient',
+    'QtGUIClient',
+    'SimpleGUIClient',
 ]

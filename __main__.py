@@ -8,7 +8,6 @@ Enhanced with unified logging system integration.
 import argparse
 import sys
 
-from AloneChat.start import client, server, api
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 from AloneChat.core.logging import auto_configure, get_logger
 
@@ -49,9 +48,9 @@ def parse():
     client_parser.add_argument('--api-port', type=int, default=DEFAULT_API_PORT, help='API server port (default: 8766)')
     client_parser.add_argument(
         '--ui',
-        choices=['gui', 'tui'],
+        choices=['gui','tui','qt'],
         default='gui',
-        help='User interface type: gui (modern GUI), tui (curses TUI) (default: gui)'
+        help='User interface type: gui (Tk GUI), qt (Qt GUI), tui (terminal UI) (default: gui)'
     )
 
     # Add 'srv-only' command
@@ -73,6 +72,9 @@ def parse():
 def main():
     """Main entry point."""
     args = parse()
+
+    # Lazy imports so server startup does not require client GUI dependencies
+    from AloneChat.start import server, api, client
 
     # Initialize logging system
     try:

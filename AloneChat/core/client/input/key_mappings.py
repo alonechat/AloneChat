@@ -3,7 +3,10 @@ Key code mappings and action definitions for input handling.
 Maps curses key codes to semantic actions.
 """
 
-import curses
+try:
+    import curses  # type: ignore
+except Exception:  # pragma: no cover
+    curses = None  # type: ignore
 from enum import Enum, auto
 
 
@@ -13,28 +16,28 @@ class KeyCode:
     ENTER_ALT = 13
     BACKSPACE = 8
     BACKSPACE_ALT = 127
-    DELETE = curses.KEY_DC if 'curses' in globals() else 330
+    DELETE = curses.KEY_DC if curses is not None else 330
     ESCAPE = 27
     TAB = 9
     SPACE = 32
 
     # Arrow keys
-    UP = curses.KEY_UP if 'curses' in globals() else 259
-    DOWN = curses.KEY_DOWN if 'curses' in globals() else 258
-    LEFT = curses.KEY_LEFT if 'curses' in globals() else 260
-    RIGHT = curses.KEY_RIGHT if 'curses' in globals() else 261
+    UP = curses.KEY_UP if curses is not None else 259
+    DOWN = curses.KEY_DOWN if curses is not None else 258
+    LEFT = curses.KEY_LEFT if curses is not None else 260
+    RIGHT = curses.KEY_RIGHT if curses is not None else 261
 
     # Page keys
-    PAGE_UP = curses.KEY_PPAGE if 'curses' in globals() else 339
-    PAGE_DOWN = curses.KEY_NPAGE if 'curses' in globals() else 338
-    HOME = curses.KEY_HOME if 'curses' in globals() else 262
-    END = curses.KEY_END if 'curses' in globals() else 360
+    PAGE_UP = curses.KEY_PPAGE if curses is not None else 339
+    PAGE_DOWN = curses.KEY_NPAGE if curses is not None else 338
+    HOME = curses.KEY_HOME if curses is not None else 262
+    END = curses.KEY_END if curses is not None else 360
 
     # Function keys
-    F1 = curses.KEY_F1 if 'curses' in globals() else 265
-    F2 = curses.KEY_F2 if 'curses' in globals() else 266
-    F3 = curses.KEY_F3 if 'curses' in globals() else 267
-    F4 = curses.KEY_F4 if 'curses' in globals() else 268
+    F1 = curses.KEY_F1 if curses is not None else 265
+    F2 = curses.KEY_F2 if curses is not None else 266
+    F3 = curses.KEY_F3 if curses is not None else 267
+    F4 = curses.KEY_F4 if curses is not None else 268
 
 
 class InputAction(Enum):
