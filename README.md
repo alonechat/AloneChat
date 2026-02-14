@@ -3,11 +3,10 @@
 A secure, modular chat application with WebSocket-based real-time communication, plugin extensibility, and unified logging.
 
 > [!WARNING]
-> 
-> Because windows-curses is not supported on python 3.14 and above, this project is currently only compatible with python 3.13 and below on Windows.
-> This canary use pyqt instead of curses,it should be run on any systems.
+> This branch should be run on any systems.
 >
-> If you use it,make sure you admit GPL licence.
+> This branch is distributed under GPLv3 due to PyQt dependency.
+> The master branch remains under Apache 2.0.
 
 ## Features
 
