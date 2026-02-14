@@ -80,7 +80,6 @@ The following legacy exports are maintained for backward compatibility:
 import warnings
 
 from AloneChat.core.server import command as _command_module
-from AloneChat.core.server import manager as _manager_module
 from AloneChat.core.server.auth import (
     JWTAuthenticator,
     AuthenticationMiddleware,
@@ -143,7 +142,6 @@ from AloneChat.core.server.websocket_manager import (
     create_server,
 )
 
-WebSocketManager = _manager_module.WebSocketManager
 COMMANDS = _command_module.COMMANDS
 CommandSystem = _command_module.CommandSystem
 
@@ -157,16 +155,9 @@ def _deprecated_warning(old_name, new_name):
     )
 
 
-# noinspection PyDeprecation
-class _DeprecatedWebSocketManager(WebSocketManager):
-    """Wrapper that emits deprecation warning."""
-    
-    def __init__(self, *args, **kwargs):
-        _deprecated_warning("WebSocketManager", "UnifiedWebSocketManager")
-        super().__init__(*args, **kwargs)
-
-
-WebSocketManager = _DeprecatedWebSocketManager
+# WebSocketManager is now an alias to UnifiedWebSocketManager
+# The legacy WebSocketManager has been removed
+WebSocketManager = UnifiedWebSocketManager
 
 __all__ = [
     'Authenticator',

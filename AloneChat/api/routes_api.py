@@ -1,6 +1,7 @@
 # Standard library imports
 
 import asyncio
+from typing import Any, Optional
 from urllib.parse import quote_plus
 
 # Third-party imports
@@ -291,10 +292,32 @@ async def admin_required(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-# Get singleton instance of WebSocketManager (imported lazily to avoid circular import)
-from AloneChat.core.server.manager import WebSocketManager
+# Get singleton instance of UnifiedWebSocketManager (modern replacement for legacy WebSocketManager)
+from AloneChat.core.server.websocket_manager import UnifiedWebSocketManager
 
-ws_manager = WebSocketManager.get_instance()
+# Create a global instance for API routes to use
+_ws_manager_instance: Optional[UnifiedWebSocketManager] = None
+
+def get_ws_manager() -> UnifiedWebSocketManager:
+    """Get or create the global WebSocket manager instance."""
+    global _ws_manager_instance
+    if _ws_manager_instance is None:
+        _ws_manager_instance = UnifiedWebSocketManager()
+    return _ws_manager_instance
+
+# Legacy compatibility: ws_manager attribute access
+class _WSManagerProxy:
+    """Proxy class to provide legacy-style attribute access to UnifiedWebSocketManager."""
+    
+    def __getattr__(self, name: str) -> Any:
+        manager = get_ws_manager()
+        return getattr(manager, name)
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        manager = get_ws_manager()
+        setattr(manager, name, value)
+
+ws_manager = _WSManagerProxy()
 
 
 # noinspection PyUnresolvedReferences

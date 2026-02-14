@@ -12,15 +12,9 @@ bcrypt
 
 # User interface
 darkdetect
-pywinstyles
 sv-ttk
 
 windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
 
 # System utilities
 psutil
-
-# Test utilities
-pydantic
-pytest
-pytest-asyncio

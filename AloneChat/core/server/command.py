@@ -94,11 +94,13 @@ class CommandSystem:
             Message: Processed message object
         """
         try:
-            manager = _get_manager()
+            # Use the new command processor for proper command handling
+            from AloneChat.core.server.commands import create_default_processor
             
-            processed_content = manager.process_command(input_str, sender, target)
+            processor = create_default_processor()
+            result = processor.process(input_str, sender, target)
             
-            return Message(MessageType.TEXT, sender, processed_content, target=target)
+            return result
             
         except Exception as e:
             logger.error("Error processing command: %s", e)

@@ -240,26 +240,14 @@ class CommandProcessor:
             original_message=original_message
         )
         
+        # Run pre-processors
         for processor in self._pre_processors:
             try:
                 context = processor(context)
             except Exception as e:
                 logger.exception("Error in pre-processor: %s", e)
         
-        if self._plugin_manager:
-            try:
-                processed_content = self._plugin_manager.process_command(
-                    content, sender, target
-                )
-                context = CommandContext(
-                    content=processed_content,
-                    sender=sender,
-                    target=target,
-                    original_message=original_message
-                )
-            except Exception as e:
-                logger.exception("Error in plugin command processing: %s", e)
-        
+        # Execute command handlers (including plugin-based handlers)
         result = None
         for handler in self._registry.get_all_handlers():
             try:
@@ -272,6 +260,7 @@ class CommandProcessor:
                 result = context.reply(f"Error executing command: {e}")
                 break
         
+        # Run post-processors
         for processor in self._post_processors:
             try:
                 processor(context, result)
@@ -396,8 +385,18 @@ class PluginCommandLoader:
                     context.sender,
                     context.target
                 )
-                if result and result != context.content:
-                    return context.reply(result)
+                if result is None:
+                    return None
+                
+                # Handle different return types from plugins
+                if isinstance(result, Message):
+                    # Plugin returned a Message object directly
+                    return result
+                elif isinstance(result, str):
+                    # Plugin returned a string - convert to Message
+                    if result != context.content:
+                        return context.reply(result)
+                
                 return None
         
         return PluginHandler()

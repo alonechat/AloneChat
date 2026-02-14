@@ -29,10 +29,10 @@ Hook Execution Order:
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 
 import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import ServerConnection
 
 from AloneChat.core.message.protocol import Message, MessageType
 from AloneChat.core.server.auth import JWTAuthenticator, AuthenticationMiddleware
@@ -174,6 +174,8 @@ class MessageProcessingPipeline:
         """
         result_content = content
         modified = False
+        result_message_type = None
+        result_target = target
         
         for processor in self._pre_processors:
             try:
@@ -202,6 +204,10 @@ class MessageProcessingPipeline:
             if message.content != result_content:
                 result_content = message.content
                 modified = True
+            if message.type != MessageType.TEXT:
+                result_message_type = message.type
+            if message.target and message.target != target:
+                result_target = message.target
         except Exception as e:
             logger.exception("Error in command processing: %s", e)
         
@@ -209,7 +215,9 @@ class MessageProcessingPipeline:
             success=True,
             content=result_content,
             modified=modified,
-            metadata=context or {}
+            metadata=context or {},
+            message_type=result_message_type,
+            response_target=result_target
         )
         
         for processor in self._post_processors:
@@ -398,7 +406,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         
         logger.info("WebSocket server stopped")
     
-    async def _handle_connection(self, websocket: WebSocketServerProtocol) -> None:
+    async def _handle_connection(self, websocket: ServerConnection) -> None:
         """
         Handle a new WebSocket connection.
         
@@ -467,7 +475,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     async def _message_loop(
         self,
         context: ConnectionContext,
-        websocket: WebSocketServerProtocol
+        websocket: ServerConnection
     ) -> None:
         """
         Main message processing loop for a connection.
@@ -522,15 +530,18 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         hook_ctx = await self._execute_hooks(HookPhase.POST_MESSAGE, hook_ctx)
         
         if result.modified or result.content != message.content:
+            response_type = result.message_type or MessageType.TEXT
+            response_target = result.response_target if result.response_target else message.target
+            
             response = Message(
-                MessageType.TEXT,
+                response_type,
                 context.user_id,
                 result.content,
-                target=message.target
+                target=response_target
             )
             await context.send(response)
             
-            if not message.target:
+            if not message.target and response_type == MessageType.TEXT:
                 hook_ctx.phase = HookPhase.PRE_BROADCAST
                 hook_ctx = await self._execute_hooks(HookPhase.PRE_BROADCAST, hook_ctx)
                 
@@ -581,7 +592,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     # noinspection PyMethodMayBeStatic
     async def _send_auth_error(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         result: AuthResult
     ) -> None:
         """Send authentication error and close connection."""
@@ -599,7 +610,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     # noinspection PyMethodMayBeStatic
     async def _send_duplicate_error(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         username: str
     ) -> None:
         """Send duplicate connection error."""
@@ -629,6 +640,20 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         Send a message to a specific user.
         """
         result = await self._message_router.send_to_user(username, message)
+        
+        # Also put message in legacy queue for HTTP polling clients
+        if hasattr(self, '_legacy_message_queues'):
+            queue = self._legacy_message_queues.get(username)
+            if queue:
+                try:
+                    queue.put_nowait(message.serialize())
+                except asyncio.QueueFull:
+                    try:
+                        _ = queue.get_nowait()
+                        queue.put_nowait(message.serialize())
+                    except Exception:
+                        pass
+        
         return result.status.name == "DELIVERED"
     
     def get_active_users(self) -> list[str]:
@@ -658,6 +683,127 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     def is_running(self) -> bool:
         """Check if server is running."""
         return self._running
+
+    # ==================== Legacy Compatibility Layer ====================
+    
+    @property
+    def sessions(self) -> Dict[str, Any]:
+        """
+        Legacy compatibility: Get active sessions mapping username to connection.
+        
+        Returns:
+            Dictionary mapping username to connection info
+        """
+        return {
+            user_id: ctx.connection.raw_websocket
+            for user_id, ctx in self._connection_contexts.items()
+        }
+    
+    @property
+    def clients(self) -> Set[ServerConnection]:
+        """
+        Legacy compatibility: Get set of all client connections.
+        
+        Returns:
+            Set of raw WebSocket connections
+        """
+        return {
+            ctx.connection.raw_websocket
+            for ctx in self._connection_contexts.values()
+        }
+    
+    def _ensure_queue(self, username: str) -> None:
+        """
+        Legacy compatibility: Ensure message queue exists for user.
+        
+        Args:
+            username: Username to ensure queue for
+        """
+        # Access message_queues property to ensure proper initialization
+        _ = self.message_queues[username]
+    
+    class _MessageQueuesDict(dict):
+        """Custom dict that auto-creates queues on access."""
+        
+        def __init__(self, manager: 'UnifiedWebSocketManager'):
+            super().__init__()
+            self._manager = manager
+        
+        def __getitem__(self, key: str) -> asyncio.Queue:
+            # Auto-create queue if it doesn't exist
+            if not super().__contains__(key):
+                super().__setitem__(key, asyncio.Queue(maxsize=500))
+            return super().__getitem__(key)
+        
+        def __contains__(self, key: object) -> bool:
+            # Check if key exists without creating it
+            return super().__contains__(key)
+    
+    @property
+    def message_queues(self) -> Dict[str, asyncio.Queue]:
+        """
+        Legacy compatibility: Get message queues for HTTP polling.
+        
+        Returns:
+            Dictionary mapping username to message queue (auto-creates on access)
+        """
+        # Create queues on-demand for HTTP polling compatibility
+        if not hasattr(self, '_legacy_message_queues'):
+            self._legacy_message_queues = self._MessageQueuesDict(self)
+        return self._legacy_message_queues
+    
+    async def broadcast(self, message: Message) -> None:
+        """
+        Legacy compatibility: Broadcast a message to all connected clients.
+        Also processes commands and sends responses back to the sender.
+        
+        Args:
+            message: Message to broadcast
+        """
+        # Process the message through the command pipeline
+        result = self._command_processor.process(
+            message.content,
+            message.sender,
+            message.target
+        )
+        
+        # Check if this was a command that produced a response
+        if result.content != message.content or result.type != MessageType.TEXT or result.target:
+            # This was a command - send response back to sender only
+            await self.send_to_user(message.sender, result)
+            # Don't broadcast the original command message
+            return
+        
+        # Not a command - broadcast the message normally
+        await self._message_router.broadcast(message)
+        
+        # Also put message in legacy queues for HTTP polling
+        if hasattr(self, '_legacy_message_queues'):
+            for username, queue in list(self._legacy_message_queues.items()):
+                try:
+                    queue.put_nowait(message.serialize())
+                except asyncio.QueueFull:
+                    try:
+                        _ = queue.get_nowait()
+                        queue.put_nowait(message.serialize())
+                    except Exception:
+                        pass
+    
+    async def _send_to_target(self, message: Message) -> None:
+        """
+        Legacy compatibility: Send a message to a specific target user.
+        
+        Args:
+            message: Message to send (target must be set)
+        """
+        if not message.target:
+            return
+        
+        await self.send_to_user(message.target, message)
+        
+        # Also send to sender if different from target
+        if message.sender != message.target:
+            await self.send_to_user(message.sender, message)
 
 
 def create_server(

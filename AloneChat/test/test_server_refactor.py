@@ -355,10 +355,11 @@ class TestBackwardCompatibility:
     """Tests for backward compatibility with legacy code."""
     
     def test_import_legacy_manager(self):
-        """Test that legacy manager can be imported."""
-        from AloneChat.core.server.manager import WebSocketManager
+        """Test that WebSocketManager alias works (now points to UnifiedWebSocketManager)."""
+        from AloneChat.core.server import WebSocketManager, UnifiedWebSocketManager
         
-        assert WebSocketManager is not None
+        # WebSocketManager should now be an alias to UnifiedWebSocketManager
+        assert WebSocketManager is UnifiedWebSocketManager
     
     def test_import_legacy_command_system(self):
         """Test that legacy command system can be imported."""

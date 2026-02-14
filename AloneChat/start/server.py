@@ -141,7 +141,7 @@ def server_legacy(
     srv_only: bool = False
 ) -> None:
     """
-    Start the chat server using the legacy WebSocketManager.
+    Start the chat server (legacy alias, now uses UnifiedWebSocketManager).
     
     Deprecated: Use server() instead.
     
@@ -156,29 +156,8 @@ def server_legacy(
         stacklevel=2
     )
     
-    from AloneChat.core.server.manager import WebSocketManager
-    
-    if port is None:
-        port = config.config.DEFAULT_SERVER_PORT
-    
-    _reset_user_statuses()
-    
-    ws_manager = WebSocketManager(port=port)
-    
-    async def start_websocket_server():
-        await ws_manager.run()
-    
-    def start_http_server():
-        uvicorn.run(app, host="0.0.0.0", port=port + 1)
-    
-    try:
-        if not srv_only:
-            http_thread = threading.Thread(target=start_http_server, daemon=True)
-            http_thread.start()
-        
-        asyncio.run(start_websocket_server())
-    except KeyboardInterrupt:
-        print("Closed by user.")
+    # Legacy mode now uses UnifiedWebSocketManager
+    server(port=port, srv_only=srv_only)
 
 
 if __name__ == "__main__":

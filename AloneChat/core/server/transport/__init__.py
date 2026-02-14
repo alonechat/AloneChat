@@ -9,7 +9,7 @@ import asyncio
 import logging
 from typing import Dict, Optional, Set, Callable
 
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import ServerConnection
 
 from AloneChat.core.server.interfaces import ConnectionRegistry
 
@@ -18,16 +18,16 @@ logger = logging.getLogger(__name__)
 
 class WebSocketConnection:
     """
-    Wrapper around WebSocketServerProtocol that implements TransportConnection.
-    
+    Wrapper around ServerConnection that implements TransportConnection.
+
     Provides a clean interface for sending messages and managing
     connection state.
     """
-    
-    def __init__(self, websocket: WebSocketServerProtocol, user_id: str):
+
+    def __init__(self, websocket: ServerConnection, user_id: str):
         """
         Initialize WebSocket connection wrapper.
-        
+
         Args:
             websocket: Underlying WebSocket protocol
             user_id: Associated user ID
@@ -35,14 +35,14 @@ class WebSocketConnection:
         self._websocket = websocket
         self._user_id = user_id
         self._closed = False
-    
+
     @property
     def user_id(self) -> str:
         """Get associated user ID."""
         return self._user_id
-    
+
     @property
-    def raw_websocket(self) -> WebSocketServerProtocol:
+    def raw_websocket(self) -> ServerConnection:
         """Get underlying WebSocket protocol."""
         return self._websocket
     
@@ -171,12 +171,12 @@ class WebSocketConnectionRegistry(ConnectionRegistry):
         connection = self._connections.get(user_id)
         return connection is not None and connection.is_open()
     
-    def get_all_clients(self) -> Set[WebSocketServerProtocol]:
+    def get_all_clients(self) -> Set[ServerConnection]:
         """
         Get all raw WebSocket clients.
-        
+
         Returns:
-            Set of WebSocketServerProtocol objects
+            Set of ServerConnection objects
         """
         return {
             conn.raw_websocket for conn in self._connections.values()
@@ -273,7 +273,7 @@ class TransportFactory:
     
     @staticmethod
     def create_connection(
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         user_id: str
     ) -> WebSocketConnection:
         """

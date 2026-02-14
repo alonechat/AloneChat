@@ -11,7 +11,10 @@ Enhanced with plugin integration hooks for pre- /post-processing.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from AloneChat.core.message.protocol import MessageType
 
 
 class HookPhase(Enum):
@@ -66,6 +69,8 @@ class ProcessingResult:
     modified: bool = False
     error: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    message_type: Optional['MessageType'] = None
+    response_target: Optional[str] = None
 
 
 @runtime_checkable
