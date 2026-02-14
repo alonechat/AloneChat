@@ -7,12 +7,12 @@ import asyncio
 import curses
 from typing import Optional
 
-from .client_base import Client
-from .ui import CursesRenderer, MessageBuffer
-from .input import InputHandler, InputResult
-from .auth import AuthFlow
-from .utils import DEFAULT_HOST, DEFAULT_API_PORT, REFRESH_RATE_HZ
 from AloneChat.api.client import AloneChatAPIClient
+from .auth import AuthFlow
+from .client_base import Client
+from .input import InputHandler, InputResult
+from .ui import CursesRenderer, MessageBuffer
+from .utils import DEFAULT_HOST, DEFAULT_API_PORT, REFRESH_RATE_HZ
 
 __all__ = ['Client', 'CursesClient']
 

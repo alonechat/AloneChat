@@ -4,7 +4,6 @@ import json
 import os
 import sys
 import time
-import asyncio
 from typing import Dict
 
 # Third-party imports
@@ -22,8 +21,6 @@ from starlette.responses import Response
 from AloneChat import __version__ as __main_version__
 from AloneChat.config import config
 
-# Default server address configuration file
-SERVER_CONFIG_FILE = "server_config.json"
 # Feedback file path
 FEEDBACK_FILE = "feedback.json"
 USER_DB_FILE = config.USER_DB_FILE
@@ -75,18 +72,6 @@ def update_user_online_status(username, is_online):
     return False
 
 
-# Load default server address configuration
-def load_server_config():
-    if os.path.exists(SERVER_CONFIG_FILE):
-        try:
-            with open(SERVER_CONFIG_FILE, 'r') as f:
-                config_data = json.load(f)
-                return config_data.get('default_server_address', config.DEFAULT_SERVER_ADDRESS)
-        except (json.JSONDecodeError, IOError):
-            return config.DEFAULT_SERVER_ADDRESS
-    return config.DEFAULT_SERVER_ADDRESS
-
-
 # 加载反馈数据
 def load_feedbacks():
     if os.path.exists(FEEDBACK_FILE):
@@ -128,18 +113,6 @@ def update_feedback_status(feedback_id, status, reply=''):
                 print(f"更新反馈数据失败: {e}")
                 return False
     return False
-
-
-# Save default server address configuration
-def save_server_config(server_address):
-    # noinspection PyShadowingNames
-    try:
-        with open(SERVER_CONFIG_FILE, 'w') as f:
-            json.dump({'default_server_address': server_address}, f, indent=2)
-        return True
-    except IOError as e:
-        print(f"Error saving server config: {e}")
-        return False
 
 
 # Hash password function
@@ -191,7 +164,7 @@ class TokenResponse(BaseModel):
 
 
 # Load server address and port from configuration
-SERVER_CONFIG = load_server_config()
+SERVER_CONFIG = config.DEFAULT_SERVER_ADDRESS
 # Parse server address, handle complete URL format
 if SERVER_CONFIG.startswith('ws://'):
     # Remove ws:// prefix

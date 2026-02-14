@@ -26,6 +26,9 @@ class Config:
     # Default Server Address
     DEFAULT_SERVER_ADDRESS = "ws://localhost:8765"
 
+    # Default API Address (for internal API communication)
+    DEFAULT_API_ADDRESS = 8766
+
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         """Get all configuration values as a dictionary."""
@@ -36,6 +39,8 @@ class Config:
             "DEFAULT_HOST": cls.DEFAULT_HOST,
             "DEFAULT_SERVER_PORT": cls.DEFAULT_SERVER_PORT,
             "DEFAULT_API_PORT": cls.DEFAULT_API_PORT,
+            "DEFAULT_SERVER_ADDRESS": cls.DEFAULT_SERVER_ADDRESS,
+            "DEFAULT_API_ADDRESS": cls.DEFAULT_API_ADDRESS,
             "USER_DB_FILE": cls.USER_DB_FILE
         }
 

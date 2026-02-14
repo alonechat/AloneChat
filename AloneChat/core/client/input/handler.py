@@ -3,9 +3,8 @@ Input handler for processing keyboard input in the curses client.
 Manages input buffer state and processes key presses.
 """
 
-import curses
-from typing import Optional, Callable, Awaitable
 from enum import Enum, auto
+from typing import Optional, Callable, Awaitable
 
 from .key_mappings import InputAction, get_action_for_key, get_char
 from ..ui.message_buffer import MessageBuffer, ScrollDirection

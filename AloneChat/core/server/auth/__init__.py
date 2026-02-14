@@ -162,8 +162,9 @@ class DefaultTokenExtractor:
         except Exception as e:
             logger.debug("Failed to extract token from cookie: %s", e)
         return None
-    
-    def _get_path(self, websocket: Any) -> Optional[str]:
+
+    @staticmethod
+    def _get_path(websocket: Any) -> Optional[str]:
         """Extract path from WebSocket object."""
         # Try different ways to get path across websockets versions
         request = getattr(websocket, "request", None)
@@ -171,10 +172,11 @@ class DefaultTokenExtractor:
             path = getattr(request, "path", None)
             if path:
                 return path
-        
+
         return getattr(websocket, "path", None)
-    
-    def _get_headers(self, websocket: Any) -> Dict[str, str]:
+
+    @staticmethod
+    def _get_headers(websocket: Any) -> Dict[str, str]:
         """Extract headers from WebSocket object."""
         try:
             request = getattr(websocket, "request", None)

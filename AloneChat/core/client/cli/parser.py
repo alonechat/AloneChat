@@ -3,8 +3,8 @@ Command parser for AloneChat client.
 Provides independent command-line parsing logic that can be used by any UI.
 """
 
-from enum import Enum, auto
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Optional, List, Callable, Any
 
 from ..utils import DEFAULT_HOST, DEFAULT_API_PORT
@@ -162,7 +162,8 @@ class CommandParser:
             error_message=error
         )
     
-    def _parse_set_command(self, args: List[str], raw: str) -> Command:
+    @staticmethod
+    def _parse_set_command(args: List[str], raw: str) -> Command:
         """Parse 'set' subcommands."""
         if len(args) < 1:
             return Command(
@@ -227,7 +228,8 @@ class CommandParser:
             kwargs={'value': value}
         )
     
-    def _parse_args(self, command_type: CommandType, args: List[str]) -> dict:
+    @staticmethod
+    def _parse_args(command_type: CommandType, args: List[str]) -> dict:
         """Parse command arguments based on command type."""
         kwargs = {}
         
@@ -246,7 +248,8 @@ class CommandParser:
         
         return kwargs
     
-    def _validate_command(self, command_type: CommandType, args: List[str], kwargs: dict) -> Optional[str]:
+    @staticmethod
+    def _validate_command(command_type: CommandType, args: List[str], kwargs: dict) -> Optional[str]:
         """Validate command arguments and return error message if invalid."""
         match command_type:
             case CommandType.UNKNOWN:
@@ -338,7 +341,8 @@ class CommandExecutor:
         self.parser.register_handler(CommandType.SET_USERNAME, self._handle_set_username)
         self.parser.register_handler(CommandType.SET_UI, self._handle_set_ui)
     
-    def _handle_help(self, cmd: Command) -> str:
+    @staticmethod
+    def _handle_help(cmd: Command) -> str:
         """Handle help command."""
         return CommandParser.get_help_text()
     

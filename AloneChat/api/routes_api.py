@@ -1,10 +1,13 @@
 # Standard library imports
 
+import asyncio
+from typing import Any, Optional
+from urllib.parse import quote_plus
+
 # Third-party imports
 import psutil
 import websockets
-from fastapi import Depends, HTTPException, Query
-from urllib.parse import quote_plus
+from fastapi import Depends, HTTPException
 
 # Local imports
 from AloneChat import __version__ as __main_version__
@@ -124,17 +127,8 @@ async def logout(request: Request):
             try:
                 notice = Message(MessageType.TEXT, "SERVER", "You have been logged out by API").serialize()
                 await websocket.send(notice)
-            except Exception:
-                pass
-            try:
                 await websocket.close(code=1000, reason="User logged out via API")
-            except Exception:
-                pass
-            try:
                 del ws_manager.sessions[username]
-            except Exception:
-                pass
-            try:
                 ws_manager.clients.discard(websocket)
             except Exception:
                 pass
@@ -192,8 +186,11 @@ async def send_message(request: Request):
         # Create message
         msg = Message(MessageType.TEXT, sender or username, message, target)
 
-        # Broadcast message directly using WebSocket manager
-        await ws_manager.broadcast(msg)
+        # Private message routing
+        if target:
+            await ws_manager._send_to_target(msg)
+        else:
+            await ws_manager.broadcast(msg)
 
         return {"success": True}
     except HTTPException:
@@ -225,9 +222,12 @@ async def recv_messages(request: Request):
         except jwt.PyJWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        # Create message queue for user if it doesn't exist
-        if username not in ws_manager.message_queues:
-            ws_manager.message_queues[username] = asyncio.Queue()
+        # Ensure bounded message queue exists for user
+        try:
+            ws_manager._ensure_queue(username)  # type: ignore[attr-defined]
+        except Exception:
+            if username not in ws_manager.message_queues:
+                ws_manager.message_queues[username] = asyncio.Queue()
 
         # Wait for a message from the queue
         try:
@@ -263,28 +263,15 @@ async def recv_messages(request: Request):
 # Get default server address
 @app.get("/api/get_default_server")
 async def get_default_server():
-    default_server = load_server_config()
+    """Get default WebSocket server address from configuration."""
     return {
         "success": True,
-        "default_server_address": default_server
+        "default_server_address": config.DEFAULT_SERVER_ADDRESS
     }
 
 
-# Set default server address
-# @app.post("/api/admin/set_default_server")
-async def set_default_server(server_address: str = Query(..., description="Default server address")):
-    # Validate server address format
-    if not server_address.startswith("ws://") and not server_address.startswith("wss://"):
-        raise HTTPException(status_code=400, detail="Server address must start with ws:// or wss://")
-
-    if save_server_config(server_address):
-        return {
-            "success": True,
-            "message": "Default server address updated",
-            "new_server_address": server_address
-        }
-    else:
-        raise HTTPException(status_code=500, detail="Failed to save default server address")
+# Set default server address - Removed: Server address is now managed via config.py
+# This endpoint is no longer available as server configuration is centralized in config.py
 
 
 # Admin permission verification dependency
@@ -305,10 +292,32 @@ async def admin_required(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-# Get singleton instance of WebSocketManager (imported lazily to avoid circular import)
-from AloneChat.core.server.manager import WebSocketManager
+# Get singleton instance of UnifiedWebSocketManager (modern replacement for legacy WebSocketManager)
+from AloneChat.core.server.websocket_manager import UnifiedWebSocketManager
 
-ws_manager = WebSocketManager.get_instance()
+# Create a global instance for API routes to use
+_ws_manager_instance: Optional[UnifiedWebSocketManager] = None
+
+def get_ws_manager() -> UnifiedWebSocketManager:
+    """Get or create the global WebSocket manager instance."""
+    global _ws_manager_instance
+    if _ws_manager_instance is None:
+        _ws_manager_instance = UnifiedWebSocketManager()
+    return _ws_manager_instance
+
+# Legacy compatibility: ws_manager attribute access
+class _WSManagerProxy:
+    """Proxy class to provide legacy-style attribute access to UnifiedWebSocketManager."""
+    
+    def __getattr__(self, name: str) -> Any:
+        manager = get_ws_manager()
+        return getattr(manager, name)
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        manager = get_ws_manager()
+        setattr(manager, name, value)
+
+ws_manager = _WSManagerProxy()
 
 
 # noinspection PyUnresolvedReferences

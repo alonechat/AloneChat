@@ -1,6 +1,6 @@
 NOTICE
 
-AlneChat AloneChat
+AloneChat AloneChat
 Copyright 2025 The AloneChat team (@alonechat)
 
 This product will be used in software developed at
@@ -10,64 +10,79 @@ AloneChat includes third-party software components licensed under the following 
 
 
 1. websockets (>=15.0.1)
-   Copyright (c) 2013-2023 Aymeric Augustin and contributors.
-   Licensed under the MIT License.
-   Source: https://github.com/aaugustin/websockets
+    Copyright (c) 2013-2026 Aymeric Augustin and contributors.
+    Licensed under the MIT License.
+    Source: https://github.com/aaugustin/websockets
 
 2. FastAPI (>=0.95.0)
-   Copyright (c) 2018 Sebastián Ramírez
-   Licensed under the MIT License.
-   Source: https://github.com/tiangolo/fastapi
+    Copyright (c) 2018 Sebastián Ramírez
+    Licensed under the MIT License.
+    Source: https://github.com/tiangolo/fastapi
 
 3. Uvicorn (>=0.22.0)
-   Copyright (c) 2018-present Encode OSS Ltd.
-   Licensed under the BSD 3-Clause License.
-   Source: https://github.com/encode/uvicorn
+    Copyright (c) 2018-present Encode OSS Ltd.
+    Licensed under the BSD 3-Clause License.
+    Source: https://github.com/encode/uvicorn
 
 4. Websockets (>=15.0.1)
-   Copyright (c) 2013-2024 Aymeric Augustin and contributors
-   Licensed under the BSD 3-Clause License.
-   Source: https://github.com/python-websockets/websockets
+    Copyright (c) 2013-2024 Aymeric Augustin and contributors
+    Licensed under the BSD 3-Clause License.
+    Source: https://github.com/python-websockets/websockets
 
 5. Pydantic (>=2.0.0)
-   Copyright (c) 2022 Samuel Colvin and individual contributors
-   Licensed under the MIT License.
-   Source: https://github.com/pydantic/pydantic
+    Copyright (c) 2022 Samuel Colvin and individual contributors
+    Licensed under the MIT License.
+    Source: https://github.com/pydantic/pydantic
 
 6. PyJWT (>=2.4.0)
-   Copyright (c) 2015 José Padilla and contributors
-   Licensed under the MIT License.
-   Source: https://github.com/jpadilla/pyjwt
+    Copyright (c) 2015 José Padilla and contributors
+    Licensed under the MIT License.
+    Source: https://github.com/jpadilla/pyjwt
 
 7. bcrypt (>=4.0.1)
-   Copyright (c) 2023 Python Cryptographic Authority and contributors
-   Licensed under the Apache License 2.0.
-   Source: https://github.com/pyca/bcrypt
+    Copyright (c) 2023 Python Cryptographic Authority and contributors
+    Licensed under the Apache License 2.0.
+    Source: https://github.com/pyca/bcrypt
 
 8. psutil (>=5.9.0)
-   Copyright (c) 2009 Giampaolo Rodola'
-   Licensed under the BSD 3-Clause License.
-   Source: https://github.com/giampaolo/psutil
+    Copyright (c) 2009 Giampaolo Rodola'
+    Licensed under the BSD 3-Clause License.
+    Source: https://github.com/giampaolo/psutil
 
 9. aiohttp (>=3.8.4)
-   Copyright (c) 2012-2024 aio-libs contributors
-   Licensed under the Apache License 2.0.
-   Source: https://github.com/aio-libs/aiohttp
+    Copyright (c) 2012-2024 aio-libs contributors
+    Licensed under the Apache License 2.0.
+    Source: https://github.com/aio-libs/aiohttp
 
 10. windows-curses (>=2.3)
-   Copyright (c) 2018 Zephyr Project and contributors
-   Licensed under the same license as Python (PSF License).
-   Source: https://github.com/zephyrproject-rtos/windows-curses
+    Copyright (c) 2018 Zephyr Project and contributors
+    Licensed under the same license as Python (PSF License).
+    Source: https://github.com/zephyrproject-rtos/windows-curses
 
 11. PyInstaller
-   Copyright (c) 2005-2024 PyInstaller contributors
-   Licensed under the GPL v2 or later license with PyInstaller exception.
-   Source: https://github.com/pyinstaller/pyinstaller
+    Copyright (c) 2005-2024 PyInstaller contributors
+    Licensed under the GPL v2 or later license with PyInstaller exception.
+    Source: https://github.com/pyinstaller/pyinstaller
 
 12. requests
-   Copyright (c) 2019 Kenneth Reitz and contributors
-   Licensed under the Apache License 2.0.
-   Source: https://github.com/psf/requests
+    Copyright (c) 2019 Kenneth Reitz and contributors
+    Licensed under the Apache License 2.0.
+    Source: https://github.com/psf/requests
+
+13. sv_ttk
+    Copyright (c) 2021-2025 sv_ttk contributors
+    Licensed under the MIT License.
+    Source: https://github.com/rdbende/Sun-Valley-ttk-theme
+
+14. darkdetect
+    Copyright (c) 2019-2022 Alberto Sottile and contributors
+    Licensed under the BSD 3 Clause License.
+    Source: http://github.com/albertosottile/darkdetect
+
+15. pywinstyles
+    Copyright (c) 2023-2024 Akash Bora
+    Licensed under the Creative Commons Zero v1.0 Universal License.
+    Source: https://github.com/Akascape/py-window-styles
 
 ---
 

@@ -1,6 +1,6 @@
 import uvicorn
-from AloneChat.core.client.utils import DEFAULT_API_PORT
 
+from AloneChat.core.client.utils import DEFAULT_API_PORT
 from .routes_api import *
 
 

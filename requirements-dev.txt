@@ -1,5 +1,4 @@
-# includes requirements.txt:
-# -r requirements.txt
-pyinstaller
-requests
-pylint>=2.15.0
+# Development dependencies for AloneChat
+
+# Code quality
+pylint

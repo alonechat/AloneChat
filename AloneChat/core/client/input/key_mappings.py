@@ -3,8 +3,8 @@ Key code mappings and action definitions for input handling.
 Maps curses key codes to semantic actions.
 """
 
+import curses
 from enum import Enum, auto
-from typing import Optional
 
 
 class KeyCode:
@@ -88,6 +88,7 @@ def get_action_for_key(key: int) -> InputAction:
     Returns:
         Corresponding input action
     """
+    # noinspection PyUnreachableCode
     match key:
         # Submit/Enter
         case KeyCode.ENTER | KeyCode.ENTER_ALT | curses.KEY_ENTER:

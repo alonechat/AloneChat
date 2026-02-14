@@ -4,7 +4,7 @@ Handles all screen drawing and display operations.
 """
 
 import curses
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from .message_buffer import MessageBuffer
 
@@ -42,7 +42,8 @@ class CursesRenderer:
 
         self._update_dimensions()
 
-    def _init_color_pairs(self) -> None:
+    @staticmethod
+    def _init_color_pairs() -> None:
         """Initialize color pairs for different message types."""
         # Color pair definitions
         curses.init_pair(1, curses.COLOR_GREEN, -1)   # System messages
@@ -107,7 +108,8 @@ class CursesRenderer:
                 # Ignore errors for edge cases
                 pass
 
-    def _get_message_color(self, message: str) -> Optional[int]:
+    @staticmethod
+    def _get_message_color(message: str) -> Optional[int]:
         """
         Determine color pair for a message.
 
