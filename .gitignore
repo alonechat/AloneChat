@@ -212,6 +212,4 @@ __marimo__/
 # AloneChat/api/static/admin.html
 .DS_Store
 tools/*.exe
-logs/*.txt
-logs/gui_state.json
-logs/dev/*.log
+logs/

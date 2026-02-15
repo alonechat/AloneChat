@@ -102,7 +102,7 @@ def main():
                 enable_plugins=not args.no_plugins
             )
         elif args.command == 'api-only':
-            api.api(port=args.port, host=args.host)
+            api.api(port=args.port)
         else:
             raise ValueError(f'Unknown command: {args.command}')
     except KeyboardInterrupt:

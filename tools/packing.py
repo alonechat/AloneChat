@@ -42,7 +42,7 @@ def clean():
     """
 
     # Directories to remove
-    directories = ['build', '__pycache__']
+    directories = ['build', '__pycache__', 'logs']
 
     for directory in directories:
         if os.path.exists(directory):
