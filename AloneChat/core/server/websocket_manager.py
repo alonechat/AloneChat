@@ -742,7 +742,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         """
         Send a message to a specific user.
         """
-        result = await self._message_router.send_to_user(username, message)
+        result = await self._message_router.send_to_user(message, username)
         
         # Also put message in legacy queue for HTTP polling clients
         if hasattr(self, '_legacy_message_queues'):
