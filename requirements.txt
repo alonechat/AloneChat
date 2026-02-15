@@ -1,0 +1,21 @@
+# Web technologies & related
+aiohttp
+fastapi
+starlette
+pyjwt
+uvicorn
+websockets
+
+# Cryptography
+bcrypt
+
+# User interface
+
+windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
+
+# System utilities
+psutil
+
+# Qt UI
+PyQt6>=6.5.0
+qasync>=0.27.1
