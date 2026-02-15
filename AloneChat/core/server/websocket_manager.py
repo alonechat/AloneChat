@@ -28,6 +28,8 @@ Hook Execution Order:
 
 import asyncio
 import logging
+import re
+import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Callable, Dict, List, Optional, Set
 
@@ -46,6 +48,8 @@ from AloneChat.core.server.interfaces import (
 )
 from AloneChat.core.server.routing import MessageRouter, BroadcastServiceImpl
 from AloneChat.core.server.session import SessionManager
+from AloneChat.core.server.social_store import SocialStore
+from AloneChat.core.server import presence
 from AloneChat.core.server.transport import (
     WebSocketConnection,
     TransportFactory
@@ -53,6 +57,8 @@ from AloneChat.core.server.transport import (
 from AloneChat.plugins import PluginManager, create_plugin_manager
 
 logger = logging.getLogger(__name__)
+
+_DM_HEADER_RE = re.compile(r"^\[\[DM\s+to=(?P<to>[A-Za-z0-9_.-]+)\]\]\s*\n?", re.IGNORECASE)
 
 
 class ConnectionContext:
@@ -287,6 +293,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         
         self._message_router = MessageRouter(self._connection_registry)
         self._broadcast_service = BroadcastServiceImpl(self._message_router)
+
+        self._social_store = SocialStore()
         
         self._command_processor = command_processor or create_default_processor()
         
@@ -313,6 +321,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             self._connection_registry,
             on_disconnect=self._handle_disconnect
         )
+        self._presence_task = None  # asyncio.Task
         
         self._on_user_connect = on_user_connect
         self._on_user_disconnect = on_user_disconnect
@@ -322,7 +331,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         self._server = None
         self._running = False
         
-        self._connection_contexts: Dict[str, ConnectionContext] = {}
+        self._connection_contexts: Dict[str, dict[str, ConnectionContext]] = {}  # user -> conn_id -> ctx
         
         logger.info("UnifiedWebSocketManager initialized")
     
@@ -376,6 +385,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         self._running = True
         
         await self._health_monitor.start()
+        # Presence monitor: prune stale heartbeats (multi-device)
+        self._presence_task = asyncio.create_task(self._presence_monitor_loop())
         
         self._server = await websockets.serve(
             self._handle_connection,
@@ -390,6 +401,14 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         self._running = False
         
         await self._health_monitor.stop()
+        if self._presence_task:
+            self._presence_task.cancel()
+            try:
+                await self._presence_task
+            except asyncio.CancelledError:
+                pass
+            self._presence_task = None
+
         
         for user_id, conn in list(self._connection_registry.get_all_connections().items()):
             try:
@@ -434,18 +453,39 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             
             username = auth_result.username
             
-            if self._connection_registry.is_connected(username):
-                await self._send_duplicate_error(websocket, username)
-                return
-            
             connection_wrapper = WebSocketConnection(websocket, username)
-            
+            # identifiers for multi-device online
+            connection_wrapper.conn_id = uuid.uuid4().hex  # type: ignore[attr-defined]
+            connection_wrapper.device_id = uuid.uuid4().hex  # type: ignore[attr-defined]
+            if hasattr(connection_wrapper, 'touch'):
+                connection_wrapper.touch()
+
             self._session_manager.create_session(username)
             
             self._connection_registry.register(username, connection_wrapper)
+            # presence register
+            evict_conn_id = presence.register(
+                username,
+                getattr(connection_wrapper, 'conn_id', uuid.uuid4().hex),
+                getattr(connection_wrapper, 'device_id', uuid.uuid4().hex)
+            )
+            # If presence module evicted an old connection, close it (kick oldest)
+            if evict_conn_id:
+                old_ctx = self._connection_contexts.get(username, {}).pop(evict_conn_id, None)
+                try:
+                    self._connection_registry.unregister_connection(username, evict_conn_id)  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+                if old_ctx and hasattr(old_ctx.connection, 'close'):
+                    try:
+                        await old_ctx.connection.close(4000, 'Kicked: too many devices')
+                    except Exception:
+                        pass
+
             
             context = ConnectionContext(username, connection_wrapper, self)
-            self._connection_contexts[username] = context
+            cid = getattr(connection_wrapper, 'conn_id', uuid.uuid4().hex)
+            self._connection_contexts.setdefault(username, {})[cid] = context
             
             hook_ctx.phase = HookPhase.POST_CONNECT
             hook_ctx.user_id = username
@@ -469,8 +509,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         except Exception as e:
             logger.exception("Error handling connection: %s", e)
         finally:
-            if username:
-                await self._cleanup_connection(username)
+            if username and connection_wrapper:
+                await self._cleanup_connection(username, getattr(connection_wrapper, 'conn_id', None))
     
     async def _message_loop(
         self,
@@ -501,6 +541,14 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     async def _handle_heartbeat(self, context: ConnectionContext, message: Message) -> None:
         """Handle heartbeat message."""
         self._session_manager.update_activity(context.user_id)
+        try:
+            cid = getattr(context.connection, 'conn_id', None)
+            if cid:
+                presence.touch(context.user_id, cid)
+            if hasattr(context.connection, 'touch'):
+                context.connection.touch()
+        except Exception:
+            pass
         await self._broadcast_service.send_pong(context.user_id)
     
     async def _process_message(self, context: ConnectionContext, message: Message) -> None:
@@ -517,7 +565,12 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         
         if hook_ctx.message:
             message = hook_ctx.message
-        
+
+        # Detect DM header ([[DM to=USER]]) and set target
+        m = _DM_HEADER_RE.match(message.content or "")
+        if m:
+            message.target = m.group('to')
+
         result = await self._processing_pipeline.process(
             content=message.content,
             sender=context.user_id,
@@ -528,33 +581,50 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         hook_ctx.phase = HookPhase.POST_MESSAGE
         hook_ctx.metadata['processing_result'] = result
         hook_ctx = await self._execute_hooks(HookPhase.POST_MESSAGE, hook_ctx)
-        
+
         if result.modified or result.content != message.content:
             response_type = result.message_type or MessageType.TEXT
             response_target = result.response_target if result.response_target else message.target
-            
+        
             response = Message(
                 response_type,
                 context.user_id,
                 result.content,
                 target=response_target
             )
+        
+            # Always echo back to sender (keep existing UX)
             await context.send(response)
+        
+            # Route message to target or broadcast for TEXT messages
+            if response_type == MessageType.TEXT:
+                if message.target:
+                    # Friend gate for DM
+                    if not self._social_store.are_friends(context.user_id, message.target):
+                        deny = Message(
+                            MessageType.TEXT,
+                            "SERVER",
+                            f"Cannot DM {message.target}: not friends yet.",
+                            target=context.user_id
+                        )
+                        await context.send(deny)
+                        return
+                    await self._send_to_target(response)
+                else:
+                    hook_ctx.phase = HookPhase.PRE_BROADCAST
+                    hook_ctx = await self._execute_hooks(HookPhase.PRE_BROADCAST, hook_ctx)
+        
+                    await self._broadcast_service.broadcast_text(
+                        result.content,
+                        sender=context.user_id,
+                        exclude=[context.user_id]
+                    )
+        
+                    hook_ctx.phase = HookPhase.POST_BROADCAST
+                    hook_ctx = await self._execute_hooks(HookPhase.POST_BROADCAST, hook_ctx)
+        
             
-            if not message.target and response_type == MessageType.TEXT:
-                hook_ctx.phase = HookPhase.PRE_BROADCAST
-                hook_ctx = await self._execute_hooks(HookPhase.PRE_BROADCAST, hook_ctx)
-                
-                await self._broadcast_service.broadcast_text(
-                    result.content,
-                    sender=context.user_id,
-                    exclude=[context.user_id]
-                )
-                
-                hook_ctx.phase = HookPhase.POST_BROADCAST
-                hook_ctx = await self._execute_hooks(HookPhase.POST_BROADCAST, hook_ctx)
-    
-    async def _cleanup_connection(self, username: str) -> None:
+    async def _cleanup_connection(self, username: str, conn_id: str | None = None) -> None:
         """
         Clean up after a connection closes.
         """
@@ -564,21 +634,36 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         )
         hook_ctx = await self._execute_hooks(HookPhase.PRE_DISCONNECT, hook_ctx)
         
-        self._connection_registry.unregister(username)
+        if conn_id and hasattr(self._connection_registry, 'unregister_connection'):
+            self._connection_registry.unregister_connection(username, conn_id)  # type: ignore[attr-defined]
+        else:
+            self._connection_registry.unregister(username)
+        if conn_id:
+            presence.unregister(username, conn_id)
         
-        self._session_manager.end_session(username)
+        if not self._connection_registry.is_connected(username):
+            self._session_manager.end_session(username)
+            self._message_router.remove_user_queue(username)
+        # remove only this context
+        if conn_id:
+            self._connection_contexts.get(username, {}).pop(conn_id, None)
+            if not self._connection_contexts.get(username):
+                self._connection_contexts.pop(username, None)
+        else:
+            self._connection_contexts.pop(username, None)
         
-        self._message_router.remove_user_queue(username)
-        
-        self._connection_contexts.pop(username, None)
-        
-        if self._on_user_disconnect:
-            try:
-                self._on_user_disconnect(username)
-            except Exception as e:
-                logger.exception("Error in user disconnect callback: %s", e)
-        
-        await self._broadcast_service.notify_user_left(username)
+
+        # Only treat as fully offline when no active presence remains
+        is_fully_offline = (not presence.is_online(username)) and (not self._connection_registry.is_connected(username))
+
+        if is_fully_offline:
+            if self._on_user_disconnect:
+                try:
+                    self._on_user_disconnect(username)
+                except Exception as e:
+                    logger.exception("Error in user disconnect callback: %s", e)
+
+            await self._broadcast_service.notify_user_left(username)
         
         hook_ctx.phase = HookPhase.POST_DISCONNECT
         hook_ctx = await self._execute_hooks(HookPhase.POST_DISCONNECT, hook_ctx)
@@ -588,6 +673,24 @@ class UnifiedWebSocketManager(PluginAwareComponent):
     def _handle_disconnect(self, user_id: str) -> None:
         """Handle disconnect detected by health monitor."""
         asyncio.create_task(self._cleanup_connection(user_id))
+
+    async def _presence_monitor_loop(self) -> None:
+        """Prune stale heartbeat connections and mark users offline."""
+        while self._running:
+            try:
+                removed = presence.prune_stale()
+                # Cleanup removed connections (best-effort)
+                for username, conn_id in removed:
+                    try:
+                        await self._cleanup_connection(username, conn_id)
+                    except Exception:
+                        pass
+                await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.exception("Presence monitor error: %s", e)
+                await asyncio.sleep(5)
 
     # noinspection PyMethodMayBeStatic
     async def _send_auth_error(

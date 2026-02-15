@@ -19,19 +19,20 @@ import os
 import subprocess
 import sys
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, ttk
 from typing import Optional
 
 # noinspection PyUnusedImports
 import darkdetect
 import sv_ttk
 
-from AloneChat.api.client import AloneChatAPIClient, close_session
+from AloneChat.api.client import AloneChatAPIClient
 from AloneChat.core.client.client_base import Client
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 from .components import WinUI3MessageCard
 from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
+from .controllers.friends_view import FriendsView
 from .controllers.search_dialog import SearchDialog
 from .models.data import MessageItem, ReplyContext
 from .services import ConversationManager, SearchService, PersistenceService, AsyncService
@@ -157,14 +158,33 @@ class GUIClient(Client):
             default_api_port=self._api_port
         )
         self._auth_view.show()
-    
+
+
     def _show_chat_view(self):
-        """Show chat view."""
+        """Show main UI with Chats / Friends / Moments."""
         self._clear_view()
         self._running = True
-        
+
+        # Main tabs
+        self._main_tabs = ttk.Notebook(self.root)
+
+        # Chats tab
+        self._tab_chats = ttk.Frame(self._main_tabs)
+        self._main_tabs.add(self._tab_chats, text="Chats")
+
+        # Friends tab
+        self._tab_friends = ttk.Frame(self._main_tabs)
+        self._main_tabs.add(self._tab_friends, text="Friends")
+
+        # Moments tab (placeholder)
+        self._tab_moments = ttk.Frame(self._main_tabs)
+        self._main_tabs.add(self._tab_moments, text="Moments")
+
+        self._main_tabs.pack(fill="both", expand=True)
+
+        # Chats UI (keep existing style)
         self._chat_view = ChatView(
-            self.root,
+            self._tab_chats,
             username=self._username,
             conversation_manager=self._conv_manager,
             on_send=self._handle_send,
@@ -178,22 +198,29 @@ class GUIClient(Client):
             on_logout=self._handle_logout
         )
         self._chat_view.show()
-        
-        # Bind search shortcut
-        self.root.bind('<Control-f>', lambda e: self._open_search())
-        
-        # Start polling
-        self._poll_future = self._async_service.run_async(self._poll_messages())
-        
-        # Show onboarding if first time
-        self._show_onboarding()
-        
-        # Render conversation
-        self._chat_view.render_conversation()
+
+        # Friends UI (separate from chats)
+        self._friends_view = FriendsView(
+            self._tab_friends,
+            username=self._username,
+            api_client=self._api_client,
+            run_async=self._async_service.run_async,
+            on_open_dm=self._open_dm_from_friends,
+        )
+        self._friends_view.show()
+        self._friends_view.refresh_all()
+
+        ttk.Label(self._tab_moments, text="(Moments - coming soon)").pack(padx=20, pady=20, anchor="nw")
+
+        # Start background loops
+        self._async_service.run_async(self._poll_messages())
+        self._async_service.run_async(self._heartbeat_loop())
+
     
+
     def _show_onboarding(self):
         """Show one-time onboarding tips."""
-        state = self._persistence.load_state_sync()
+        state = self._persistence.load_state()
         if not state.get("onboarding_shown", False):
             self._add_system_message(
                 "Tips:\n"
@@ -203,7 +230,7 @@ class GUIClient(Client):
                 "• Need help? Contact to us with tonytao2022 @outlook.com | zhang.chenyun @outlook.com"
             )
             state["onboarding_shown"] = True
-            self._persistence.save_state_sync(state)
+            self._persistence.save_state(state)
     
     # ==================== Auth Handlers ====================
     
@@ -309,7 +336,11 @@ class GUIClient(Client):
                            card: Optional[WinUI3MessageCard]):
         """Send message via API."""
         try:
-            response = await self._api_client.send_message(payload)
+            # ConversationManager uses active_cid ("global" or username for DM).
+            # For DM we keep the legacy DM header in payload and also pass target so the server routes privately.
+            active_cid = getattr(self._conv_manager, "active_cid", "global")
+            target = active_cid if active_cid != "global" else None
+            response = await self._api_client.send_message(payload, target=target)
             
             if response.get("success"):
                 item.status = "✓"
@@ -340,19 +371,26 @@ class GUIClient(Client):
         self._async_service.run_async(self._send_message(payload, item, card))
     
     def _handle_new_conversation(self):
-        """Handle new conversation request."""
-        to_user = simpledialog.askstring("New Conversation", "Enter username to chat with:")
-        if not to_user:
-            return
-        to_user = to_user.strip()
-        if not to_user:
-            return
-        
-        self._conv_manager.create_conversation(to_user, name=to_user)
-        self._conv_manager.switch_conversation(to_user)
-        self._chat_view.refresh_conversation_list()
-        self._chat_view.render_conversation()
-    
+        """Handle new conversation request.
+
+        Direct username DM creation is disabled. Use Friends tab to add friends first.
+        """
+        try:
+            messagebox.showinfo(
+                "New Conversation Disabled",
+                "Please add the user as a friend first (Friends → Search → Send Request).\nThen open the chat by double-clicking the friend."
+            )
+        except Exception:
+            pass
+
+        # Jump to Friends tab for convenience
+        try:
+            if hasattr(self, "_main_tabs") and self._main_tabs:
+                self._main_tabs.select(1)  # Friends
+        except Exception:
+            pass
+        return
+
     def _handle_switch_conversation(self, cid: str):
         """Handle conversation switch."""
         self._conv_manager.switch_conversation(cid)
@@ -375,32 +413,24 @@ class GUIClient(Client):
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        self._async_service.run_async(self._do_export_md(conv))
-
-    async def _do_export_md(self, conv):
-        """Perform Markdown export asynchronously."""
-        path = await self._persistence.export_conversation_md(
+        path = self._persistence.export_conversation_md(
             self._username, conv.cid, conv.name,
             [item.__dict__ for item in conv.items]
         )
-        if path and self._ui_alive():
-            self.root.after(0, self._open_logs_folder)
-
+        if path:
+            self._open_logs_folder()
+    
     def _handle_export_json(self):
         """Export current conversation to JSON."""
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        self._async_service.run_async(self._do_export_json(conv))
-
-    async def _do_export_json(self, conv):
-        """Perform JSON export asynchronously."""
-        path = await self._persistence.export_conversation_json(
+        path = self._persistence.export_conversation_json(
             self._username, conv.cid,
             [item.__dict__ for item in conv.items]
         )
-        if path and self._ui_alive():
-            self.root.after(0, self._open_logs_folder)
+        if path:
+            self._open_logs_folder()
     
     def _handle_export_logs(self):
         """Open logs folder."""
@@ -470,15 +500,40 @@ class GUIClient(Client):
             except Exception:
                 await asyncio.sleep(0.5)
     
+    async def _heartbeat_loop(self):
+        """Send heartbeat periodically so server can compute online users."""
+        while self._running:
+            try:
+                await self._api_client.heartbeat()
+            except Exception:
+                pass
+            await asyncio.sleep(10)
+
+    def _open_dm_from_friends(self, friend_username: str):
+        """Create/switch to a DM conversation and jump to Chats tab."""
+        if not friend_username:
+            return
+        self._conv_manager.create_conversation(friend_username, name=friend_username)
+        self._conv_manager.switch_conversation(friend_username)
+        if hasattr(self, "_chat_view") and self._chat_view:
+            self._chat_view.refresh_conversation_list()
+            # ChatView public API
+            self._chat_view.render_conversation()
+        if hasattr(self, "_main_tabs") and self._main_tabs:
+            try:
+                # Chats tab is index 0
+                self._main_tabs.select(0)
+            except Exception:
+                pass
+
+
     def _add_message_to_ui(self, item: MessageItem):
         """Add a message to the UI."""
         if not self._chat_view:
             return
         card = self._chat_view.add_message_card(item)
         self._search_service.set_message_cards(self._chat_view.get_message_cards())
-        self._async_service.run_async(
-            self._persistence.log_chat(self._username, item.sender, item.content)
-        )
+        self._persistence.log_chat(self._username, item.sender, item.content)
     
     def _add_system_message(self, content: str):
         """Add a system message."""
@@ -486,9 +541,7 @@ class GUIClient(Client):
         self._conv_manager.add_message(self._conv_manager.active_cid, item, is_active=True)
         if self._chat_view:
             self._chat_view.add_message_card(item)
-        self._async_service.run_async(
-            self._persistence.log_chat(self._username, "System", content)
-        )
+        self._persistence.log_chat(self._username, "System", content)
     
     # ==================== Search ====================
     
@@ -541,13 +594,6 @@ class GUIClient(Client):
         # Cancel poll future
         if self._poll_future and not self._poll_future.done():
             self._poll_future.cancel()
-        
-        # Flush log buffers before stopping async service
-        self._persistence.flush_buffers_sync()
-        
-        # Close shared aiohttp session
-        if self._async_service.is_running():
-            self._async_service.run_async(close_session())
         
         # Stop async service
         self._async_service.stop()

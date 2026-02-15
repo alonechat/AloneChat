@@ -3,6 +3,7 @@ Async service for handling API calls and event loop.
 """
 import asyncio
 import threading
+import time
 from typing import Optional
 
 
@@ -13,26 +14,24 @@ class AsyncService:
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._running = False
-        self._ready = threading.Event()
     
     def start(self) -> None:
         """Start the async event loop in a background thread."""
         if self._running:
             return
         
-        self._ready.clear()
-        
         def run_loop():
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            self._ready.set()
             self._loop.run_forever()
         
         self._thread = threading.Thread(target=run_loop, daemon=False)
         self._thread.start()
         self._running = True
         
-        self._ready.wait()
+        # Wait for loop to be ready
+        while self._loop is None:
+            time.sleep(0.01)
     
     def stop(self, timeout: float = 2.0) -> None:
         """Stop the async event loop gracefully."""
@@ -41,10 +40,12 @@ class AsyncService:
         
         try:
             if self._loop:
+                # Cancel all tasks
                 fut = asyncio.run_coroutine_threadsafe(self._shutdown_loop(), self._loop)
                 try:
                     fut.result(timeout=timeout)
                 except Exception:
+                    # Fallback: force stop
                     try:
                         self._loop.call_soon_threadsafe(self._loop.stop)
                     except Exception:
@@ -52,6 +53,7 @@ class AsyncService:
         except Exception:
             pass
         
+        # Join thread
         try:
             if self._thread and self._thread.is_alive():
                 self._thread.join(timeout=timeout)
@@ -61,7 +63,6 @@ class AsyncService:
         self._running = False
         self._loop = None
         self._thread = None
-        self._ready.clear()
     
     async def _shutdown_loop(self) -> None:
         """Cancel all tasks and stop the loop."""

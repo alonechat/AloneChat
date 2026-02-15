@@ -1,11 +1,8 @@
-"""
+"""\
 High-level API client for AloneChat application.
 Provides a clean interface for interacting with the AloneChat API endpoints.
-Uses singleton pattern for aiohttp.ClientSession to enable connection pooling.
 """
 
-import asyncio
-import weakref
 from typing import Optional, Dict, Any
 
 import aiohttp
@@ -13,64 +10,9 @@ import aiohttp
 from AloneChat.core.client.utils import DEFAULT_API_PORT
 
 
-class SessionManager:
-    """
-    Singleton manager for aiohttp.ClientSession.
-    
-    Provides a shared session across all API client instances,
-    enabling connection pooling and reducing overhead.
-    """
-    
-    _instance: Optional['SessionManager'] = None
-    _session: Optional[aiohttp.ClientSession] = None
-    _lock = asyncio.Lock()
-    
-    def __new__(cls) -> 'SessionManager':
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-    
-    async def get_session(self) -> aiohttp.ClientSession:
-        """Get or create the shared aiohttp session."""
-        if self._session is None or self._session.closed:
-            async with self._lock:
-                if self._session is None or self._session.closed:
-                    connector = aiohttp.TCPConnector(
-                        limit=0,
-                        limit_per_host=0,
-                        ttl_dns_cache=300,
-                        enable_cleanup_closed=True
-                    )
-                    timeout = aiohttp.ClientTimeout(total=60, connect=10)
-                    self._session = aiohttp.ClientSession(
-                        connector=connector,
-                        timeout=timeout,
-                        trust_env=False
-                    )
-        return self._session
-    
-    async def close(self) -> None:
-        """Close the shared session."""
-        async with self._lock:
-            if self._session and not self._session.closed:
-                await self._session.close()
-                self._session = None
-    
-    @property
-    def is_closed(self) -> bool:
-        """Check if the session is closed."""
-        return self._session is None or self._session.closed
-
-
-_session_manager = SessionManager()
-
-
 class AloneChatAPIClient:
     """
     High-level API client for AloneChat application.
-    
-    Uses a shared aiohttp.ClientSession for all requests,
-    enabling connection pooling and reducing TCP handshake overhead.
     """
 
     def __init__(self, host: str = "localhost", port: int = DEFAULT_API_PORT):
@@ -86,10 +28,6 @@ class AloneChatAPIClient:
         self.base_url = f"http://{host}:{port}"
         self.token: Optional[str] = None
         self.username: Optional[str] = None
-
-    async def _get_session(self) -> aiohttp.ClientSession:
-        """Get the shared aiohttp session."""
-        return await _session_manager.get_session()
 
     async def _make_request(
         self, 
@@ -113,24 +51,27 @@ class AloneChatAPIClient:
         try:
             url = f"{self.base_url}{endpoint}"
             
+            # Default headers
             default_headers = {}
             if self.token:
                 default_headers["Authorization"] = f"Bearer {self.token}"
             
+            # Merge headers
             if headers:
                 default_headers.update(headers)
             
-            session = await self._get_session()
-            async with session.request(
-                method=method, 
-                url=url, 
-                json=data, 
-                headers=default_headers
-            ) as response:
-                try:
-                    return await response.json()
-                except Exception:
-                    return {"success": False, "message": f"Request failed with status {response.status}"}
+            # Create a new session for each request
+            async with aiohttp.ClientSession() as session:
+                async with session.request(
+                    method=method, 
+                    url=url, 
+                    json=data, 
+                    headers=default_headers
+                ) as response:
+                    try:
+                        return await response.json()
+                    except Exception:
+                        return {"success": False, "message": f"Request failed with status {response.status}"}
         except Exception as e:
             return {"success": False, "message": f"Request failed: {str(e)}"}
 
@@ -216,6 +157,9 @@ class AloneChatAPIClient:
         if not use_token:
             raise ValueError("No authentication token available")
         
+        # Extract server address from base URL
+        # Assuming API and WebSocket servers are on the same host
+        # but WebSocket uses different port (typically base port - 1)
         ws_port = self.port - 1
         return f"ws://{self.host}:{ws_port}?token={use_token}"
 
@@ -251,16 +195,18 @@ class AloneChatAPIClient:
         try:
             url = f"{self.base_url}/recv"
             
+            # Default headers
             headers = {}
             if self.token:
                 headers["Authorization"] = f"Bearer {self.token}"
             
-            session = await self._get_session()
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    return {"success": False, "error": f"Error: {response.status}"}
+            # Create a new session for each request
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    else:
+                        return {"success": False, "error": f"Error: {response.status}"}
         except Exception as e:
             return {"success": False, "error": f"Error: {str(e)}"}
 
@@ -273,15 +219,61 @@ class AloneChatAPIClient:
         """
         return self.token is not None
 
+    # ==================== Social / Presence APIs (GUI) ====================
+    # NOTE: _make_request signature is: (endpoint, method='GET', data=None, headers=None)
+    # Keep all helpers consistent with that.
 
-async def close_session() -> None:
-    """
-    Close the shared aiohttp session.
-    
-    Should be called when the application shuts down
-    to properly release resources.
-    """
-    await _session_manager.close()
+    async def users_search(self, keyword: str = "") -> Dict[str, Any]:
+        return await self._make_request(
+            f"/api/users/search?keyword={keyword}",
+            method="GET",
+        )
+
+    async def users_presence(self) -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/users/presence",
+            method="GET",
+        )
+
+    async def friends_list(self) -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/friends/list",
+            method="GET",
+        )
+
+    async def friend_requests_incoming(self) -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/friends/requests/incoming",
+            method="GET",
+        )
+
+    async def friend_requests_sent(self) -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/friends/requests/sent",
+            method="GET",
+        )
+
+    async def send_friend_request(self, to: str, message: str = "") -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/friends/request",
+            method="POST",
+            data={"to": to, "message": message},
+        )
+
+    async def respond_friend_request(self, from_user: str, accept: bool) -> Dict[str, Any]:
+        action = "accept" if accept else "reject"
+        return await self._make_request(
+            "/api/friends/respond",
+            method="POST",
+            data={"from": from_user, "action": action},
+        )
+
+    async def heartbeat(self) -> Dict[str, Any]:
+        return await self._make_request(
+            "/api/heartbeat",
+            method="POST",
+            data={},
+        )
 
 
-__all__ = ["AloneChatAPIClient", "close_session"]
+__all__ = ["AloneChatAPIClient"]

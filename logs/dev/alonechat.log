@@ -1,0 +1,43 @@
+2026-02-15 20:41:08 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
+2026-02-15 20:41:08 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
+2026-02-15 20:41:08 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
+2026-02-15 20:41:08 - __main__ - INFO - [__main__.py:81 - main] - Command: client
+2026-02-15 20:41:08 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-15 20:41:30 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
+2026-02-15 20:41:30 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
+2026-02-15 20:41:30 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
+2026-02-15 20:41:30 - __main__ - INFO - [__main__.py:81 - main] - Command: server
+2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:30 - _reset_user_statuses] - All user credentials saved. All statuses reset to 'offline'.
+2026-02-15 20:41:30 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: help
+2026-02-15 20:41:30 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: echo
+2026-02-15 20:41:30 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
+2026-02-15 20:41:30 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
+2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
+2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
+2026-02-15 20:41:30 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
+2026-02-15 20:41:30 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
+2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
+2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
+2026-02-15 20:41:30 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:336 - __init__] - UnifiedWebSocketManager initialized
+2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:128 - server] - HTTP API server starting on http://0.0.0.0:8766
+2026-02-15 20:41:30 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-15 20:41:30 - AloneChat.core.server.transport - INFO - [__init__.py:242 - start] - Connection health monitor started
+2026-02-15 20:41:30 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-15 20:41:30 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:397 - start] - WebSocket server started on ws://0.0.0.0:8765
+2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:103 - start_websocket_server] - WebSocket server running on ws://0.0.0.0:8765
+2026-02-15 20:41:35 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: help
+2026-02-15 20:41:35 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: echo
+2026-02-15 20:41:35 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
+2026-02-15 20:41:35 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
+2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
+2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
+2026-02-15 20:41:35 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
+2026-02-15 20:41:35 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
+2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
+2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
+2026-02-15 20:41:35 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:336 - __init__] - UnifiedWebSocketManager initialized
+2026-02-15 20:41:44 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
+2026-02-15 20:41:44 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
+2026-02-15 20:41:44 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
+2026-02-15 20:41:44 - __main__ - INFO - [__main__.py:81 - main] - Command: client
+2026-02-15 20:41:44 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor

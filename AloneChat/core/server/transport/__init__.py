@@ -7,6 +7,8 @@ handles transport-specific details.
 
 import asyncio
 import logging
+import time
+import uuid
 from typing import Dict, Optional, Set, Callable
 
 from websockets.asyncio.server import ServerConnection
@@ -24,7 +26,7 @@ class WebSocketConnection:
     connection state.
     """
 
-    def __init__(self, websocket: ServerConnection, user_id: str):
+    def __init__(self, websocket: ServerConnection, user_id: str, device_id: str | None = None):
         """
         Initialize WebSocket connection wrapper.
 
@@ -35,6 +37,9 @@ class WebSocketConnection:
         self._websocket = websocket
         self._user_id = user_id
         self._closed = False
+        self.conn_id: str = uuid.uuid4().hex
+        self.device_id: str = device_id or uuid.uuid4().hex
+        self.last_heartbeat: float = time.time()
 
     @property
     def user_id(self) -> str:
@@ -81,6 +86,10 @@ class WebSocketConnection:
             except Exception as e:
                 logger.debug("Error closing connection for %s: %s", self._user_id, e)
     
+    def touch(self) -> None:
+        """Update last heartbeat time."""
+        self.last_heartbeat = time.time()
+
     def is_open(self) -> bool:
         """Check if connection is open."""
         if self._closed:
@@ -103,40 +112,62 @@ class WebSocketConnectionRegistry(ConnectionRegistry):
     
     def __init__(self):
         """Initialize connection registry."""
-        self._connections: Dict[str, WebSocketConnection] = {}
-        self._user_to_connection: Dict[str, WebSocketConnection] = {}
+        # user -> conn_id -> connection
+        self._connections: Dict[str, Dict[str, WebSocketConnection]] = {}
         self._lock = asyncio.Lock()
     
     def register(self, user_id: str, connection: WebSocketConnection) -> None:
         """
-        Register a new connection.
-        
-        Args:
-            user_id: User identifier
-            connection: WebSocket connection wrapper
+        Register a new connection (multi-device).
+        Keeps up to 3 connections per user; evicts the stalest if needed.
         """
-        self._connections[user_id] = connection
-        self._user_to_connection[user_id] = connection
-        logger.debug("Registered connection for user %s", user_id)
+        conns = self._connections.setdefault(user_id, {})
+        conns[connection.conn_id] = connection
+        # enforce max 3
+        if len(conns) > 3:
+            items = list(conns.values())
+            items.sort(key=lambda c: (c.last_heartbeat, c.conn_id))
+            evict = items[0]
+            if evict.conn_id != connection.conn_id:
+                conns.pop(evict.conn_id, None)
+                try:
+                    # best-effort close
+                    asyncio.create_task(evict.close())
+                except Exception:
+                    pass
+        logger.debug("Registered connection for user %s (%s)", user_id, connection.conn_id)
     
+    def unregister_connection(self, user_id: str, conn_id: str) -> Optional[WebSocketConnection]:
+        """Unregister a specific connection."""
+        conns = self._connections.get(user_id)
+        if not conns:
+            return None
+        c = conns.pop(conn_id, None)
+        if not conns:
+            self._connections.pop(user_id, None)
+        return c
+
     def unregister(self, user_id: str) -> Optional[WebSocketConnection]:
+        """Unregister ALL connections for a user.
+
+        Returns the most-recent connection (if any) for compatibility.
         """
-        Unregister a connection.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            The removed connection or None
-        """
-        connection = self._connections.pop(user_id, None)
-        self._user_to_connection.pop(user_id, None)
-        
-        if connection:
-            logger.debug("Unregistered connection for user %s", user_id)
-        
-        return connection
-    
+        conns = self._connections.pop(user_id, None)
+        if not conns:
+            return None
+        # best-effort close all
+        for c in list(conns.values()):
+            try:
+                asyncio.create_task(c.close())
+            except Exception:
+                pass
+        # return one connection object for backward compatibility
+        return next(iter(conns.values()), None)
+
+    def get_connections(self, user_id: str) -> list[WebSocketConnection]:
+        conns = self._connections.get(user_id) or {}
+        return list(conns.values())
+
     def get_connection(self, user_id: str) -> Optional[WebSocketConnection]:
         """
         Get connection for a user.
@@ -147,7 +178,8 @@ class WebSocketConnectionRegistry(ConnectionRegistry):
         Returns:
             WebSocketConnection or None
         """
-        return self._connections.get(user_id)
+        conns = self._connections.get(user_id) or {}
+        return next(iter(conns.values()), None)
     
     def get_all_connections(self) -> Dict[str, WebSocketConnection]:
         """
@@ -156,35 +188,24 @@ class WebSocketConnectionRegistry(ConnectionRegistry):
         Returns:
             Dictionary mapping user IDs to connections
         """
-        return self._connections.copy()
+        out: Dict[str, WebSocketConnection] = {}
+        for user, conns in self._connections.items():
+            for cid, c in conns.items():
+                out[f"{user}#{cid}"] = c
+        return out
     
     def is_connected(self, user_id: str) -> bool:
-        """
-        Check if user is connected.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            True if user has an active connection
-        """
-        connection = self._connections.get(user_id)
-        return connection is not None and connection.is_open()
-    
-    def get_all_clients(self) -> Set[ServerConnection]:
-        """
-        Get all raw WebSocket clients.
+        """True if user has at least one open connection."""
+        conns = self._connections.get(user_id) or {}
+        return any(c.is_open() for c in conns.values())
 
-        Returns:
-            Set of ServerConnection objects
-        """
-        return {
-            conn.raw_websocket for conn in self._connections.values()
-        }
-    
-    def __len__(self) -> int:
-        """Return number of registered connections."""
-        return len(self._connections)
+    def get_all_clients(self) -> Set[ServerConnection]:
+        """Get all raw WebSocket clients across all connections."""
+        out: Set[ServerConnection] = set()
+        for conns in self._connections.values():
+            for c in conns.values():
+                out.add(c.raw_websocket)
+        return out
 
 
 class ConnectionHealthMonitor:

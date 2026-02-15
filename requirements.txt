@@ -1,5 +1,4 @@
 # Web technologies & related
-aiofiles
 aiohttp
 fastapi
 starlette

@@ -57,6 +57,9 @@ class MessageRouter:
         self._queue_size = message_queue_size
         self._pre_send_hooks: List[Callable[[Message, str], Optional[Message]]] = []
         self._post_send_hooks: List[Callable[[Message, str, DeliveryResult], None]] = []
+        # Optional queue manager (older canary variants referenced this).
+        # We keep it as None unless explicitly injected.
+        self._queue_manager = None
     
     def register_pre_send_hook(
         self,
@@ -82,127 +85,85 @@ class MessageRouter:
         """
         self._post_send_hooks.append(hook)
     
-    async def send_to_user(
-        self,
-        user_id: str,
-        message: Message,
-        skip_hooks: bool = False
-    ) -> DeliveryResult:
-        """
-        Send a message to a specific user.
-        
-        Args:
-            user_id: Target user ID
-            message: Message to send
-            skip_hooks: Whether to skip pre-send hooks
-            
-        Returns:
-            DeliveryResult indicating status
-        """
-        # Apply pre-send hooks
-        if not skip_hooks:
-            for hook in self._pre_send_hooks:
-                try:
-                    modified = hook(message, user_id)
-                    if modified is not None:
-                        message = modified
-                except Exception as e:
-                    logger.exception("Error in pre-send hook: %s", e)
-        
-        # Try to send via WebSocket
-        connection = self._registry.get_connection(user_id)
-        if connection and connection.is_open():
+    async def send_to_user(self, message: Message, user_id: str) -> DeliveryResult:
+        """Send message to a specific user (all active connections)."""
+        message = self._invoke_pre_hooks(message, user_id)
+        if message is None:
+            # Pre-hook can drop the message
+            result = DeliveryResult(DeliveryStatus.FAILED, user_id, error="Message dropped by pre-hook")
+            # message is None here; skip post hooks
+            return result
+
+        connections = []
+        if hasattr(self._registry, "get_connections"):
             try:
-                success = await connection.send(message.serialize())
+                connections = self._registry.get_connections(user_id)  # type: ignore[attr-defined]
+            except Exception:
+                connections = []
+        if not connections:
+            c = self._registry.get_connection(user_id)
+            if c:
+                connections = [c]
+
+        any_success = False
+        last_error: str | None = None
+
+        for connection in connections:
+            if not connection or not connection.is_open():
+                continue
+            try:
+                success = await connection.send(message)
                 if success:
-                    result = DeliveryResult(DeliveryStatus.DELIVERED, user_id)
-                    self._invoke_post_hooks(message, user_id, result)
-                    return result
+                    any_success = True
                 else:
-                    result = DeliveryResult(
-                        DeliveryStatus.FAILED,
-                        user_id,
-                        error="Send failed"
-                    )
+                    last_error = "Send failed"
+            except Exception as e:
+                logger.exception("Error sending message to %s: %s", user_id, e)
+                last_error = str(e)
+
+        if any_success:
+            result = DeliveryResult(DeliveryStatus.DELIVERED, user_id)
+            self._invoke_post_hooks(message, user_id, result)
+            return result
+
+        # If no websocket delivery, optionally try queue manager if provided.
+        if self._queue_manager is not None:
+            try:
+                if getattr(self._queue_manager, "has_queue", None) and self._queue_manager.has_queue(user_id):
+                    await self._queue_manager.queue_message(user_id, message)
+                    result = DeliveryResult(DeliveryStatus.QUEUED, user_id)
                     self._invoke_post_hooks(message, user_id, result)
                     return result
             except Exception as e:
-                result = DeliveryResult(
-                    DeliveryStatus.FAILED,
-                    user_id,
-                    error=str(e)
-                )
-                self._invoke_post_hooks(message, user_id, result)
-                return result
-        
-        # User is offline, queue the message
-        if user_id not in self._message_queues:
-            self._message_queues[user_id] = asyncio.Queue(maxsize=self._queue_size)
-        
-        try:
-            self._message_queues[user_id].put_nowait(message.serialize())
-            result = DeliveryResult(DeliveryStatus.QUEUED, user_id)
-            self._invoke_post_hooks(message, user_id, result)
-            return result
-        except asyncio.QueueFull:
-            result = DeliveryResult(
-                DeliveryStatus.FAILED,
-                user_id,
-                error="Message queue full"
-            )
-            self._invoke_post_hooks(message, user_id, result)
-            return result
-    
+                last_error = str(e)
+
+        result = DeliveryResult(DeliveryStatus.FAILED, user_id, error=last_error or "No connection")
+        self._invoke_post_hooks(message, user_id, result)
+        return result
+
     async def broadcast(
         self,
         message: Message,
         exclude: Optional[List[str]] = None
     ) -> Dict[str, DeliveryResult]:
-        """
-        Broadcast a message to all connected users concurrently.
-
-        Args:
-            message: Message to broadcast
-            exclude: List of user IDs to exclude
-
-        Returns:
-            Dictionary mapping user IDs to delivery results
-        """
+        """Broadcast a message to all currently connected users."""
         exclude_set = set(exclude or [])
         results: Dict[str, DeliveryResult] = {}
 
-        async def _send_safe(uid: str, msg: Message) -> tuple[str, DeliveryResult]:
-            try:
-                result = await self.send_to_user(uid, msg, skip_hooks=True)
-                return uid, result
-            except Exception as e:
-                logger.exception("Error sending to %s: %s", uid, e)
-                return uid, DeliveryResult(DeliveryStatus.FAILED, uid, error=str(e))
+        # Prefer registry bulk API if available
+        all_conns = {}
+        try:
+            all_conns = self._registry.get_all_connections()  # type: ignore[attr-defined]
+        except Exception:
+            all_conns = {}
 
-        send_tasks = []
-        for user_id in self._registry.get_all_connections().keys():
+        for user_id in list(all_conns.keys()):
             if user_id in exclude_set:
                 continue
-            send_tasks.append(_send_safe(user_id, message))
-
-        for user_id in self._message_queues:
-            if user_id not in exclude_set:
-                send_tasks.append(_send_safe(user_id, message))
-
-        if send_tasks:
-            gathered_results = await asyncio.gather(*send_tasks, return_exceptions=True)
-            for item in gathered_results:
-                if isinstance(item, Exception):
-                    logger.exception("Broadcast task failed: %s", item)
-                elif isinstance(item, tuple):
-                    uid, result = item
-                    results[uid] = result
-
-        for user_id, result in results.items():
-            self._invoke_post_hooks(message, user_id, result)
+            results[user_id] = await self.send_to_user(message, user_id)
 
         return results
-    
+        
     def get_pending_messages(self, user_id: str) -> List[str]:
         """
         Get pending messages for a user (non-blocking).
@@ -258,6 +219,19 @@ class MessageRouter:
                 hook(message, user_id, result)
             except Exception as e:
                 logger.exception("Error in post-send hook: %s", e)
+
+    def _invoke_pre_hooks(self, message: Message, user_id: str) -> Optional[Message]:
+        """Invoke pre-send hooks; hooks may modify or drop the message."""
+        current = message
+        for hook in self._pre_send_hooks:
+            try:
+                nxt = hook(current, user_id)
+                if nxt is None:
+                    return None
+                current = nxt
+            except Exception as e:
+                logger.exception("Error in pre-send hook: %s", e)
+        return current
 
 
 class BroadcastServiceImpl:
