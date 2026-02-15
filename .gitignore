@@ -221,3 +221,4 @@ logs/
 #  They include system files and directories that are not relevant to the project.
 .DS_Store
 user_credentials.json
+feedback.json

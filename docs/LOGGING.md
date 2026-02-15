@@ -1,3 +1,5 @@
+from tools.generate_hashes import password
+
 # AloneChat Unified Logging System
 
 ```
@@ -83,17 +85,18 @@ configure_logging(config)
 
 ### LogConfig Attributes
 
-| Attribute | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `level` | str | "INFO" | Minimum log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
-| `log_dir` | str | "./logs" | Directory for log files |
-| `console_output` | bool | True | Enable console output |
-| `file_output` | bool | True | Enable file output |
-| `max_bytes` | int | 10MB | Maximum log file size before rotation |
-| `backup_count` | int | 5 | Number of backup files to keep |
-| `format_string` | str | None | Custom log format |
-| `date_format` | str | "%Y-%m-%d %H:%M:%S" | Date format string |
-| `component_levels` | Dict[str, str] | {} | Per-component log levels |
+<!-- I like PyCharm auto table formatting!!! -->
+| Attribute          | Type           | Default             | Description                                               |
+|--------------------|----------------|---------------------|-----------------------------------------------------------|
+| `level`            | str            | "INFO"              | Minimum log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `log_dir`          | str            | "./logs"            | Directory for log files                                   |
+| `console_output`   | bool           | True                | Enable console output                                     |
+| `file_output`      | bool           | True                | Enable file output                                        |
+| `max_bytes`        | int            | 10MB                | Maximum log file size before rotation                     |
+| `backup_count`     | int            | 5                   | Number of backup files to keep                            |
+| `format_string`    | str            | None                | Custom log format                                         |
+| `date_format`      | str            | "%Y-%m-%d %H:%M:%S" | Date format string                                        |
+| `component_levels` | Dict[str, str] | {}                  | Per-component log levels                                  |
 
 ### Environment-Specific Configurations
 
@@ -136,6 +139,8 @@ config = create_testing_config()
 ```python
 from AloneChat.core.logging.utils import LogTimer, timed
 
+db = api = ...  # Database connection
+query = "SELECT * FROM users" 
 # Context manager
 with LogTimer("database_query"):
     result = db.execute(query)
@@ -175,6 +180,9 @@ request_logger.log_websocket_event(
 from AloneChat.core.logging.utils import ExceptionLogger
 
 exception_logger = ExceptionLogger()
+def risky_operation():
+    # Some code that may raise an exception
+    pass
 
 try:
     risky_operation()
@@ -219,15 +227,27 @@ manager = UnifiedWebSocketManager()
 ```python
 from AloneChat.core.server import HookPhase, HookContext
 
-def log_connection(ctx: HookContext) -> HookContext:
-    logger = get_logger("hooks.connection")
+
+class Manager:
+    # ... existing code ...
+    def register_hook(self, phase: HookPhase, func=None):
+        # Register a hook function for a specific phase
+        pass
     
+manager = Manager()
+
+
+def log_connection(ctx: HookContext) -> HookContext:
+    # noinspection PyUnresolvedReferences
+    logger = get_logger("hooks.connection")
+
     if ctx.phase == HookPhase.POST_CONNECT:
         logger.info("User connected: %s", ctx.user_id)
     elif ctx.phase == HookPhase.POST_DISCONNECT:
         logger.info("User disconnected: %s", ctx.user_id)
-    
+
     return ctx
+
 
 manager.register_hook(HookPhase.POST_CONNECT, log_connection)
 manager.register_hook(HookPhase.POST_DISCONNECT, log_connection)
@@ -285,15 +305,22 @@ python -m AloneChat server
 
 ```python
 # Good
+def get_logger(name: str):
+    return name # To avoid unused variable warning
+
+
+# Good
 logger = get_logger(__name__)
 
 # Avoid
+# noinspection PyRedeclaration
 logger = get_logger("my_module")  # Hardcoded name
 ```
 
 ### 2. Log at Appropriate Levels
 
 ```python
+logger = ...
 logger.debug("Detailed information for debugging")
 logger.info("General information about application flow")
 logger.warning("Something unexpected but not critical")
@@ -304,6 +331,7 @@ logger.critical("Application cannot continue")
 ### 3. Include Context
 
 ```python
+logger = username = ip_address = ...
 # Good
 logger.info("User %s logged in from %s", username, ip_address)
 
@@ -314,6 +342,7 @@ logger.info("User logged in")
 ### 4. Use Structured Data
 
 ```python
+logger = req_id = user_id = duration = ...
 # Good
 logger.info("Processing request", extra={
     "request_id": req_id,
@@ -325,6 +354,7 @@ logger.info("Processing request", extra={
 ### 5. Handle Sensitive Data
 
 ```python
+logger = password = user_id = ...
 # Never log sensitive information
 logger.info("User password: %s", password)  # BAD!
 
@@ -363,6 +393,7 @@ logger = logging.getLogger(__name__)
 
 # New way
 from AloneChat.core.logging import get_logger
+# noinspection PyRedeclaration
 logger = get_logger(__name__)
 ```
 
@@ -370,6 +401,8 @@ logger = get_logger(__name__)
 
 ```python
 # Old way
+import logging
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
