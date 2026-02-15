@@ -209,7 +209,15 @@ marimo/_lsp/
 __marimo__/
 
 
-# AloneChat/api/static/admin.html
-.DS_Store
+# AloneChat project-defined ignores
+#  These are files and directories that are specific to the AloneChat project and should be ignored by Git.
+#  These may include temporary files, logs, and other artifacts that are not relevant to the source code.
 tools/*.exe
 logs/
+
+
+# macOS specific ignores
+#  These files are specific to macOS and should be ignored by Git when working on a macOS system.
+#  They include system files and directories that are not relevant to the project.
+.DS_Store
+user_credentials.json

@@ -40,6 +40,7 @@ from .services import ConversationManager, SearchService, PersistenceService, As
 # DPI awareness disabled - letting Windows auto-scale for better compatibility
 # If you want crisp rendering on high-DPI, consider using DPI awareness with proper scaling
 
+# noinspection PyTypeChecker
 class GUIClient(Client):
     """
     Simplified, modern GUI client with excellent UX.
@@ -94,6 +95,14 @@ class GUIClient(Client):
         self.root.title("AloneChat")
         self.root.geometry("1200x640")
         self.root.minsize(800, 500)
+
+        # Add icon if available
+        # noinspection PyBroadException
+        try:
+            self.root.iconphoto(False, tk.PhotoImage(file="../../../../assets/icon.jpg"))
+        # noinspection PyBroadException
+        except Exception:
+            pass
         
         # Apply sv_ttk theme (Sun Valley Windows 11 theme) - handles DPI automatically
         sv_ttk.set_theme(darkdetect.theme())
@@ -409,6 +418,7 @@ class GUIClient(Client):
     
     async def _do_logout(self):
         """Perform logout."""
+        # noinspection PyBroadException
         try:
             await self._api_client.logout()
         except:
@@ -422,6 +432,7 @@ class GUIClient(Client):
     async def _poll_messages(self):
         """Poll for new messages."""
         while self._running and not self._closing:
+            # noinspection PyBroadException
             try:
                 msg = await self._api_client.receive_message()
                 
@@ -523,6 +534,7 @@ class GUIClient(Client):
         self._async_service.stop()
         
         # Drop tk variable references
+        # noinspection PyBroadException
         try:
             for name in ("username_var", "password_var", "server_var", "port_var",
                         "status_var", "input_var", "search_var"):
@@ -533,6 +545,7 @@ class GUIClient(Client):
             pass
         
         # Destroy UI
+        # noinspection PyBroadException
         try:
             if self.root:
                 self.root.quit()
