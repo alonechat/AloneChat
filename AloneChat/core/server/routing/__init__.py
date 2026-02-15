@@ -159,36 +159,48 @@ class MessageRouter:
         exclude: Optional[List[str]] = None
     ) -> Dict[str, DeliveryResult]:
         """
-        Broadcast a message to all connected users.
-        
+        Broadcast a message to all connected users concurrently.
+
         Args:
             message: Message to broadcast
             exclude: List of user IDs to exclude
-            
+
         Returns:
             Dictionary mapping user IDs to delivery results
         """
         exclude_set = set(exclude or [])
-        results = {}
-        
-        # Send to all connected clients
-        for user_id, connection in self._registry.get_all_connections().items():
+        results: Dict[str, DeliveryResult] = {}
+
+        async def _send_safe(uid: str, msg: Message) -> tuple[str, DeliveryResult]:
+            try:
+                result = await self.send_to_user(uid, msg, skip_hooks=True)
+                return uid, result
+            except Exception as e:
+                logger.exception("Error sending to %s: %s", uid, e)
+                return uid, DeliveryResult(DeliveryStatus.FAILED, uid, error=str(e))
+
+        send_tasks = []
+        for user_id in self._registry.get_all_connections().keys():
             if user_id in exclude_set:
                 continue
-            
-            result = await self.send_to_user(user_id, message, skip_hooks=True)
-            results[user_id] = result
-        
-        # Also queue for users with message queues but no active connection
+            send_tasks.append(_send_safe(user_id, message))
+
         for user_id in self._message_queues:
-            if user_id not in results and user_id not in exclude_set:
-                result = await self.send_to_user(user_id, message, skip_hooks=True)
-                results[user_id] = result
-        
-        # Invoke post-send hooks for broadcast
+            if user_id not in exclude_set:
+                send_tasks.append(_send_safe(user_id, message))
+
+        if send_tasks:
+            gathered_results = await asyncio.gather(*send_tasks, return_exceptions=True)
+            for item in gathered_results:
+                if isinstance(item, Exception):
+                    logger.exception("Broadcast task failed: %s", item)
+                elif isinstance(item, tuple):
+                    uid, result = item
+                    results[uid] = result
+
         for user_id, result in results.items():
             self._invoke_post_hooks(message, user_id, result)
-        
+
         return results
     
     def get_pending_messages(self, user_id: str) -> List[str]:

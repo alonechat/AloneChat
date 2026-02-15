@@ -26,7 +26,7 @@ from typing import Optional
 import darkdetect
 import sv_ttk
 
-from AloneChat.api.client import AloneChatAPIClient
+from AloneChat.api.client import AloneChatAPIClient, close_session
 from AloneChat.core.client.client_base import Client
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 from .components import WinUI3MessageCard
@@ -193,7 +193,7 @@ class GUIClient(Client):
     
     def _show_onboarding(self):
         """Show one-time onboarding tips."""
-        state = self._persistence.load_state()
+        state = self._persistence.load_state_sync()
         if not state.get("onboarding_shown", False):
             self._add_system_message(
                 "Tips:\n"
@@ -203,7 +203,7 @@ class GUIClient(Client):
                 "• Need help? Contact to us with tonytao2022 @outlook.com | zhang.chenyun @outlook.com"
             )
             state["onboarding_shown"] = True
-            self._persistence.save_state(state)
+            self._persistence.save_state_sync(state)
     
     # ==================== Auth Handlers ====================
     
@@ -375,24 +375,32 @@ class GUIClient(Client):
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        path = self._persistence.export_conversation_md(
+        self._async_service.run_async(self._do_export_md(conv))
+
+    async def _do_export_md(self, conv):
+        """Perform Markdown export asynchronously."""
+        path = await self._persistence.export_conversation_md(
             self._username, conv.cid, conv.name,
             [item.__dict__ for item in conv.items]
         )
-        if path:
-            self._open_logs_folder()
-    
+        if path and self._ui_alive():
+            self.root.after(0, self._open_logs_folder)
+
     def _handle_export_json(self):
         """Export current conversation to JSON."""
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        path = self._persistence.export_conversation_json(
+        self._async_service.run_async(self._do_export_json(conv))
+
+    async def _do_export_json(self, conv):
+        """Perform JSON export asynchronously."""
+        path = await self._persistence.export_conversation_json(
             self._username, conv.cid,
             [item.__dict__ for item in conv.items]
         )
-        if path:
-            self._open_logs_folder()
+        if path and self._ui_alive():
+            self.root.after(0, self._open_logs_folder)
     
     def _handle_export_logs(self):
         """Open logs folder."""
@@ -468,7 +476,9 @@ class GUIClient(Client):
             return
         card = self._chat_view.add_message_card(item)
         self._search_service.set_message_cards(self._chat_view.get_message_cards())
-        self._persistence.log_chat(self._username, item.sender, item.content)
+        self._async_service.run_async(
+            self._persistence.log_chat(self._username, item.sender, item.content)
+        )
     
     def _add_system_message(self, content: str):
         """Add a system message."""
@@ -476,7 +486,9 @@ class GUIClient(Client):
         self._conv_manager.add_message(self._conv_manager.active_cid, item, is_active=True)
         if self._chat_view:
             self._chat_view.add_message_card(item)
-        self._persistence.log_chat(self._username, "System", content)
+        self._async_service.run_async(
+            self._persistence.log_chat(self._username, "System", content)
+        )
     
     # ==================== Search ====================
     
@@ -529,6 +541,13 @@ class GUIClient(Client):
         # Cancel poll future
         if self._poll_future and not self._poll_future.done():
             self._poll_future.cancel()
+        
+        # Flush log buffers before stopping async service
+        self._persistence.flush_buffers_sync()
+        
+        # Close shared aiohttp session
+        if self._async_service.is_running():
+            self._async_service.run_async(close_session())
         
         # Stop async service
         self._async_service.stop()
