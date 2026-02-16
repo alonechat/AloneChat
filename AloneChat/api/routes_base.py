@@ -50,26 +50,29 @@ class UserStatusManager:
     
     _instance: Optional['UserStatusManager'] = None
     _lock = threading.Lock()
+    _initialized: bool = False
     
     def __new__(cls) -> 'UserStatusManager':
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):
-        if self._initialized:
-            return
-        self._initialized = True
-        
-        self._credentials: Dict[str, dict] = {}
-        self._pending_status: Dict[str, bool] = {}
-        self._dirty = False
-        self._last_save = time.time()
-        self._save_interval = 5.0
-        self._save_lock = threading.Lock()
-        
-        self._load_credentials()
+        with UserStatusManager._lock:
+            if self._initialized:
+                return
+            self._initialized = True
+            
+            self._credentials: Dict[str, dict] = {}
+            self._pending_status: Dict[str, bool] = {}
+            self._dirty = False
+            self._last_save = time.time()
+            self._save_interval = 5.0
+            self._save_lock = threading.Lock()
+            
+            self._load_credentials()
     
     def _load_credentials(self) -> None:
         """Load user credentials from file."""

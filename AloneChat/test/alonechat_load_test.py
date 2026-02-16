@@ -93,7 +93,7 @@ async def send_messages(user_id: int, clients: dict) -> int:
     success_count = 0
     try:
         ws_url = client.get_ws_url()
-        async with websockets.connect(ws_url) as ws:
+        async with websockets.connect(ws_url,proxy=None) as ws:
             for i in range(MESSAGES_PER_USER):
                 msg_content = f"hello {i} {uuid.uuid4()}"
                 result = await client.send_message(msg_content)

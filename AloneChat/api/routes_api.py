@@ -1,17 +1,14 @@
 # Standard library imports
-import asyncio
 import logging
 from typing import Any, Optional
-from urllib.parse import quote_plus
 
 # Third-party imports
-import websockets
 from fastapi import HTTPException
 
 # Local imports
 from AloneChat import __version__ as __main_version__
 from .routes_base import *
-from ..core.message.protocol import Message, MessageType
+from AloneChat.core.message import Message, MessageType
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +57,9 @@ async def login(credentials: LoginRequest):
         algorithm=JWT_ALGORITHM
     )
 
-    update_user_online_status(credentials.username, True)
+    from AloneChat.core.server.user import UserStatus
+    manager = get_ws_manager()
+    manager.user_manager.register_user(credentials.username, credentials.username)
 
     return TokenResponse(success=True, token=token, message="Login successful")
 
@@ -70,7 +69,6 @@ async def logout(request: Request):
     """
     Logout endpoint
     - Extracts token from Authorization header
-    - Updates user online status
     - Notifies WebSocket server of user logout
     - Closes user's WebSocket connection if exists
     """
@@ -87,40 +85,10 @@ async def logout(request: Request):
 
     if username:
         try:
-            update_user_online_status(username, False)
+            manager = get_ws_manager()
+            manager.user_manager.unregister_user(username)
         except Exception:
             pass
-
-    try:
-        if token:
-            sep = "&" if "?" in SERVER else "?"
-            ws_url = f"{SERVER}{sep}token={quote_plus(token)}"
-            try:
-                async with websockets.connect(ws_url) as websocket:
-                    leave_msg = Message(MessageType.LEAVE, username or "", "").serialize()
-                    await websocket.send(leave_msg)
-                    try:
-                        await websocket.close(code=1000, reason="User logged out via API")
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-    except Exception:
-        pass
-
-    try:
-        if username and username in ws_manager.sessions:
-            websocket = ws_manager.sessions.get(username)
-            try:
-                notice = Message(MessageType.TEXT, "SERVER", "You have been logged out by API").serialize()
-                await websocket.send(notice)
-                await websocket.close(code=1000, reason="User logged out via API")
-                del ws_manager.sessions[username]
-                ws_manager.clients.discard(websocket)
-            except Exception:
-                pass
-    except Exception:
-        pass
 
     return {"success": True, "message": "Logout successful"}
 
@@ -246,16 +214,43 @@ async def get_default_server():
 
 
 from AloneChat.core.server.websocket_manager import UnifiedWebSocketManager
+from typing import Callable
+
+from .routes_user import *
 
 _ws_manager_instance: Optional[UnifiedWebSocketManager] = None
 
 
-def get_ws_manager() -> UnifiedWebSocketManager:
-    """Get or create the global WebSocket manager instance."""
+def get_ws_manager(
+    on_user_connect: Optional[Callable[[str], None]] = None,
+    on_user_disconnect: Optional[Callable[[str], None]] = None,
+    enable_plugins: bool = True
+) -> UnifiedWebSocketManager:
+    """
+    Get or create the global WebSocket manager instance.
+    
+    Args:
+        on_user_connect: Callback when user connects (only used on first creation)
+        on_user_disconnect: Callback when user disconnects (only used on first creation)
+        enable_plugins: Whether to enable plugins (only used on first creation)
+    
+    Returns:
+        The singleton UnifiedWebSocketManager instance
+    """
     global _ws_manager_instance
     if _ws_manager_instance is None:
-        _ws_manager_instance = UnifiedWebSocketManager()
+        _ws_manager_instance = UnifiedWebSocketManager(
+            on_user_connect=on_user_connect,
+            on_user_disconnect=on_user_disconnect,
+            enable_plugins=enable_plugins
+        )
     return _ws_manager_instance
+
+
+def reset_ws_manager() -> None:
+    """Reset the WebSocket manager instance (for testing or server restart)."""
+    global _ws_manager_instance
+    _ws_manager_instance = None
 
 
 class _WSManagerProxy:

@@ -44,12 +44,14 @@ from AloneChat.core.server.interfaces import (
     PluginAwareComponent,
     ProcessingResult,
 )
+from AloneChat.core.server.private_chat import PrivateChatManager, PrivateChatSession
 from AloneChat.core.server.routing import MessageRouter, BroadcastServiceImpl
 from AloneChat.core.server.session import SessionManager
 from AloneChat.core.server.transport import (
     WebSocketConnection,
     TransportFactory
 )
+from AloneChat.core.server.user import UserManager, UserStatus, UserInfo
 from AloneChat.plugins import PluginManager, create_plugin_manager
 
 logger = logging.getLogger(__name__)
@@ -261,6 +263,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         session_manager: Optional[SessionManager] = None,
         command_processor: Optional[CommandProcessor] = None,
         plugin_manager: Optional[PluginManager] = None,
+        user_manager: Optional[UserManager] = None,
+        private_chat_manager: Optional[PrivateChatManager] = None,
         on_user_connect: Optional[Callable[[str], None]] = None,
         on_user_disconnect: Optional[Callable[[str], None]] = None,
         enable_plugins: bool = True
@@ -273,6 +277,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             session_manager: Session manager (creates default if None)
             command_processor: Command processor (creates default if None)
             plugin_manager: Plugin manager for extended processing
+            user_manager: User manager for user tracking (creates default if None)
+            private_chat_manager: Private chat manager (creates default if None)
             on_user_connect: Callback when user connects (user_id)
             on_user_disconnect: Callback when user disconnects (user_id)
             enable_plugins: Whether to enable plugin system integration
@@ -289,6 +295,13 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         self._broadcast_service = BroadcastServiceImpl(self._message_router)
         
         self._command_processor = command_processor or create_default_processor()
+        
+        self._user_manager = user_manager or UserManager(
+            on_user_online=self._on_user_online_internal,
+            on_user_offline=self._on_user_offline_internal
+        )
+        
+        self._private_chat_manager = private_chat_manager or PrivateChatManager()
         
         self._plugin_manager = plugin_manager
         self._enable_plugins = enable_plugins
@@ -326,10 +339,28 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         
         logger.info("UnifiedWebSocketManager initialized")
     
+    def _on_user_online_internal(self, user_id: str) -> None:
+        """Internal callback when user comes online."""
+        logger.debug("User online (internal): %s", user_id)
+    
+    def _on_user_offline_internal(self, user_id: str) -> None:
+        """Internal callback when user goes offline."""
+        logger.debug("User offline (internal): %s", user_id)
+    
     @property
     def plugin_manager(self) -> Optional[PluginManager]:
         """Get the plugin manager."""
         return self._plugin_manager
+    
+    @property
+    def user_manager(self) -> UserManager:
+        """Get the user manager."""
+        return self._user_manager
+    
+    @property
+    def private_chat_manager(self) -> PrivateChatManager:
+        """Get the private chat manager."""
+        return self._private_chat_manager
     
     @property
     def processing_pipeline(self) -> MessageProcessingPipeline:
@@ -441,6 +472,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             connection_wrapper = WebSocketConnection(websocket, username)
             
             self._session_manager.create_session(username)
+            
+            self._user_manager.register_user(username)
             
             self._connection_registry.register(username, connection_wrapper)
             
@@ -567,6 +600,8 @@ class UnifiedWebSocketManager(PluginAwareComponent):
         self._connection_registry.unregister(username)
         
         self._session_manager.end_session(username)
+        
+        self._user_manager.unregister_user(username)
         
         self._message_router.remove_user_queue(username)
         

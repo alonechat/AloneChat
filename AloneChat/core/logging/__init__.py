@@ -31,6 +31,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -152,20 +153,24 @@ class LoggingManager:
     """
     
     _instance: Optional['LoggingManager'] = None
+    _lock = threading.Lock()
     _initialized: bool = False
     
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):
-        if self._initialized:
-            return
-        
-        self._config: Optional[LogConfig] = None
-        self._handlers: List[logging.Handler] = []
-        self._initialized = True
+        with LoggingManager._lock:
+            if self._initialized:
+                return
+            
+            self._config: Optional[LogConfig] = None
+            self._handlers: List[logging.Handler] = []
+            self._initialized = True
     
     def configure(self, config: LogConfig) -> None:
         """

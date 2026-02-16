@@ -18,26 +18,36 @@ The server is organized into the following components:
    - InMemorySessionStore: In-memory session storage
    - UserSession: Session data model
 
-3. **Transport Layer** (`transport/`)
+3. **User Management** (`user/`)
+   - UserManager: User registration and status tracking
+   - UserInfo: User information data model
+   - UserStatus: User online status enum
+
+4. **Private Chat** (`private_chat/`)
+   - PrivateChatManager: Private messaging management
+   - PrivateChatSession: Private chat session model
+   - PendingMessage: Offline message queue
+
+5. **Transport Layer** (`transport/`)
    - WebSocketConnection: Connection wrapper
    - WebSocketConnectionRegistry: Connection management
    - ConnectionHealthMonitor: Automatic cleanup
 
-4. **Message Routing** (`routing/`)
+6. **Message Routing** (`routing/`)
    - MessageRouter: Routes messages to destinations
    - BroadcastServiceImpl: High-level broadcasting
 
-5. **Command Processing** (`commands/`)
+7. **Command Processing** (`commands/`)
    - CommandProcessor: Processes chat commands
    - CommandRegistry: Manages command handlers
    - Plugin-based command loading
 
-6. **Unified Manager** (`websocket_manager.py`)
+8. **Unified Manager** (`websocket_manager.py`)
    - UnifiedWebSocketManager: Main entry point that composes all components
    - MessageProcessingPipeline: Plugin-aware message processing
    - ConnectionContext: Per-connection state management
 
-7. **Plugin Integration** (`interfaces/`)
+9. **Plugin Integration** (`interfaces/`)
    - HookPhase: Lifecycle phases for hooks
    - HookContext: Context passed to hooks
    - PluginAwareComponent: Base class for hook-enabled components
@@ -110,6 +120,11 @@ from AloneChat.core.server.interfaces import (
     ProcessingResult,
     MessageProcessor,
 )
+from AloneChat.core.server.private_chat import (
+    PrivateChatSession,
+    PendingMessage,
+    PrivateChatManager,
+)
 from AloneChat.core.server.routing import (
     MessageRouter,
     BroadcastServiceImpl,
@@ -126,6 +141,11 @@ from AloneChat.core.server.transport import (
     WebSocketConnectionRegistry,
     ConnectionHealthMonitor,
     TransportFactory,
+)
+from AloneChat.core.server.user import (
+    UserStatus,
+    UserInfo,
+    UserManager,
 )
 from AloneChat.core.server.utils.helpers import (
     MessageBuilder,
@@ -184,6 +204,10 @@ __all__ = [
     'InMemorySessionStore',
     'SessionManager',
     
+    'UserStatus',
+    'UserInfo',
+    'UserManager',
+    
     'WebSocketConnection',
     'WebSocketConnectionRegistry',
     'ConnectionHealthMonitor',
@@ -193,6 +217,10 @@ __all__ = [
     'BroadcastServiceImpl',
     'DeliveryResult',
     'DeliveryStatus',
+    
+    'PrivateChatSession',
+    'PendingMessage',
+    'PrivateChatManager',
     
     'CommandHandler',
     'CommandRegistry',

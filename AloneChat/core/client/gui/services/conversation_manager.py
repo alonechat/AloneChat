@@ -3,9 +3,22 @@ Conversation management service.
 Handles conversations, DMs, and message routing.
 """
 import re
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 
 from ..models.data import Conversation, MessageItem
+
+
+@dataclass
+class PrivateChatInfo:
+    """Information about a private chat."""
+    partner_id: str
+    partner_name: str
+    is_online: bool = False
+    status: str = "offline"
+    last_activity: Optional[float] = None
+    unread: int = 0
 
 
 class ConversationManager:
@@ -17,6 +30,7 @@ class ConversationManager:
         self._conversations: Dict[str, Conversation] = {}
         self._conv_ids: List[str] = []
         self._active_cid: str = "global"
+        self._private_chat_info: Dict[str, PrivateChatInfo] = {}
         self._ensure_conversation("global", name="# Global")
     
     @property
@@ -64,12 +78,70 @@ class ConversationManager:
         """Create a new conversation."""
         return self._ensure_conversation(cid, name)
     
+    def create_private_conversation(self, partner_id: str, partner_name: Optional[str] = None,
+                                    is_online: bool = False, status: str = "offline") -> Conversation:
+        """
+        Create a private conversation with a user.
+        
+        Args:
+            partner_id: Partner user ID
+            partner_name: Partner display name
+            is_online: Whether partner is online
+            status: Partner status
+            
+        Returns:
+            Conversation
+        """
+        conv = self._ensure_conversation(partner_id, name=partner_name or partner_id)
+        
+        self._private_chat_info[partner_id] = PrivateChatInfo(
+            partner_id=partner_id,
+            partner_name=partner_name or partner_id,
+            is_online=is_online,
+            status=status,
+            last_activity=datetime.now().timestamp()
+        )
+        
+        return conv
+    
+    def update_partner_status(self, partner_id: str, is_online: bool, status: str = "online") -> None:
+        """
+        Update partner online status.
+        
+        Args:
+            partner_id: Partner user ID
+            is_online: Whether partner is online
+            status: Status string
+        """
+        if partner_id in self._private_chat_info:
+            info = self._private_chat_info[partner_id]
+            info.is_online = is_online
+            info.status = status
+    
+    def get_private_chat_info(self, partner_id: str) -> Optional[PrivateChatInfo]:
+        """Get private chat info for a partner."""
+        return self._private_chat_info.get(partner_id)
+    
+    def is_private_conversation(self, cid: str) -> bool:
+        """Check if a conversation is a private chat."""
+        return cid != "global" and cid in self._private_chat_info
+    
+    def get_private_conversations(self) -> List[Tuple[str, PrivateChatInfo]]:
+        """Get all private conversations with their info."""
+        return [
+            (cid, self._private_chat_info[cid])
+            for cid in self._conv_ids
+            if cid in self._private_chat_info
+        ]
+    
     def add_message(self, cid: str, item: MessageItem, is_active: bool = False) -> None:
         """Add a message to a conversation."""
         conv = self._ensure_conversation(cid)
         conv.add_message(item)
         if not is_active and not item.is_self:
             conv.increment_unread()
+            if cid in self._private_chat_info:
+                self._private_chat_info[cid].unread += 1
     
     def get_conversation_labels(self) -> List[str]:
         """Get display labels for all conversations."""
@@ -78,10 +150,28 @@ class ConversationManager:
             conv = self._conversations.get(cid)
             if conv:
                 label = conv.name
+                
+                if cid in self._private_chat_info:
+                    info = self._private_chat_info[cid]
+                    status_icon = self._get_status_icon(info.status, info.is_online)
+                    label = f"{status_icon} {label}"
+                
                 if conv.unread > 0:
                     label = f"{label} ({conv.unread})"
                 labels.append(label)
         return labels
+    
+    @staticmethod
+    def _get_status_icon(status: str, is_online: bool) -> str:
+        """Get status icon for display."""
+        if not is_online or status == "offline":
+            return "○"
+        elif status == "away":
+            return "◐"
+        elif status == "busy":
+            return "◑"
+        else:
+            return "●"
     
     @staticmethod
     def pack_dm(to_user: str, body: str) -> str:
@@ -109,14 +199,16 @@ class ConversationManager:
         is_dm, to_user, body = self.unpack_dm(content)
         
         if is_dm:
-            # Only accept DMs addressed to me
             if (to_user or "").lower() != (current_user or "").lower():
                 return None, sender, body
-            # DM from sender
             self._ensure_conversation(sender, name=sender)
+            if sender not in self._private_chat_info:
+                self._private_chat_info[sender] = PrivateChatInfo(
+                    partner_id=sender,
+                    partner_name=sender
+                )
             return sender, sender, body
         else:
-            # Global message
             return "global", sender, content
     
     def to_dict(self) -> Dict[str, Any]:
@@ -144,6 +236,17 @@ class ConversationManager:
             },
             "conv_ids": self._conv_ids,
             "active_cid": self._active_cid,
+            "private_chat_info": {
+                pid: {
+                    "partner_id": info.partner_id,
+                    "partner_name": info.partner_name,
+                    "is_online": info.is_online,
+                    "status": info.status,
+                    "last_activity": info.last_activity,
+                    "unread": info.unread,
+                }
+                for pid, info in self._private_chat_info.items()
+            }
         }
     
     @classmethod
@@ -173,5 +276,15 @@ class ConversationManager:
                 unread=conv_data.get("unread", 0),
             )
             manager._conversations[cid] = conv
+        
+        for pid, info_data in data.get("private_chat_info", {}).items():
+            manager._private_chat_info[pid] = PrivateChatInfo(
+                partner_id=info_data.get("partner_id", pid),
+                partner_name=info_data.get("partner_name", pid),
+                is_online=info_data.get("is_online", False),
+                status=info_data.get("status", "offline"),
+                last_activity=info_data.get("last_activity"),
+                unread=info_data.get("unread", 0),
+            )
         
         return manager

@@ -5,6 +5,7 @@ Uses singleton pattern for aiohttp.ClientSession to enable connection pooling.
 """
 
 import asyncio
+import threading
 import weakref
 from typing import Optional, Dict, Any
 
@@ -22,18 +23,28 @@ class SessionManager:
     """
     
     _instance: Optional['SessionManager'] = None
-    _session: Optional[aiohttp.ClientSession] = None
-    _lock = asyncio.Lock()
+    _thread_lock = threading.Lock()
+    _initialized: bool = False
     
     def __new__(cls) -> 'SessionManager':
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._thread_lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
+    
+    def __init__(self):
+        with SessionManager._thread_lock:
+            if self._initialized:
+                return
+            self._initialized = True
+            self._session: Optional[aiohttp.ClientSession] = None
+            self._async_lock = asyncio.Lock()
     
     async def get_session(self) -> aiohttp.ClientSession:
         """Get or create the shared aiohttp session."""
         if self._session is None or self._session.closed:
-            async with self._lock:
+            async with self._async_lock:
                 if self._session is None or self._session.closed:
                     connector = aiohttp.TCPConnector(
                         limit=0,
@@ -51,7 +62,7 @@ class SessionManager:
     
     async def close(self) -> None:
         """Close the shared session."""
-        async with self._lock:
+        async with self._async_lock:
             if self._session and not self._session.closed:
                 await self._session.close()
                 self._session = None
@@ -272,6 +283,121 @@ class AloneChatAPIClient:
             bool: True if authenticated, False otherwise
         """
         return self.token is not None
+    
+    async def set_user_status(self, status: str) -> Dict[str, Any]:
+        """
+        Set current user's status.
+
+        Args:
+            status (str): Status to set (online, away, busy, offline)
+
+        Returns:
+            dict: Response from the API
+        """
+        return await self._make_request(
+            "/api/user/status",
+            method="POST",
+            data={"status": status}
+        )
+    
+    async def get_user_status(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get a user's status.
+
+        Args:
+            user_id (str): User identifier
+
+        Returns:
+            dict: User status response
+        """
+        return await self._make_request(f"/api/user/status/{user_id}")
+    
+    async def get_online_users(self) -> Dict[str, Any]:
+        """
+        Get list of online users.
+
+        Returns:
+            dict: Online users response
+        """
+        return await self._make_request("/api/users/online")
+    
+    async def get_all_users(self) -> Dict[str, Any]:
+        """
+        Get all users with their status.
+
+        Returns:
+            dict: All users response
+        """
+        return await self._make_request("/api/users/all")
+    
+    async def send_private_message(self, recipient: str, content: str) -> Dict[str, Any]:
+        """
+        Send a private message to another user.
+
+        Args:
+            recipient (str): Recipient user ID
+            content (str): Message content
+
+        Returns:
+            dict: Response from the API
+        """
+        return await self._make_request(
+            "/api/chat/private",
+            method="POST",
+            data={"recipient": recipient, "content": content}
+        )
+    
+    async def get_chat_history(self, other_user: str, limit: int = 50) -> Dict[str, Any]:
+        """
+        Get chat history with another user.
+
+        Args:
+            other_user (str): Other user in the conversation
+            limit (int): Maximum number of messages to return
+
+        Returns:
+            dict: Chat history response
+        """
+        return await self._make_request(f"/api/chat/history/{other_user}?limit={limit}")
+    
+    async def get_recent_chats(self, limit: int = 10) -> Dict[str, Any]:
+        """
+        Get recent private chat sessions.
+
+        Args:
+            limit (int): Maximum number of sessions to return
+
+        Returns:
+            dict: Recent chats response
+        """
+        return await self._make_request(f"/api/chat/recent?limit={limit}")
+    
+    async def get_pending_messages(self) -> Dict[str, Any]:
+        """
+        Get pending messages for current user.
+
+        Returns:
+            dict: Pending messages response
+        """
+        return await self._make_request("/api/chat/pending")
+    
+    async def clear_pending_messages(self) -> Dict[str, Any]:
+        """
+        Clear all pending messages for current user.
+
+        Returns:
+            dict: Clear response
+        """
+        return await self._make_request("/api/chat/pending/clear", method="POST")
+    
+    async def get_server_stats(self) -> Dict[str, Any]:
+        """
+        Get server statistics.
+
+        Returns:
+            dict: Server stats response
+        """
+        return await self._make_request("/api/stats")
 
 
 async def close_session() -> None:

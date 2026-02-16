@@ -14,6 +14,7 @@ import uvicorn
 import AloneChat
 import AloneChat.config as config
 from AloneChat.api.routes import app
+from AloneChat.api.routes_api import get_ws_manager, reset_ws_manager
 from AloneChat.core.logging import get_logger, auto_configure
 from AloneChat.core.server import UnifiedWebSocketManager, HookPhase, HookContext
 
@@ -89,7 +90,11 @@ def server(
     
     _reset_user_statuses()
     
-    manager = UnifiedWebSocketManager(
+    # Reset any existing manager instance to ensure clean state
+    reset_ws_manager()
+    
+    # Get singleton WebSocket manager with callbacks
+    manager = get_ws_manager(
         on_user_connect=_create_user_status_callback(True),
         on_user_disconnect=_create_user_status_callback(False),
         enable_plugins=enable_plugins

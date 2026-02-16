@@ -33,8 +33,10 @@ from .components import WinUI3MessageCard
 from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
 from .controllers.search_dialog import SearchDialog
+from .controllers.user_list_dialog import UserListDialog
 from .models.data import MessageItem, ReplyContext
 from .services import ConversationManager, SearchService, PersistenceService, AsyncService
+from .services.private_chat_service import PrivateChatService
 
 
 # DPI awareness disabled - letting Windows auto-scale for better compatibility
@@ -73,12 +75,17 @@ class GUIClient(Client):
         self._auth_view: Optional[AuthView] = None
         self._chat_view: Optional[ChatView] = None
         self._search_dialog: Optional[SearchDialog] = None
+        self._user_list_dialog: Optional[UserListDialog] = None
         
         # Services
         self._async_service = AsyncService()
         self._conv_manager = ConversationManager()
         self._search_service = SearchService()
         self._persistence = PersistenceService()
+        self._private_chat_service = PrivateChatService(
+            on_session_update=self._on_private_chat_update,
+            on_user_status_update=self._on_user_status_update
+        )
         
         # Reply context
         self._reply_ctx: Optional[ReplyContext] = None
@@ -168,14 +175,16 @@ class GUIClient(Client):
             username=self._username,
             conversation_manager=self._conv_manager,
             on_send=self._handle_send,
-            on_new_conversation=self._handle_new_conversation,
             on_select_conversation=self._handle_switch_conversation,
             on_reply=self._handle_begin_reply,
             on_clear_reply=self._handle_clear_reply,
             on_export_md=self._handle_export_md,
             on_export_json=self._handle_export_json,
             on_export_logs=self._handle_export_logs,
-            on_logout=self._handle_logout
+            on_logout=self._handle_logout,
+            on_set_status=self._handle_set_status,
+            on_refresh_users=self._handle_refresh_users,
+            on_user_list=self._handle_user_list
         )
         self._chat_view.show()
         
@@ -185,11 +194,53 @@ class GUIClient(Client):
         # Start polling
         self._poll_future = self._async_service.run_async(self._poll_messages())
         
+        # Start user status refresh timer
+        self._start_status_refresh_timer()
+        
         # Show onboarding if first time
         self._show_onboarding()
         
         # Render conversation
         self._chat_view.render_conversation()
+    
+    def _start_status_refresh_timer(self):
+        """Start periodic user status refresh timer."""
+        self._refresh_status()
+    
+    def _refresh_status(self):
+        """Refresh user status periodically."""
+        if not self._running or self._closing:
+            return
+        
+        self._async_service.run_async(self._do_refresh_all_users())
+        
+        if self._ui_alive():
+            self.root.after(3000, self._refresh_status)
+    
+    async def _do_refresh_all_users(self):
+        """Refresh all users status from API."""
+        try:
+            result = await self._api_client.get_all_users()
+            if result and self._ui_alive():
+                users = result.get("users", [])
+                
+                for user_data in users:
+                    if isinstance(user_data, dict):
+                        user_id = user_data.get("user_id")
+                        status = user_data.get("status", "offline")
+                        is_online = user_data.get("is_online", False)
+                        
+                        if user_id and user_id != self._username:
+                            self._conv_manager.update_partner_status(user_id, is_online, status)
+                            self._private_chat_service.update_user_status(
+                                user_id, 
+                                is_online=is_online, 
+                                status=status
+                            )
+                
+                self.root.after(0, self._chat_view.refresh_conversation_list)
+        except Exception as e:
+            logger.debug("Failed to refresh user status: %s", e)
     
     def _show_onboarding(self):
         """Show one-time onboarding tips."""
@@ -339,20 +390,6 @@ class GUIClient(Client):
         card.update_status("Sending…", is_error=False)
         self._async_service.run_async(self._send_message(payload, item, card))
     
-    def _handle_new_conversation(self):
-        """Handle new conversation request."""
-        to_user = simpledialog.askstring("New Conversation", "Enter username to chat with:")
-        if not to_user:
-            return
-        to_user = to_user.strip()
-        if not to_user:
-            return
-        
-        self._conv_manager.create_conversation(to_user, name=to_user)
-        self._conv_manager.switch_conversation(to_user)
-        self._chat_view.refresh_conversation_list()
-        self._chat_view.render_conversation()
-    
     def _handle_switch_conversation(self, cid: str):
         """Handle conversation switch."""
         self._conv_manager.switch_conversation(cid)
@@ -435,10 +472,113 @@ class GUIClient(Client):
             if self._ui_alive():
                 self.root.after(0, self._show_auth_view)
     
+    # ==================== User Status Handlers ====================
+    
+    def _handle_set_status(self, status: str):
+        """Handle user status change."""
+        self._async_service.run_async(self._do_set_status(status))
+    
+    async def _do_set_status(self, status: str):
+        """Set user status via API."""
+        try:
+            await self._api_client.set_user_status(status)
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showwarning("Status", f"Failed to set status: {e}"))
+    
+    def _handle_refresh_users(self):
+        """Handle refresh users request."""
+        self._async_service.run_async(self._do_refresh_users())
+    
+    async def _do_refresh_users(self):
+        """Refresh online users from API."""
+        try:
+            users = await self._api_client.get_online_users()
+            if users and self._ui_alive():
+                for user_data in users:
+                    user_id = user_data if isinstance(user_data, str) else user_data.get("user_id")
+                    is_online = True
+                    status = "online"
+                    self._private_chat_service.update_user_status(
+                        user_id, is_online=is_online, status=status
+                    )
+                    self._conv_manager.update_partner_status(user_id, is_online, status)
+                
+                self.root.after(0, self._chat_view.refresh_conversation_list)
+        except Exception as e:
+            logger.warning("Failed to refresh users: %s", e)
+    
+    def _on_private_chat_update(self, partner_id: str):
+        """Callback when private chat session is updated."""
+        if self._ui_alive():
+            self.root.after(0, self._chat_view.refresh_conversation_list)
+    
+    def _on_user_status_update(self, user_id: str, status: str):
+        """Callback when user status changes."""
+        is_online = status != "offline"
+        if self._ui_alive():
+            self.root.after(0, lambda: self._chat_view.update_partner_status(user_id, is_online, status))
+    
+    def _handle_user_list(self):
+        """Handle user list button click."""
+        if not self._user_list_dialog:
+            self._user_list_dialog = UserListDialog(
+                self.root,
+                on_select_user=self._handle_select_user_from_list,
+                on_refresh=self._handle_refresh_users_for_dialog
+            )
+        self._user_list_dialog.show()
+        self._async_service.run_async(self._do_load_users_for_dialog())
+    
+    def _handle_select_user_from_list(self, user_id: str):
+        """Handle selecting a user from the user list dialog."""
+        user_status = self._private_chat_service.get_user_status(user_id)
+        is_online = user_status.is_online if user_status else False
+        status = user_status.status if user_status else "offline"
+        
+        self._conv_manager.create_private_conversation(
+            user_id, user_id, is_online=is_online, status=status
+        )
+        self._conv_manager.switch_conversation(user_id)
+        self._chat_view.refresh_conversation_list()
+        self._chat_view.render_conversation()
+    
+    def _handle_refresh_users_for_dialog(self):
+        """Handle refresh button in user list dialog."""
+        self._async_service.run_async(self._do_load_users_for_dialog())
+    
+    async def _do_load_users_for_dialog(self):
+        """Load all users from API and update dialog."""
+        try:
+            result = await self._api_client.get_all_users()
+            if result and self._ui_alive():
+                users = result.get("users", [])
+                
+                for user_data in users:
+                    if isinstance(user_data, dict):
+                        user_id = user_data.get("user_id")
+                        status = user_data.get("status", "offline")
+                        is_online = user_data.get("is_online", False)
+                        
+                        if user_id:
+                            self._conv_manager.update_partner_status(user_id, is_online, status)
+                            self._private_chat_service.update_user_status(
+                                user_id, 
+                                is_online=is_online, 
+                                status=status
+                            )
+                
+                if self._user_list_dialog:
+                    self.root.after(0, lambda: self._user_list_dialog.set_users(users))
+        except Exception as e:
+            logger.warning("Failed to load users: %s", e)
+    
     # ==================== Message Handling ====================
     
     async def _poll_messages(self):
         """Poll for new messages."""
+        connection_lost = False
+        
         while self._running and not self._closing:
             # noinspection PyBroadException
             try:
@@ -467,8 +607,18 @@ class GUIClient(Client):
                 await asyncio.sleep(0.1)
             except asyncio.CancelledError:
                 break
-            except Exception:
-                await asyncio.sleep(0.5)
+            except Exception as e:
+                if not connection_lost:
+                    connection_lost = True
+                    logger.warning("Connection lost: %s", e)
+                    
+                    if self._ui_alive():
+                        self.root.after(0, lambda: messagebox.showwarning(
+                            "Connection Lost", 
+                            "Server connection has been lost. Please try to reconnect."
+                        ))
+                
+                await asyncio.sleep(1.0)
     
     def _add_message_to_ui(self, item: MessageItem):
         """Add a message to the UI."""
