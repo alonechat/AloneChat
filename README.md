@@ -1,13 +1,7 @@
 # AloneChat
 
-A secure, modular chat application with WebSocket-based real-time communication, plugin extensibility, and unified logging.
-
-> [!WARNING]
-> 
-> Because windows-curses is not supported on python 3.14 and above, this project is currently only compatible with python 3.13 and below on Windows.
-> Or you can build `https://github.com/pmbarrett314/windows-curses` as a workaround, but it may not be stable.
->
-> Curses on Windows really be a curse.
+A secure, modular chat application with WebSocket-based real-time communication, 
+plugin extensibility, and unified logging.
 
 ## Features
 
@@ -20,134 +14,7 @@ A secure, modular chat application with WebSocket-based real-time communication,
 
 ## Architecture
 
-```
-AloneChat/.
-├── AloneChat
-│   ├── __init__.py
-│   ├── api
-│   │   ├── __init__.py
-│   │   ├── client.py
-│   │   ├── routes.py
-│   │   ├── routes_api.py
-│   │   └── routes_base.py
-│   ├── config.py
-│   ├── core
-│   │   ├── __init__.py
-│   │   ├── client
-│   │   │   ├── __init__.py
-│   │   │   ├── auth
-│   │   │   │   ├── __init__.py
-│   │   │   │   └── auth_flow.py
-│   │   │   ├── cli
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── parser.py
-│   │   │   │   └── selector.py
-│   │   │   ├── client_base.py
-│   │   │   ├── curses_client.py
-│   │   │   ├── gui
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── client.py
-│   │   │   │   ├── components
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── common.py
-│   │   │   │   │   └── message_card.py
-│   │   │   │   ├── controllers
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── auth_view.py
-│   │   │   │   │   ├── chat_view.py
-│   │   │   │   │   └── search_dialog.py
-│   │   │   │   ├── models
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── data.py
-│   │   │   │   │   └── theme.py
-│   │   │   │   └── services
-│   │   │   │       ├── __init__.py
-│   │   │   │       ├── async_service.py
-│   │   │   │       ├── conversation_manager.py
-│   │   │   │       ├── persistence_service.py
-│   │   │   │       └── search_service.py
-│   │   │   ├── gui_client.py
-│   │   │   ├── input
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── handler.py
-│   │   │   │   └── key_mappings.py
-│   │   │   ├── runner.py
-│   │   │   ├── ui
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── message_buffer.py
-│   │   │   │   └── renderer.py
-│   │   │   └── utils
-│   │   │       ├── __init__.py
-│   │   │       ├── constants.py
-│   │   │       └── exceptions.py
-│   │   ├── logging
-│   │   │   ├── __init__.py
-│   │   │   └── utils.py
-│   │   ├── message
-│   │   │   ├── __init__.py
-│   │   │   └── protocol.py
-│   │   └── server
-│   │       ├── __init__.py
-│   │       ├── auth
-│   │       │   └── __init__.py
-│   │       ├── command.py
-│   │       ├── commands
-│   │       │   └── __init__.py
-│   │       ├── interfaces
-│   │       │   └── __init__.py
-│   │       ├── manager.py
-│   │       ├── routing
-│   │       │   └── __init__.py
-│   │       ├── session
-│   │       │   └── __init__.py
-│   │       ├── transport
-│   │       │   └── __init__.py
-│   │       ├── utils
-│   │       │   ├── __init__.py
-│   │       │   └── helpers.py
-│   │       └── websocket_manager.py
-│   ├── plugins
-│   │   ├── __init__.py
-│   │   ├── base.py
-│   │   ├── context.py
-│   │   ├── exceptions.py
-│   │   ├── loader.py
-│   │   ├── manager.py
-│   │   └── registry.py
-│   ├── start
-│   │   ├── api.py
-│   │   ├── client.py
-│   │   └── server.py
-│   └── test
-│       ├── __init__.py
-│       ├── test_api.py
-│       ├── test_fix.py
-│       └── test_server_refactor.py
-├── CHANGELOG.md
-├── LICENSE
-├── NOTICE
-├── README-zh.md
-├── README.md
-├── SECURITY.md
-├── TODOs.md
-├── __main__.py
-├── docs
-│   ├── LOGGING.md
-│   └── WS_SERVER.md
-├── feedback.json
-├── logs
-│   ├── dev
-│   └── gui_state.json
-├── qodana.yaml
-├── requirements-dev.txt
-├── requirements.txt
-├── tools
-│   ├── generate_hashes.py
-│   ├── key_press.py
-│   ├── packing.py
-│   └── update_version.py
-└── user_credentials.json
-```
+TODO
 
 ## Installation
 
@@ -156,7 +23,7 @@ AloneChat/.
 git clone https://github.com/your-repo/AloneChat.git
 cd AloneChat
 
-# Create virtual environment
+# Create virtual environment (optional but recommended)
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate     # Windows
@@ -197,10 +64,10 @@ python -m AloneChat client --api-host localhost --api-port 8766
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ALONECHAT_ENV` | Environment (development/production/testing) | development |
-| `JWT_SECRET` | JWT signing secret | (change in production!) |
+| Variable        | Description                                  | Default                 |
+|-----------------|----------------------------------------------|-------------------------|
+| `ALONECHAT_ENV` | Environment (development/production/testing) | development             |
+| `JWT_SECRET`    | JWT signing secret                           | (change in production!) |
 
 ### Command-Line Options
 
@@ -248,6 +115,7 @@ class MyPlugin(CommandPluginBase):
 
 ```python
 from AloneChat.core.server import HookPhase, HookContext
+manager = ...  # Get reference to UnifiedWebSocketManager
 
 def my_hook(ctx: HookContext) -> HookContext:
     if ctx.phase == HookPhase.PRE_MESSAGE:
@@ -352,7 +220,7 @@ TODO
 ## Acknowledgments
 
 - Built with [websockets](https://github.com/python-websockets/websockets)
-- GUI powered by [customtkinter](https://github.com/TomSchimansky/CustomTkinter)
+- GUI powered by [customtkinter](https://github.com/TomSchimansky/CustomTkinter)a dn
 - Authentication via [PyJWT](https://github.com/jpadilla/pyjwt)
 
 ## Contributing

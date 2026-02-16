@@ -14,7 +14,7 @@ bcrypt
 darkdetect
 sv-ttk
 
-windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
+# windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
 
 # System utilities
 psutil

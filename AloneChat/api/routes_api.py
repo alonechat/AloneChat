@@ -3,7 +3,7 @@ import logging
 from typing import Any, Optional
 
 # Third-party imports
-from fastapi import HTTPException
+# from fastapi import HTTPException
 
 # Local imports
 from AloneChat import __version__ as __main_version__

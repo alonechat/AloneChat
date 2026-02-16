@@ -49,9 +49,9 @@ def parse():
     client_parser.add_argument('--api-port', type=int, default=DEFAULT_API_PORT, help='API server port (default: 8766)')
     client_parser.add_argument(
         '--ui',
-        choices=['gui', 'tui'],
+        choices=['gui'],
         default='gui',
-        help='User interface type: gui (modern GUI), tui (curses TUI) (default: gui)'
+        help='User interface type: gui (modern GUI) (default: gui)'
     )
 
     # Add 'srv-only' command
