@@ -2,6 +2,7 @@
 Message service for AloneChat server.
 
 Pure message routing and broadcasting logic without transport concerns.
+Supports both WebSocket connections and SSE (Server-Sent Events) clients.
 """
 
 import asyncio
@@ -83,11 +84,18 @@ class MessageQueue:
 
 
 class MessageService:
-    """Pure message routing - no transport concerns."""
+    """
+    Pure message routing - no transport concerns.
+    
+    Supports two types of clients:
+    - WebSocket clients: registered with a send callback
+    - SSE clients: use message queues for polling
+    """
     
     def __init__(self, max_concurrent: int = 50):
         self._queues: Dict[str, MessageQueue] = {}
         self._connections: Dict[str, Callable] = {}
+        self._sse_clients: Set[str] = set()
         self._max_concurrent = max_concurrent
         self._semaphore: Optional[asyncio.Semaphore] = None
     
@@ -97,12 +105,24 @@ class MessageService:
         return self._semaphore
     
     def register_connection(self, user_id: str, send_func: Callable) -> None:
+        """Register a WebSocket connection for a user."""
         self._connections[user_id] = send_func
         if user_id not in self._queues:
             self._queues[user_id] = MessageQueue()
     
     def unregister_connection(self, user_id: str) -> None:
+        """Unregister a WebSocket connection."""
         self._connections.pop(user_id, None)
+    
+    def register_sse_client(self, user_id: str) -> None:
+        """Register an SSE client (uses queue-based messaging)."""
+        self._sse_clients.add(user_id)
+        if user_id not in self._queues:
+            self._queues[user_id] = MessageQueue()
+    
+    def unregister_sse_client(self, user_id: str) -> None:
+        """Unregister an SSE client."""
+        self._sse_clients.discard(user_id)
     
     def get_queue(self, user_id: str) -> MessageQueue:
         if user_id not in self._queues:
@@ -111,6 +131,9 @@ class MessageService:
     
     def has_connection(self, user_id: str) -> bool:
         return user_id in self._connections
+    
+    def has_sse_client(self, user_id: str) -> bool:
+        return user_id in self._sse_clients
     
     async def send_to_user(self, user_id: str, message: Message) -> DeliveryResult:
         serialized = message.serialize()
@@ -132,11 +155,20 @@ class MessageService:
         return DeliveryResult(success=True, user_id=user_id)
     
     async def broadcast(self, message: Message, exclude: Optional[Set[str]] = None) -> Dict[str, DeliveryResult]:
+        """
+        Broadcast message to all connected users.
+        
+        Sends to:
+        - WebSocket clients via their registered send callback
+        - SSE clients via their message queue
+        """
         exclude = exclude or set()
         results: Dict[str, DeliveryResult] = {}
         
         serialized = message.serialize()
         semaphore = self._get_semaphore()
+        
+        all_users = set(self._connections.keys()) | set(self._sse_clients)
         
         async def _send(uid: str) -> Tuple[str, DeliveryResult]:
             async with semaphore:
@@ -157,7 +189,7 @@ class MessageService:
                     await queue.put(serialized)
                     return uid, DeliveryResult(success=True, user_id=uid)
         
-        targets = [uid for uid in self._connections.keys() if uid not in exclude]
+        targets = [uid for uid in all_users if uid not in exclude]
         
         if targets:
             batch_results = await asyncio.gather(
@@ -180,6 +212,10 @@ class MessageService:
     def clear_queue(self, user_id: str) -> None:
         if user_id in self._queues:
             del self._queues[user_id]
+    
+    def get_all_connected_users(self) -> Set[str]:
+        """Get all users with active connections (WebSocket or SSE)."""
+        return set(self._connections.keys()) | self._sse_clients
 
 
 _message_service: Optional[MessageService] = None

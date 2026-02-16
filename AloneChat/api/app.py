@@ -439,29 +439,34 @@ async def message_events(request: Request):
     if not username:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    queue = get_message_service().get_queue(username)
+    message_service = get_message_service()
+    message_service.register_sse_client(username)
+    queue = message_service.get_queue(username)
     
     async def event_generator():
         yield ": connected\n\n"
         
-        while True:
-            if await request.is_disconnected():
-                break
-            
-            msg_data = await queue.get(timeout=30.0)
-            if msg_data:
-                try:
-                    msg = Message.deserialize(msg_data)
-                    data = json.dumps({
-                        "sender": msg.sender,
-                        "content": msg.content,
-                        "type": msg.type.value
-                    })
-                    yield f"data: {data}\n\n"
-                except Exception:
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                
+                msg_data = await queue.get(timeout=30.0)
+                if msg_data:
+                    try:
+                        msg = Message.deserialize(msg_data)
+                        data = json.dumps({
+                            "sender": msg.sender,
+                            "content": msg.content,
+                            "type": msg.type.value
+                        })
+                        yield f"data: {data}\n\n"
+                    except Exception:
+                        yield ": heartbeat\n\n"
+                else:
                     yield ": heartbeat\n\n"
-            else:
-                yield ": heartbeat\n\n"
+        finally:
+            message_service.unregister_sse_client(username)
     
     return StreamingResponse(
         event_generator(),
