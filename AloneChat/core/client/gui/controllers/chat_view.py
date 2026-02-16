@@ -1,10 +1,11 @@
 """
-Chat view with conversations, messages, and input - sv_ttk styled.
+Chat view with conversations, messages, and input.
 Uses modular components for better maintainability.
 """
+
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, TYPE_CHECKING
 
 from ..components import WinUI3ScrollableFrame, WinUI3MessageCard
 from ..models.data import MessageItem, ReplyContext
@@ -13,24 +14,32 @@ from .header import HeaderBar
 from .sidebar import Sidebar
 from .message_area import MessageArea
 from .input_area import InputArea
+from .status_bar import StatusBar
+
+if TYPE_CHECKING:
+    pass
 
 
 class ChatView:
-    """Main chat view with sidebar and message area - sv_ttk styled."""
+    """Main chat view with sidebar, message area, and status bar."""
     
-    def __init__(self, root: tk.Tk, username: str,
-                 conversation_manager: ConversationManager,
-                 on_send: Callable[[str], None],
-                 on_select_conversation: Callable[[str], None],
-                 on_reply: Callable[[str, str, str], None],
-                 on_clear_reply: Callable[[], None],
-                 on_export_md: Callable[[], None],
-                 on_export_json: Callable[[], None],
-                 on_export_logs: Callable[[], None],
-                 on_logout: Callable[[], None],
-                 on_set_status: Optional[Callable[[str], None]] = None,
-                 on_refresh_users: Optional[Callable[[], None]] = None,
-                 on_user_list: Optional[Callable[[], None]] = None):
+    def __init__(
+        self,
+        root: tk.Tk,
+        username: str,
+        conversation_manager: ConversationManager,
+        on_send: Callable[[str], None],
+        on_select_conversation: Callable[[str], None],
+        on_reply: Callable[[str, str, str], None],
+        on_clear_reply: Callable[[], None],
+        on_export_md: Callable[[], None],
+        on_export_json: Callable[[], None],
+        on_export_logs: Callable[[], None],
+        on_logout: Callable[[], None],
+        on_set_status: Optional[Callable[[str], None]] = None,
+        on_refresh_users: Optional[Callable[[], None]] = None,
+        on_user_list: Optional[Callable[[], None]] = None
+    ):
         self.root = root
         self.username = username
         self.conv_manager = conversation_manager
@@ -53,18 +62,21 @@ class ChatView:
         self._sidebar: Optional[Sidebar] = None
         self._message_area: Optional[MessageArea] = None
         self._input_area: Optional[InputArea] = None
+        self._status_bar: Optional[StatusBar] = None
     
-    def show(self):
-        """Display the chat view with sv_ttk styling."""
+    def show(self) -> None:
+        """Display the chat view."""
         self.root.grid_rowconfigure(0, weight=0)
         self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_rowconfigure(2, weight=0)
         self.root.grid_columnconfigure(0, weight=1)
         
         self._build_header()
         self._build_main_pane()
+        self._build_status_bar()
         self._bind_shortcuts()
     
-    def hide(self):
+    def hide(self) -> None:
         """Hide the chat view."""
         if self._header:
             self._header.destroy()
@@ -78,12 +90,15 @@ class ChatView:
         if self._input_area:
             self._input_area.destroy()
             self._input_area = None
+        if self._status_bar:
+            self._status_bar.destroy()
+            self._status_bar = None
         if self.main_pane:
             self.main_pane.destroy()
             self.main_pane = None
         self.frame = None
     
-    def _build_header(self):
+    def _build_header(self) -> None:
         """Build the header bar."""
         self._header = HeaderBar(
             self.root,
@@ -96,18 +111,17 @@ class ChatView:
         header_frame = self._header.build()
         header_frame.grid(row=0, column=0, sticky="ew")
     
-    def _build_main_pane(self):
+    def _build_main_pane(self) -> None:
         """Build the main content area."""
         self.main_pane = ttk.Frame(self.root)
-        self.main_pane.grid(row=1, column=0, sticky="nsew",
-                           padx=16, pady=12)
+        self.main_pane.grid(row=1, column=0, sticky="nsew", padx=16, pady=12)
         self.main_pane.grid_rowconfigure(0, weight=1)
         self.main_pane.grid_columnconfigure(1, weight=1)
         
         self._build_sidebar()
         self._build_chat_area()
     
-    def _build_sidebar(self):
+    def _build_sidebar(self) -> None:
         """Build the conversation sidebar."""
         self._sidebar = Sidebar(
             self.main_pane,
@@ -117,7 +131,7 @@ class ChatView:
         )
         self._sidebar.build().grid(row=0, column=0, sticky="ns")
     
-    def _build_chat_area(self):
+    def _build_chat_area(self) -> None:
         """Build the chat message area."""
         right = ttk.Frame(self.main_pane)
         right.grid(row=0, column=1, sticky="nsew", padx=(16, 0))
@@ -138,31 +152,36 @@ class ChatView:
         )
         self._input_area.build().grid(row=1, column=0, sticky="ew", pady=(12, 0))
     
-    def _bind_shortcuts(self):
+    def _build_status_bar(self) -> None:
+        """Build the status bar at the bottom."""
+        self._status_bar = StatusBar(self.root)
+        self._status_bar.grid(row=2, column=0, sticky="ew")
+    
+    def _bind_shortcuts(self) -> None:
         """Bind keyboard shortcuts."""
         self.root.bind('<Control-l>', lambda e: self.on_logout())
     
-    def refresh_conversation_list(self):
+    def refresh_conversation_list(self) -> None:
         """Refresh the conversation list display."""
         if self._sidebar:
             self._sidebar.refresh_conversation_list()
     
-    def show_reply_banner(self, ctx: ReplyContext):
+    def show_reply_banner(self, ctx: ReplyContext) -> None:
         """Show reply banner with context."""
         if self._input_area:
             self._input_area.show_reply_banner(ctx)
     
-    def hide_reply_banner(self):
+    def hide_reply_banner(self) -> None:
         """Hide the reply banner."""
         if self._input_area:
             self._input_area.hide_reply_banner()
     
-    def clear_message_entry(self):
+    def clear_message_entry(self) -> None:
         """Clear the message entry field."""
         if self._input_area:
             self._input_area.clear_message_entry()
     
-    def render_conversation(self):
+    def render_conversation(self) -> None:
         """Render the active conversation messages."""
         if self._message_area:
             self._message_area.render_conversation()
@@ -175,12 +194,12 @@ class ChatView:
             return self._message_area.add_message_card(item)
         return None
     
-    def scroll_to_bottom(self):
+    def scroll_to_bottom(self) -> None:
         """Scroll to bottom of messages."""
         if self._message_area:
             self._message_area.scroll_to_bottom()
     
-    def scroll_to_card(self, card: WinUI3MessageCard):
+    def scroll_to_card(self, card: WinUI3MessageCard) -> None:
         """Scroll to a specific message card."""
         if self._message_area:
             self._message_area.scroll_to_card(card)
@@ -191,7 +210,25 @@ class ChatView:
             return self._message_area.get_message_cards()
         return []
     
-    def update_partner_status(self, partner_id: str, is_online: bool, status: str):
+    def update_partner_status(
+        self,
+        partner_id: str,
+        is_online: bool,
+        status: str
+    ) -> None:
         """Update partner status display."""
         if self._sidebar:
             self._sidebar.update_partner_status(partner_id, is_online, status)
+    
+    def set_connection_status(self, connected: bool, message: Optional[str] = None) -> None:
+        """Set connection status in the status bar."""
+        if self._status_bar:
+            self._status_bar.set_connected(connected, message)
+    
+    def set_status_message(self, message: str, color: Optional[str] = None) -> None:
+        """Set a custom status message in the status bar."""
+        if self._status_bar:
+            self._status_bar.set_status(message, color)
+
+
+__all__ = ['ChatView']

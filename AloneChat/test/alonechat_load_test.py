@@ -5,44 +5,39 @@ Separated into 3 stages: register, login, message.
 Plus a single-user high-frequency message test.
 """
 import asyncio
-import os
 import time
 import uuid
-
-# Disable proxy for localhost connections
-os.environ.pop('HTTP_PROXY', None)
-os.environ.pop('HTTPS_PROXY', None)
-os.environ.pop('http_proxy', None)
-os.environ.pop('https_proxy', None)
-os.environ.pop('ALL_PROXY', None)
-os.environ.pop('all_proxy', None)
+from dataclasses import dataclass
+from typing import List, Tuple
 
 import websockets
 
 from AloneChat.api.client import AloneChatAPIClient, close_session
-from AloneChat.core.client.utils import DEFAULT_API_PORT
 
-WS_PORT = 8765
 API_PORT = 8766
 HOST = "localhost"
 
 TOTAL_USERS = 200
 MESSAGES_PER_USER = 200
 MESSAGE_INTERVAL = 0
-BATCH_SIZE = 50
+BATCH_SIZE = TOTAL_USERS # 50
 BATCH_DELAY = 0
 
 SINGLE_USER_MESSAGES = 10000
 SINGLE_USER_INTERVAL = 0
 
 
-async def register_user(user_id: int, clients: dict) -> bool:
-    """
-    Stage 1: Register a user.
+@dataclass
+class MessageResult:
+    success_count: int = 0
+    latencies: List[float] = None
     
-    Returns:
-        True if registration successful or user already exists
-    """
+    def __post_init__(self):
+        if self.latencies is None:
+            self.latencies = []
+
+
+async def register_user(user_id: int, clients: dict) -> bool:
     username = f"user_{user_id}"
     password = "test123"
     client = clients.get(user_id)
@@ -58,12 +53,6 @@ async def register_user(user_id: int, clients: dict) -> bool:
 
 
 async def login_user(user_id: int, clients: dict) -> bool:
-    """
-    Stage 2: Login a user.
-    
-    Returns:
-        True if login successful
-    """
     username = f"user_{user_id}"
     password = "test123"
     client = clients.get(user_id)
@@ -78,41 +67,37 @@ async def login_user(user_id: int, clients: dict) -> bool:
         return False
 
 
-async def send_messages(user_id: int, clients: dict) -> int:
-    """
-    Stage 3: Send messages for a user.
-    
-    Returns:
-        Number of successful messages
-    """
+async def send_messages(user_id: int, clients: dict) -> MessageResult:
     username = f"user_{user_id}"
     client = clients.get(user_id)
+    result = MessageResult()
+    
     if not client:
-        return 0
+        return result
 
-    success_count = 0
     try:
         ws_url = client.get_ws_url()
-        async with websockets.connect(ws_url,proxy=None) as ws:
+        async with websockets.connect(ws_url, proxy=None) as ws:
             for i in range(MESSAGES_PER_USER):
                 msg_content = f"hello {i} {uuid.uuid4()}"
-                result = await client.send_message(msg_content)
-                if result.get("success"):
-                    success_count += 1
+                msg_start = time.time()
+                send_result = await client.send_message(msg_content)
+                msg_latency = time.time() - msg_start
+                result.latencies.append(msg_latency)
+                
+                if send_result.get("success"):
+                    result.success_count += 1
                 else:
-                    print(f"{username} send failed: {result.get('message')}")
+                    print(f"{username} send failed: {send_result.get('message')}")
                 if MESSAGE_INTERVAL > 0:
                     await asyncio.sleep(MESSAGE_INTERVAL)
     except Exception as e:
         print(f"{username} message error: {e}")
 
-    return success_count
+    return result
 
 
 async def create_clients(count: int) -> dict:
-    """
-    Pre-create client instances (not counted in test time).
-    """
     print(f"Pre-creating {count} client instances...")
     clients = {}
     for i in range(count):
@@ -121,18 +106,12 @@ async def create_clients(count: int) -> dict:
     return clients
 
 
-async def run_stage(name: str, coro_func, clients: dict, total_users: int, batch_size: int, batch_delay: float):
-    """
-    Run a stage with batching and return stats.
-    
-    Returns:
-        Tuple of (stage_duration, success_count, total_count)
-        For message stage, success_count is total successful messages.
-    """
+async def run_stage(name: str, coro_func, clients: dict, total_users: int, batch_size: int, batch_delay: float) -> Tuple[float, int, int, List[float]]:
     print(f"=== Stage: {name} ===")
     start = time.time()
     success_count = 0
     total_count = 0
+    all_latencies: List[float] = []
 
     for batch_start in range(0, total_users, batch_size):
         batch_end = min(batch_start + batch_size, total_users)
@@ -145,6 +124,9 @@ async def run_stage(name: str, coro_func, clients: dict, total_users: int, batch
             if isinstance(r, bool):
                 if r:
                     success_count += 1
+            elif isinstance(r, MessageResult):
+                success_count += r.success_count
+                all_latencies.extend(r.latencies)
             elif isinstance(r, int):
                 success_count += r
         total_count += len(results)
@@ -154,14 +136,10 @@ async def run_stage(name: str, coro_func, clients: dict, total_users: int, batch
     end = time.time()
     duration = end - start
     print(f"  Duration: {duration:.2f}s, Success: {success_count}/{total_count}")
-    return duration, success_count, total_count
+    return duration, success_count, total_count, all_latencies
 
 
 async def single_user_high_frequency_test():
-    """
-    Single user high-frequency message test.
-    Tests message throughput for a single connection.
-    """
     print()
     print("=" * 50)
     print("=== Single User High-Frequency Test ===")
@@ -191,7 +169,7 @@ async def single_user_high_frequency_test():
     ws_url = client.get_ws_url()
     
     try:
-        async with websockets.connect(ws_url,proxy=None) as ws:
+        async with websockets.connect(ws_url, proxy=None) as ws:
             print(f"WebSocket connected, sending {SINGLE_USER_MESSAGES} messages...")
             start = time.time()
             
@@ -238,9 +216,6 @@ async def single_user_high_frequency_test():
 
 
 async def multi_user_test():
-    """
-    Multi-user concurrent test.
-    """
     print(f"Starting load test with {TOTAL_USERS} users...")
     print(f"Each user sends {MESSAGES_PER_USER} message(s)")
     print(f"Batch size: {BATCH_SIZE}, Batch delay: {BATCH_DELAY}s")
@@ -252,15 +227,15 @@ async def multi_user_test():
     print("====== Starting Multi-User Test ======")
     overall_start = time.time()
 
-    reg_duration, reg_success, reg_total = await run_stage(
+    reg_duration, reg_success, reg_total, _ = await run_stage(
         "Register", register_user, clients, TOTAL_USERS, BATCH_SIZE, BATCH_DELAY
     )
 
-    login_duration, login_success, login_total = await run_stage(
+    login_duration, login_success, login_total, _ = await run_stage(
         "Login", login_user, clients, TOTAL_USERS, BATCH_SIZE, BATCH_DELAY
     )
 
-    msg_duration, msg_success, msg_total = await run_stage(
+    msg_duration, msg_success, msg_total, msg_latencies = await run_stage(
         "Messages", send_messages, clients, TOTAL_USERS, BATCH_SIZE, BATCH_DELAY
     )
 
@@ -291,9 +266,36 @@ async def multi_user_test():
     total_msg_attempted = msg_total * MESSAGES_PER_USER
     print(f"Attempted: {total_msg_attempted}, Success: {msg_success}")
     print(f"Stage duration: {msg_duration:.2f}s")
-    if msg_duration > 0:
-        print(f"Avg time: {msg_duration * 1000 / msg_success:.2f}ms" if msg_success > 0 else "Avg time: N/A")
+    if msg_duration > 0 and msg_success > 0:
+        print(f"Avg send time: {msg_duration * 1000 / msg_success:.2f}ms")
         print(f"Throughput: {msg_success / msg_duration:.2f} msg/s")
+    print()
+    print("=== Forward Stats (Broadcast) ===")
+    online_users = login_success
+    forward_per_msg = max(0, online_users - 1)
+    total_forwards = msg_success * forward_per_msg
+    print(f"Online users: {online_users}")
+    print(f"Forward per message: {forward_per_msg}")
+    print(f"Total forward count: {total_forwards}")
+    if msg_duration > 0 and total_forwards > 0:
+        forward_throughput = total_forwards / msg_duration
+        avg_forward_time = msg_duration * 1000 / total_forwards
+        print(f"Forward throughput: {forward_throughput:.2f} forward/s")
+        print(f"Avg forward time: {avg_forward_time:.4f}ms")
+    if msg_latencies:
+        print()
+        print("=== Latency Distribution ===")
+        print(f"Total samples: {len(msg_latencies)}")
+        print(f"Avg latency: {sum(msg_latencies) / len(msg_latencies) * 1000:.2f}ms")
+        sorted_latencies = sorted(msg_latencies)
+        p50 = sorted_latencies[len(sorted_latencies) // 2]
+        p90 = sorted_latencies[int(len(sorted_latencies) * 0.9)]
+        p99 = sorted_latencies[int(len(sorted_latencies) * 0.99)]
+        print(f"P50 latency: {p50 * 1000:.2f}ms")
+        print(f"P90 latency: {p90 * 1000:.2f}ms")
+        print(f"P99 latency: {p99 * 1000:.2f}ms")
+        print(f"Min latency: {min(msg_latencies) * 1000:.2f}ms")
+        print(f"Max latency: {max(msg_latencies) * 1000:.2f}ms")
 
 
 async def main():

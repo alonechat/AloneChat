@@ -20,7 +20,7 @@ class Config:
     DEFAULT_SERVER_PORT = 8765
     DEFAULT_API_PORT = 8766
 
-    # User Database
+    # User Database (JSON fallback)
     USER_DB_FILE = "user_credentials.json"
 
     # Default Server Address
@@ -28,6 +28,14 @@ class Config:
 
     # Default API Address (for internal API communication)
     DEFAULT_API_ADDRESS = 8766
+
+    # ClickHouse Configuration
+    CLICKHOUSE_HOST = os.environ.get("CLICKHOUSE_HOST", "localhost")
+    CLICKHOUSE_PORT = int(os.environ.get("CLICKHOUSE_PORT", 9000))
+    CLICKHOUSE_USER = os.environ.get("CLICKHOUSE_USER", "default")
+    CLICKHOUSE_PASSWORD = os.environ.get("CLICKHOUSE_PASSWORD", "")
+    CLICKHOUSE_DATABASE = os.environ.get("CLICKHOUSE_DATABASE", "alonechat")
+    CLICKHOUSE_ENABLED = os.environ.get("CLICKHOUSE_ENABLED", "false").lower() == "true"
 
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
@@ -41,7 +49,13 @@ class Config:
             "DEFAULT_API_PORT": cls.DEFAULT_API_PORT,
             "DEFAULT_SERVER_ADDRESS": cls.DEFAULT_SERVER_ADDRESS,
             "DEFAULT_API_ADDRESS": cls.DEFAULT_API_ADDRESS,
-            "USER_DB_FILE": cls.USER_DB_FILE
+            "USER_DB_FILE": cls.USER_DB_FILE,
+            "CLICKHOUSE_HOST": cls.CLICKHOUSE_HOST,
+            "CLICKHOUSE_PORT": cls.CLICKHOUSE_PORT,
+            "CLICKHOUSE_USER": cls.CLICKHOUSE_USER,
+            "CLICKHOUSE_PASSWORD": cls.CLICKHOUSE_PASSWORD,
+            "CLICKHOUSE_DATABASE": cls.CLICKHOUSE_DATABASE,
+            "CLICKHOUSE_ENABLED": cls.CLICKHOUSE_ENABLED,
         }
 
 

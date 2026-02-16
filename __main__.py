@@ -8,7 +8,7 @@ Enhanced with unified logging system integration.
 import argparse
 import sys
 
-from AloneChat.start import client, server, api
+from AloneChat.start import client, server
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 from AloneChat.core.logging import auto_configure, get_logger
 
@@ -54,17 +54,6 @@ def parse():
         help='User interface type: gui (modern GUI) (default: gui)'
     )
 
-    # Add 'srv-only' command
-    srv_parser = subparsers.add_parser('srv-only', help='Start WebSocket server only')
-    srv_parser.add_argument('--port', type=int, default=None, help='WebSocket port (default: 8765)')
-    srv_parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
-    srv_parser.add_argument('--no-plugins', action='store_true', help='Disable plugin system')
-
-    # Add 'api-only' command
-    api_parser = subparsers.add_parser('api-only', help='Start HTTP API server only')
-    api_parser.add_argument('--port', type=int, default=None, help='API server port (default: 8766)')
-    api_parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
-
     args = parser.parse_args()
 
     return args
@@ -89,20 +78,10 @@ def main():
             server.server(
                 port=args.port,
                 host=args.host,
-                enable_plugins=not args.no_plugins
             )
         elif args.command == 'client':
             ui = args.ui
             client.client(api_host=args.api_host, api_port=args.api_port, ui=ui)
-        elif args.command == 'srv-only':
-            server.server(
-                port=args.port,
-                host=args.host,
-                srv_only=True,
-                enable_plugins=not args.no_plugins
-            )
-        elif args.command == 'api-only':
-            api.api(port=args.port)
         else:
             raise ValueError(f'Unknown command: {args.command}')
     except KeyboardInterrupt:

@@ -1,6 +1,7 @@
 """
 GUI Controllers package.
 """
+
 from .auth_view import AuthView
 from .chat_view import ChatView
 from .header import HeaderBar
@@ -9,6 +10,7 @@ from .message_area import MessageArea
 from .input_area import InputArea
 from .search_dialog import SearchDialog
 from .user_list_dialog import UserListDialog
+from .status_bar import StatusBar
 
 __all__ = [
     'AuthView',
@@ -19,4 +21,5 @@ __all__ = [
     'InputArea',
     'SearchDialog',
     'UserListDialog',
+    'StatusBar',
 ]

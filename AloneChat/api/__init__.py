@@ -1,3 +1,10 @@
-from .routes import app, run
+"""
+AloneChat API module.
 
-__all__ = ['app', 'run']
+This module provides the HTTP/WebSocket interaction layer.
+All business logic is delegated to the server layer.
+"""
+
+from .app import app
+
+__all__ = ['app']

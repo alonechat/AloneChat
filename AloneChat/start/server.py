@@ -1,121 +1,100 @@
 """
 Server startup module for AloneChat application.
-Provides the entry point for starting the chat server and api services.
-
-Enhanced with plugin system integration, lifecycle hooks, and unified logging.
+Provides the entry point for starting the chat server and API services.
 """
 
-import asyncio
+import signal
+import sys
 import threading
-from typing import Callable
+import time
 
 import uvicorn
 
 import AloneChat
 import AloneChat.config as config
 from AloneChat.api.routes import app
-from AloneChat.api.routes_api import get_ws_manager, reset_ws_manager
 from AloneChat.core.logging import get_logger, auto_configure
-from AloneChat.core.server import UnifiedWebSocketManager, HookPhase, HookContext
+from AloneChat.core.server import get_database, shutdown_user_service
 
 logger = get_logger(__name__)
 
-
-def _reset_user_statuses():
-    """Reset all user online statuses to offline."""
-    from AloneChat.api.routes import load_user_credentials, save_user_credentials
-    
-    user_credentials = load_user_credentials()
-    for username in user_credentials:
-        user_credentials[username]['is_online'] = False
-    save_user_credentials(user_credentials)
-    logger.info("All user credentials saved. All statuses reset to 'offline'.")
+_shutdown_state = 0
+_shutdown_lock = threading.Lock()
 
 
-def _create_user_status_callback(is_online: bool) -> Callable[[str], None]:
-    """
-    Create a callback function for user status updates.
-    
-    Args:
-        is_online: Whether the user is coming online or going offline
-        
-    Returns:
-        Callback function
-    """
-    def callback(username: str) -> None:
-        try:
-            from AloneChat.api.routes import update_user_online_status
-            update_user_online_status(username, is_online)
-        except Exception as e:
-            logger.error("Failed to update user status for %s: %s", username, e)
-    
-    return callback
+def _set_all_users_offline():
+    """Set ALL users to offline status using single database query."""
+    db = get_database()
+    count = db.set_all_offline()
+    logger.info("Set %d users to offline status", count)
+    return count
 
 
-def _setup_default_hooks(manager: UnifiedWebSocketManager) -> None:
-    """
-    Set up default hooks for the WebSocket manager.
+def _graceful_shutdown():
+    """Perform graceful shutdown - set users offline and flush buffer."""
+    global _shutdown_state
     
-    Args:
-        manager: UnifiedWebSocketManager instance
-    """
-    def log_connections(ctx: HookContext) -> HookContext:
-        if ctx.phase == HookPhase.POST_CONNECT:
-            logger.info("User connected: %s", ctx.user_id)
-        elif ctx.phase == HookPhase.POST_DISCONNECT:
-            logger.info("User disconnected: %s", ctx.user_id)
-        return ctx
-    
-    manager.register_hook(HookPhase.POST_CONNECT, log_connections, priority=100)
-    manager.register_hook(HookPhase.POST_DISCONNECT, log_connections, priority=100)
+    with _shutdown_lock:
+        if _shutdown_state == 0:
+            _shutdown_state = 1
+            logger.info("")
+            logger.info("=" * 50)
+            logger.info("Graceful shutdown initiated (Ctrl+C again to force quit)")
+            logger.info("Setting all users offline...")
+            logger.info("=" * 50)
+            logger.info("")
+            
+            try:
+                _set_all_users_offline()
+                shutdown_user_service()
+                logger.info("Graceful shutdown complete. Press Ctrl+C again to force exit.")
+            except Exception as e:
+                logger.error("Error during graceful shutdown: %s", e)
+            
+        elif _shutdown_state == 1:
+            _shutdown_state = 2
+            logger.info("")
+            logger.info("=" * 50)
+            logger.info("Force quit requested - exiting immediately")
+            logger.info("=" * 50)
+            logger.info("")
+            sys.exit(1)
+
+
+def _signal_handler(signum, frame):
+    """Handle shutdown signals with two-stage shutdown."""
+    _graceful_shutdown()
 
 
 def server(
     port: int = None,
     srv_only: bool = False,
-    enable_plugins: bool = True,
     host: str = "0.0.0.0"
 ) -> None:
     """
-    Start the chat server and API services on the specified port.
+    Start the chat server and API services.
 
     Args:
         port: Port number to listen on (default: from config)
         srv_only: If True, serve only the WebSocket server (no HTTP API)
-        enable_plugins: Whether to enable the plugin system
         host: Host to bind to (default: 0.0.0.0 for all interfaces)
     """
+    global _shutdown_state
+    _shutdown_state = 0
+    
     if port is None:
         port = config.config.DEFAULT_SERVER_PORT
     
-    _reset_user_statuses()
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
     
-    # Reset any existing manager instance to ensure clean state
-    reset_ws_manager()
+    _set_all_users_offline()
     
-    # Get singleton WebSocket manager with callbacks
-    manager = get_ws_manager(
-        on_user_connect=_create_user_status_callback(True),
-        on_user_disconnect=_create_user_status_callback(False),
-        enable_plugins=enable_plugins
-    )
-    
-    _setup_default_hooks(manager)
-
     logger.info(AloneChat.__doc__)
-    
-    async def start_websocket_server():
-        """Start the WebSocket server."""
-        try:
-            async with manager.run(host, port):
-                logger.info("WebSocket server running on ws://%s:%s", host, port)
-                await asyncio.Future()
-        except asyncio.CancelledError:
-            logger.info("WebSocket server cancelled")
-        except Exception as e:
-            logger.exception("WebSocket server error: %s", e)
-        finally:
-            logger.info("WebSocket server stopped")
+    logger.info("")
+    logger.info("Server started. Press Ctrl+C to shutdown gracefully.")
+    logger.info("Press Ctrl+C twice to force quit.")
+    logger.info("")
     
     def start_http_server():
         """Start the HTTP API server."""
@@ -135,37 +114,18 @@ def server(
             http_thread.start()
             logger.info("HTTP API server starting on http://%s:%s", host, port + 1)
         
-        asyncio.run(start_websocket_server())
+        while _shutdown_state < 2:
+            time.sleep(0.5)
+            if _shutdown_state == 1:
+                break
     except KeyboardInterrupt:
-        logger.info("Server shutdown requested by user")
+        _graceful_shutdown()
     except Exception as e:
         logger.exception("Server error: %s", e)
     finally:
+        if _shutdown_state == 0:
+            _graceful_shutdown()
         logger.info("Server shutdown complete")
-
-
-def server_legacy(
-    port: int = None,
-    srv_only: bool = False
-) -> None:
-    """
-    Start the chat server (legacy alias, now uses UnifiedWebSocketManager).
-    
-    Deprecated: Use server() instead.
-    
-    Args:
-        port: Port number to listen on
-        srv_only: If True, serve only the WebSocket server
-    """
-    import warnings
-    warnings.warn(
-        "server_legacy() is deprecated. Use server() instead.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    
-    # Legacy mode now uses UnifiedWebSocketManager
-    server(port=port, srv_only=srv_only)
 
 
 if __name__ == "__main__":
@@ -184,34 +144,18 @@ if __name__ == "__main__":
         help="Run only WebSocket server (no HTTP API)"
     )
     parser.add_argument(
-        "--no-plugins",
-        action="store_true",
-        help="Disable plugin system"
-    )
-    parser.add_argument(
         "--host",
         type=str,
         default="0.0.0.0",
         help="Host to bind to"
     )
-    parser.add_argument(
-        "--legacy",
-        action="store_true",
-        help="Use legacy WebSocketManager (deprecated)"
-    )
     
     args = parser.parse_args()
     
-    # Initialize unified logging system
     auto_configure()
     
-    if args.legacy:
-        # noinspection PyDeprecation
-        server_legacy(port=args.port, srv_only=args.srv_only)
-    else:
-        server(
-            port=args.port,
-            srv_only=args.srv_only,
-            enable_plugins=not args.no_plugins,
-            host=args.host
-        )
+    server(
+        port=args.port,
+        srv_only=args.srv_only,
+        host=args.host
+    )

@@ -8,7 +8,10 @@ uvicorn
 websockets
 
 # Cryptography
-bcrypt
+argon2-cffi
+
+# Database
+clickhouse-driver
 
 # User interface
 darkdetect

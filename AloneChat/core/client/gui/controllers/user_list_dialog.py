@@ -1,6 +1,7 @@
 """
-User list dialog for selecting users to chat with - sv_ttk styled.
+User list dialog for selecting users to chat with.
 """
+
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, List, Dict, Any, Optional
@@ -10,8 +11,8 @@ class UserListDialog:
     """Dialog showing list of users with their status."""
     
     def __init__(
-        self, 
-        root: tk.Tk, 
+        self,
+        root: tk.Tk,
         on_select_user: Callable[[str], None],
         on_refresh: Optional[Callable[[], None]] = None
     ):
@@ -23,7 +24,7 @@ class UserListDialog:
         self.users_listbox: Optional[tk.Listbox] = None
         self.users_data: List[Dict[str, Any]] = []
     
-    def show(self):
+    def show(self) -> None:
         """Show the user list dialog."""
         if self.window and self.window.winfo_exists():
             self.window.lift()
@@ -62,19 +63,29 @@ class UserListDialog:
         btn_frame.pack(fill="x")
         
         if self.on_refresh:
-            ttk.Button(btn_frame, text="Refresh", 
-                      command=self._on_refresh).pack(side="left")
+            ttk.Button(
+                btn_frame,
+                text="Refresh",
+                command=self._on_refresh
+            ).pack(side="left")
         
-        ttk.Button(btn_frame, text="Chat", 
-                  command=self._on_select).pack(side="right", padx=(0, 8))
-        ttk.Button(btn_frame, text="Cancel", 
-                  command=self.hide).pack(side="right")
+        ttk.Button(
+            btn_frame,
+            text="Chat",
+            command=self._on_select
+        ).pack(side="right", padx=(0, 8))
+        
+        ttk.Button(
+            btn_frame,
+            text="Cancel",
+            command=self.hide
+        ).pack(side="right")
         
         self.window.bind("<Escape>", lambda e: self.hide())
         
         self._update_listbox()
     
-    def _update_listbox(self):
+    def _update_listbox(self) -> None:
         """Update the listbox with current users data."""
         if not self.users_listbox:
             return
@@ -83,8 +94,8 @@ class UserListDialog:
         
         for user in self.users_data:
             user_id = user.get("user_id", user.get("display_name", "Unknown"))
-            status = user.get("status", "offline")
             is_online = user.get("is_online", False)
+            status = user.get("status", "online" if is_online else "offline")
             
             status_icon = self._get_status_icon(status, is_online)
             display_text = f"{status_icon} {user_id}"
@@ -103,7 +114,7 @@ class UserListDialog:
         else:
             return "●"
     
-    def set_users(self, users: List[Any]):
+    def set_users(self, users: List[Any]) -> None:
         """Set the list of users to display."""
         self.users_data = []
         
@@ -119,11 +130,11 @@ class UserListDialog:
         
         self._update_listbox()
     
-    def _on_double_click(self, event=None):
+    def _on_double_click(self, event=None) -> None:
         """Handle double click on user."""
         self._on_select()
     
-    def _on_select(self):
+    def _on_select(self) -> None:
         """Handle select button click."""
         if not self.users_listbox:
             return
@@ -134,18 +145,20 @@ class UserListDialog:
         
         idx = selection[0]
         if 0 <= idx < len(self.users_data):
-            user_id = self.users_data[idx].get("user_id", 
-                         self.users_data[idx].get("display_name", ""))
+            user_id = self.users_data[idx].get(
+                "user_id",
+                self.users_data[idx].get("display_name", "")
+            )
             if user_id:
                 self.on_select_user(user_id)
                 self.hide()
     
-    def _on_refresh(self):
+    def _on_refresh(self) -> None:
         """Handle refresh button click."""
         if self.on_refresh:
             self.on_refresh()
     
-    def hide(self):
+    def hide(self) -> None:
         """Hide the dialog."""
         if self.window:
             try:
@@ -154,3 +167,6 @@ class UserListDialog:
                 pass
         self.window = None
         self.users_listbox = None
+
+
+__all__ = ['UserListDialog']
