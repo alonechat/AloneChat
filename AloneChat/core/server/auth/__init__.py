@@ -85,7 +85,7 @@ class JWTAuthenticator:
                 error_code="INVALID_TOKEN"
             )
         except Exception as e:
-            logger.exception("Unexpected error during authentication")
+            logger.warning("Unexpected error during authentication: %s", e, exc_info=True)
             return AuthResult(
                 success=False,
                 error_message=f"Authentication error: {e}",
@@ -147,7 +147,7 @@ class DefaultTokenExtractor:
                 if tokens:
                     return tokens[0]
         except Exception as e:
-            logger.debug("Failed to extract token from query: %s", e)
+            logger.warning("Failed to extract token from query: %s", e, exc_info=True)
         return None
     
     def _extract_from_cookie(self, websocket: Any) -> Optional[str]:
@@ -160,7 +160,7 @@ class DefaultTokenExtractor:
                 if "authToken=" in cookie:
                     return cookie.split("=", 1)[1].strip()
         except Exception as e:
-            logger.debug("Failed to extract token from cookie: %s", e)
+            logger.warning("Failed to extract token from cookie: %s", e, exc_info=True)
         return None
 
     @staticmethod

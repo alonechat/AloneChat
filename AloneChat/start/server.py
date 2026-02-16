@@ -11,6 +11,7 @@ from typing import Callable
 
 import uvicorn
 
+import AloneChat
 import AloneChat.config as config
 from AloneChat.api.routes import app
 from AloneChat.core.logging import get_logger, auto_configure
@@ -95,6 +96,8 @@ def server(
     )
     
     _setup_default_hooks(manager)
+
+    logger.info(AloneChat.__doc__)
     
     async def start_websocket_server():
         """Start the WebSocket server."""

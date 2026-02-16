@@ -184,7 +184,7 @@ class MessageProcessingPipeline:
                     result_content = processed
                     modified = True
             except Exception as e:
-                logger.exception("Error in pre-processor: %s", e)
+                logger.warning("Error in pre-processor: %s", e, exc_info=True)
         
         if self._plugin_manager:
             try:
@@ -195,7 +195,7 @@ class MessageProcessingPipeline:
                     result_content = plugin_result
                     modified = True
             except Exception as e:
-                logger.exception("Error in plugin processing: %s", e)
+                logger.warning("Error in plugin processing: %s", e, exc_info=True)
         
         try:
             message = self._command_processor.process(
@@ -209,7 +209,7 @@ class MessageProcessingPipeline:
             if message.target and message.target != target:
                 result_target = message.target
         except Exception as e:
-            logger.exception("Error in command processing: %s", e)
+            logger.warning("Error in command processing: %s", e, exc_info=True)
         
         result = ProcessingResult(
             success=True,
@@ -224,7 +224,7 @@ class MessageProcessingPipeline:
             try:
                 processor(result)
             except Exception as e:
-                logger.exception("Error in post-processor: %s", e)
+                logger.warning("Error in post-processor: %s", e, exc_info=True)
         
         return result
 
@@ -395,7 +395,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             try:
                 await conn.close(1001, "Server shutting down")
             except Exception as e:
-                logger.debug("Error closing connection for %s: %s", user_id, e)
+                logger.warning("Error closing connection for %s: %s", user_id, e, exc_info=True)
         
         if self._server:
             self._server.close()
@@ -456,7 +456,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
                 try:
                     self._on_user_connect(username)
                 except Exception as e:
-                    logger.exception("Error in user connect callback: %s", e)
+                    logger.warning("Error in user connect callback: %s", e, exc_info=True)
             
             await self._broadcast_service.notify_user_joined(username, exclude=[username])
             
@@ -465,9 +465,9 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             await self._message_loop(context, websocket)
             
         except websockets.exceptions.ConnectionClosed:
-            logger.debug("Connection closed for %s", username or "unknown")
+            logger.warning("Connection closed for %s", username or "unknown")
         except Exception as e:
-            logger.exception("Error handling connection: %s", e)
+            logger.warning("Error handling connection: %s", e, exc_info=True)
         finally:
             if username:
                 await self._cleanup_connection(username)
@@ -496,7 +496,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
                 await self._process_message(context, message)
                 
             except Exception as e:
-                logger.exception("Error processing message: %s", e)
+                logger.warning("Error processing message: %s", e, exc_info=True)
     
     async def _handle_heartbeat(self, context: ConnectionContext, message: Message) -> None:
         """Handle heartbeat message."""
@@ -576,7 +576,7 @@ class UnifiedWebSocketManager(PluginAwareComponent):
             try:
                 self._on_user_disconnect(username)
             except Exception as e:
-                logger.exception("Error in user disconnect callback: %s", e)
+                logger.warning("Error in user disconnect callback: %s", e, exc_info=True)
         
         await self._broadcast_service.notify_user_left(username)
         

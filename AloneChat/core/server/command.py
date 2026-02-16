@@ -54,7 +54,7 @@ def load() -> dict | None:
         manager = _get_manager()
         return manager.load_legacy("./AloneChat/plugins")
     except Exception as e:
-        logger.error("Failed to load plugins: %s", e)
+        logger.warning("Failed to load plugins: %s", e, exc_info=True)
         return None
 
 
@@ -103,7 +103,7 @@ class CommandSystem:
             return result
             
         except Exception as e:
-            logger.error("Error processing command: %s", e)
+            logger.warning("Error processing command: %s", e, exc_info=True)
             return Message(MessageType.TEXT, sender, input_str, target=target)
     
     @classmethod
@@ -128,6 +128,6 @@ class CommandSystem:
                     if callable(handler):
                         input_str = handler(input_str)
                 except Exception as e:
-                    logger.error("Error in command handler: %s", e)
+                    logger.warning("Error in command handler: %s", e, exc_info=True)
         
         return Message(MessageType.TEXT, sender, input_str)

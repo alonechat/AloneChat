@@ -245,7 +245,7 @@ class CommandProcessor:
             try:
                 context = processor(context)
             except Exception as e:
-                logger.exception("Error in pre-processor: %s", e)
+                logger.warning("Error in pre-processor: %s", e, exc_info=True)
         
         # Execute command handlers (including plugin-based handlers)
         result = None
@@ -256,7 +256,7 @@ class CommandProcessor:
                     if result is not None:
                         break
             except Exception as e:
-                logger.exception("Error executing command %s: %s", handler.name, e)
+                logger.warning("Error executing command %s: %s", handler.name, e, exc_info=True)
                 result = context.reply(f"Error executing command: {e}")
                 break
         
@@ -265,7 +265,7 @@ class CommandProcessor:
             try:
                 processor(context, result)
             except Exception as e:
-                logger.exception("Error in post-processor: %s", e)
+                logger.warning("Error in post-processor: %s", e, exc_info=True)
         
         if result is not None:
             return result
@@ -356,7 +356,7 @@ class PluginCommandLoader:
                     count += 1
                     
         except Exception as e:
-            logger.exception("Error loading plugin commands: %s", e)
+            logger.warning("Error loading plugin commands: %s", e, exc_info=True)
         
         return count
     

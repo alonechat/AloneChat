@@ -107,7 +107,7 @@ class MessageRouter:
                     if modified is not None:
                         message = modified
                 except Exception as e:
-                    logger.exception("Error in pre-send hook: %s", e)
+                    logger.warning("Error in pre-send hook: %s", e, exc_info=True)
         
         # Try to send via WebSocket
         connection = self._registry.get_connection(user_id)
@@ -127,6 +127,7 @@ class MessageRouter:
                     self._invoke_post_hooks(message, user_id, result)
                     return result
             except Exception as e:
+                logger.warning("Error sending to user %s: %s", user_id, e, exc_info=True)
                 result = DeliveryResult(
                     DeliveryStatus.FAILED,
                     user_id,
@@ -176,7 +177,7 @@ class MessageRouter:
                 result = await self.send_to_user(uid, msg, skip_hooks=True)
                 return uid, result
             except Exception as e:
-                logger.exception("Error sending to %s: %s", uid, e)
+                logger.warning("Error sending to %s: %s", uid, e, exc_info=True)
                 return uid, DeliveryResult(DeliveryStatus.FAILED, uid, error=str(e))
 
         send_tasks = []
@@ -193,7 +194,7 @@ class MessageRouter:
             gathered_results = await asyncio.gather(*send_tasks, return_exceptions=True)
             for item in gathered_results:
                 if isinstance(item, Exception):
-                    logger.exception("Broadcast task failed: %s", item)
+                    logger.warning("Broadcast task failed: %s", item, exc_info=True)
                 elif isinstance(item, tuple):
                     uid, result = item
                     results[uid] = result
@@ -257,7 +258,7 @@ class MessageRouter:
             try:
                 hook(message, user_id, result)
             except Exception as e:
-                logger.exception("Error in post-send hook: %s", e)
+                logger.warning("Error in post-send hook: %s", e, exc_info=True)
 
 
 class BroadcastServiceImpl:

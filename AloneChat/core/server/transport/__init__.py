@@ -63,7 +63,7 @@ class WebSocketConnection:
             await self._websocket.send(message)
             return True
         except Exception as e:
-            logger.debug("Failed to send to %s: %s", self._user_id, e)
+            logger.warning("Failed to send to %s: %s", self._user_id, e, exc_info=True)
             return False
     
     async def close(self, code: int = 1000, reason: str = "") -> None:
@@ -79,7 +79,7 @@ class WebSocketConnection:
             try:
                 await self._websocket.close(code=code, reason=reason)
             except Exception as e:
-                logger.debug("Error closing connection for %s: %s", self._user_id, e)
+                logger.warning("Error closing connection for %s: %s", self._user_id, e, exc_info=True)
     
     def is_open(self) -> bool:
         """Check if connection is open."""
@@ -240,7 +240,7 @@ class ConnectionHealthMonitor:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.exception("Error in health monitor: %s", e)
+                logger.warning("Error in health monitor: %s", e, exc_info=True)
                 await asyncio.sleep(self._check_interval)
     
     async def _check_connections(self) -> None:
@@ -257,7 +257,7 @@ class ConnectionHealthMonitor:
                 try:
                     self._on_disconnect(user_id)
                 except Exception as e:
-                    logger.exception("Error in disconnect callback: %s", e)
+                    logger.warning("Error in disconnect callback: %s", e, exc_info=True)
         
         if dead_connections:
             logger.info("Cleaned up %d dead connections", len(dead_connections))
