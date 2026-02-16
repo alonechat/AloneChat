@@ -1,4 +1,5 @@
 # Web technologies & related
+aiofiles
 aiohttp
 fastapi
 starlette
@@ -7,13 +8,16 @@ uvicorn
 websockets
 
 # Cryptography
-bcrypt
+argon2-cffi
+
+# Database
+clickhouse-driver
 
 # User interface
 darkdetect
 sv-ttk
 
-windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
+# windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
 
 # System utilities
 psutil

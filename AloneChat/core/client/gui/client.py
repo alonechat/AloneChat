@@ -1,136 +1,113 @@
 """
-Modern, simplified GUI client for AloneChat with excellent user experience.
+Modern GUI client for AloneChat using SSE for real-time messaging.
 
 Features:
+- Server-Sent Events (SSE) for efficient real-time communication
 - Clean, modern interface using ttk (themed tkinter widgets)
 - Responsive layout that adapts to window size
-- Proper bounds management - no out-of-window elements
-- Simple, intuitive user interactions
 - Modern card-based design with proper spacing
 - Smooth scrolling and message history
 - Keyboard shortcuts for power users
-- Accessible design with proper contrast
 - High-DPI support for modern displays
 """
 
-import asyncio
 import gc
+import logging
 import os
 import subprocess
 import sys
 import tkinter as tk
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox
 from typing import Optional
 
-# noinspection PyUnusedImports
 import darkdetect
 import sv_ttk
 
-from AloneChat.api.client import AloneChatAPIClient
 from AloneChat.core.client.client_base import Client
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
 from .components import WinUI3MessageCard
 from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
-from .controllers.friends_view import FriendsView
 from .controllers.search_dialog import SearchDialog
-from .models.data import MessageItem, ReplyContext
-from .services import ConversationManager, SearchService, PersistenceService, AsyncService
+from .controllers.user_list_dialog import UserListDialog
+from .services.async_service import AsyncService
+from .services.conversation_manager import ConversationManager, MessageItem, ReplyContext
+from .services.event_service import APIClient, EventService, EventServiceConfig, ChatMessage, MessageType
+from .services.persistence_service import PersistenceService
+from .services.search_service import SearchService
+
+logger = logging.getLogger(__name__)
 
 
-# DPI awareness disabled - letting Windows auto-scale for better compatibility
-# If you want crisp rendering on high-DPI, consider using DPI awareness with proper scaling
-
-# noinspection PyTypeChecker
 class GUIClient(Client):
     """
-    Simplified, modern GUI client with excellent UX.
+    Modern GUI client with SSE-based real-time messaging.
     
     Features:
+    - SSE streaming via /events endpoint
     - Clean, modern interface
-    - Proper bounds management
-    - Simple, intuitive interactions
     - Responsive layout
+    - Automatic reconnection
     """
     
     def __init__(self, api_host: str = DEFAULT_HOST, api_port: int = DEFAULT_API_PORT):
         super().__init__(api_host, api_port)
         
-        # API configuration
         self._api_host = api_host
         self._api_port = api_port
         
-        # API client
-        self._api_client = AloneChatAPIClient(api_host, api_port)
+        self._api_client = APIClient(f"http://{api_host}:{api_port}")
+        self._event_service: Optional[EventService] = None
         
-        # State
         self._username = ""
         self._token: Optional[str] = None
         self._running = False
         self._closing = False
         
-        # UI
         self.root: Optional[tk.Tk] = None
         self._auth_view: Optional[AuthView] = None
         self._chat_view: Optional[ChatView] = None
         self._search_dialog: Optional[SearchDialog] = None
+        self._user_list_dialog: Optional[UserListDialog] = None
+
+        # Friends cache: used to gate private chat from "All users" list.
+        # Updated whenever friends are refreshed.
+        self._friends_cache: set[str] = set()
         
-        # Services
         self._async_service = AsyncService()
         self._conv_manager = ConversationManager()
         self._search_service = SearchService()
         self._persistence = PersistenceService()
         
-        # Reply context
         self._reply_ctx: Optional[ReplyContext] = None
-        
-        # Poll future for cancellation
-        self._poll_future = None
     
-    # ==================== Lifecycle ====================
-    
-    def run(self):
+    def run(self) -> None:
         """Start the GUI client."""
-        # Create main window
         self.root = tk.Tk()
         self.root.title("AloneChat")
         self.root.geometry("1200x640")
         self.root.minsize(800, 500)
-
-        # Add icon if available
-        # noinspection PyBroadException
+        
         try:
             self.root.iconphoto(False, tk.PhotoImage(file="../../../../assets/icon.jpg"))
-        # noinspection PyBroadException
         except Exception:
             pass
         
-        # Apply sv_ttk theme (Sun Valley Windows 11 theme) - handles DPI automatically
         sv_ttk.set_theme(darkdetect.theme())
-        # self.set_title_bar_color(self.root)
-
-        # Enable DPI awareness for sharp rendering on high-DPI displays
-        # Note: sv_ttk uses image-based assets; Windows handles scaling automatically
-        # noinspection PyUnresolvedReferences
-        # ctypes.windll.shcore.SetProcessDpiAwareness(0)
         
-        # Setup async
         self._async_service.start()
         
-        # Show auth view
         self._show_auth_view()
         
-        # Handle close
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         
-        # Start
         self.root.mainloop()
     
     def _ui_alive(self) -> bool:
         """Check if UI is still alive."""
         return bool(self.root) and bool(self.root.winfo_exists()) and not self._closing
     
-    def _clear_view(self):
+    def _clear_view(self) -> None:
         """Clear current view."""
         if self._auth_view:
             self._auth_view.hide()
@@ -144,9 +121,7 @@ class GUIClient(Client):
         
         self._search_service.clear()
     
-    # ==================== Views ====================
-    
-    def _show_auth_view(self):
+    def _show_auth_view(self) -> None:
         """Show authentication view."""
         self._clear_view()
         self._auth_view = AuthView(
@@ -158,69 +133,167 @@ class GUIClient(Client):
             default_api_port=self._api_port
         )
         self._auth_view.show()
-
-
-    def _show_chat_view(self):
-        """Show main UI with Chats / Friends / Moments."""
+    
+    def _show_chat_view(self) -> None:
+        """Show chat view."""
         self._clear_view()
         self._running = True
-
-        # Main tabs
-        self._main_tabs = ttk.Notebook(self.root)
-
-        # Chats tab
-        self._tab_chats = ttk.Frame(self._main_tabs)
-        self._main_tabs.add(self._tab_chats, text="Chats")
-
-        # Friends tab
-        self._tab_friends = ttk.Frame(self._main_tabs)
-        self._main_tabs.add(self._tab_friends, text="Friends")
-
-        # Moments tab (placeholder)
-        self._tab_moments = ttk.Frame(self._main_tabs)
-        self._main_tabs.add(self._tab_moments, text="Moments")
-
-        self._main_tabs.pack(fill="both", expand=True)
-
-        # Chats UI (keep existing style)
+        
         self._chat_view = ChatView(
-            self._tab_chats,
+            self.root,
             username=self._username,
             conversation_manager=self._conv_manager,
             on_send=self._handle_send,
-            on_new_conversation=self._handle_new_conversation,
             on_select_conversation=self._handle_switch_conversation,
             on_reply=self._handle_begin_reply,
             on_clear_reply=self._handle_clear_reply,
             on_export_md=self._handle_export_md,
             on_export_json=self._handle_export_json,
             on_export_logs=self._handle_export_logs,
-            on_logout=self._handle_logout
+            on_logout=self._handle_logout,
+            on_set_status=self._handle_set_status,
+            on_refresh_users=self._handle_refresh_users,
+            on_user_list=self._handle_user_list,
+            on_open_private=self._handle_open_private_from_friends,
+            on_friends_refresh=self._handle_refresh_friends,
+            on_friend_request=self._handle_send_friend_request,
+            on_friend_accept=self._handle_accept_friend_request,
+            on_friend_reject=self._handle_reject_friend_request
         )
         self._chat_view.show()
-
-        # Friends UI (separate from chats)
-        self._friends_view = FriendsView(
-            self._tab_friends,
-            username=self._username,
-            api_client=self._api_client,
-            run_async=self._async_service.run_async,
-            on_open_dm=self._open_dm_from_friends,
-        )
-        self._friends_view.show()
-        self._friends_view.refresh_all()
-
-        ttk.Label(self._tab_moments, text="(Moments - coming soon)").pack(padx=20, pady=20, anchor="nw")
-
-        # Start background loops
-        self._async_service.run_async(self._poll_messages())
-        self._async_service.run_async(self._heartbeat_loop())
-
+        # Load friends data for sidebar
+        self._handle_refresh_friends()
+        
+        self.root.bind('<Control-f>', lambda e: self._open_search())
+        
+        self._chat_view._status_bar.set_connecting()
+        
+        self._start_event_service()
+        
+        self._start_status_refresh_timer()
+        
+        self._show_onboarding()
+        
+        self._chat_view.render_conversation()
     
-
-    def _show_onboarding(self):
+    def _start_event_service(self) -> None:
+        """Start the SSE event service."""
+        if not self._token:
+            return
+        
+        config = EventServiceConfig(
+            base_url=f"http://{self._api_host}:{self._api_port}",
+            token=self._token,
+            reconnect_delay=1.0,
+            max_reconnect_delay=30.0,
+            heartbeat_timeout=60.0,
+            buffer_size=100
+        )
+        
+        self._event_service = EventService(config)
+        self._event_service.set_callbacks(
+            on_message=self._on_sse_message,
+            on_connected=self._on_sse_connected,
+            on_disconnected=self._on_sse_disconnected,
+            on_error=self._on_sse_error
+        )
+        
+        self._async_service.run_async(self._event_service.start())
+    
+    def _on_sse_message(self, message: ChatMessage) -> None:
+        """Handle incoming SSE message."""
+        if message.sender == self._username:
+            return
+        
+        if message.is_system():
+            self._handle_system_message(message)
+            return
+        
+        cid, actual_sender, body = self._conv_manager.process_received_message(
+            message.sender, message.content, self._username
+        )
+        
+        if not cid:
+            return
+        
+        item = MessageItem.create(actual_sender, body, is_self=False)
+        is_active = (cid == self._conv_manager.active_cid)
+        self._conv_manager.add_message(cid, item, is_active=is_active)
+        
+        if self._ui_alive():
+            if is_active:
+                self.root.after(0, lambda i=item: self._add_message_to_ui(i))
+            else:
+                self.root.after(0, self._chat_view.refresh_conversation_list)
+    
+    def _handle_system_message(self, message: ChatMessage) -> None:
+        """Handle system messages (join/leave/etc)."""
+        if message.msg_type == MessageType.JOIN:
+            content = f"{message.sender} joined the chat"
+        elif message.msg_type == MessageType.LEAVE:
+            content = f"{message.sender} left the chat"
+        else:
+            content = message.content
+        
+        item = MessageItem.create("System", content, is_system=True)
+        self._conv_manager.add_message("global", item, is_active=True)
+        
+        if self._ui_alive() and self._conv_manager.active_cid == "global":
+            self.root.after(0, lambda i=item: self._add_message_to_ui(i))
+    
+    def _on_sse_connected(self) -> None:
+        """Handle SSE connection established."""
+        logger.info("SSE connected")
+        if self._ui_alive():
+            self.root.after(0, lambda: self._chat_view.set_connection_status(True))
+    
+    def _on_sse_disconnected(self) -> None:
+        """Handle SSE connection lost."""
+        logger.warning("SSE disconnected")
+        if self._ui_alive():
+            self.root.after(0, lambda: self._chat_view.set_connection_status(False, "Reconnecting..."))
+    
+    def _on_sse_error(self, error: Exception) -> None:
+        """Handle SSE error."""
+        logger.error("SSE error: %s", error)
+    
+    def _start_status_refresh_timer(self) -> None:
+        """Start periodic user status refresh timer."""
+        self._refresh_status()
+    
+    def _refresh_status(self) -> None:
+        """Refresh user status periodically."""
+        if not self._running or self._closing:
+            return
+        
+        self._async_service.run_async(self._do_refresh_all_users())
+        
+        if self._ui_alive():
+            self.root.after(15000, self._refresh_status)
+    
+    async def _do_refresh_all_users(self) -> None:
+        """Refresh all users status from API."""
+        try:
+            result = await self._api_client.get_all_users()
+            if result and self._ui_alive():
+                users = result.get("users", [])
+                
+                for user_data in users:
+                    if isinstance(user_data, dict):
+                        user_id = user_data.get("user_id")
+                        status = user_data.get("status", "offline")
+                        is_online = user_data.get("is_online", False)
+                        
+                        if user_id and user_id != self._username:
+                            self._conv_manager.update_partner_status(user_id, is_online, status)
+                
+                self.root.after(0, self._chat_view.refresh_conversation_list)
+        except Exception as e:
+            logger.debug("Failed to refresh user status: %s", e)
+    
+    def _show_onboarding(self) -> None:
         """Show one-time onboarding tips."""
-        state = self._persistence.load_state()
+        state = self._persistence.load_state_sync()
         if not state.get("onboarding_shown", False):
             self._add_system_message(
                 "Tips:\n"
@@ -230,11 +303,9 @@ class GUIClient(Client):
                 "• Need help? Contact to us with tonytao2022 @outlook.com | zhang.chenyun @outlook.com"
             )
             state["onboarding_shown"] = True
-            self._persistence.save_state(state)
+            self._persistence.save_state_sync(state)
     
-    # ==================== Auth Handlers ====================
-    
-    def _handle_login_request(self, username: str, password: str):
+    def _handle_login_request(self, username: str, password: str) -> None:
         """Handle login request from auth view."""
         if not username or not password:
             messagebox.showwarning("Login", "Please enter username and password")
@@ -242,7 +313,7 @@ class GUIClient(Client):
         
         self._async_service.run_async(self._do_login(username, password))
     
-    async def _do_login(self, username: str, password: str):
+    async def _do_login(self, username: str, password: str) -> None:
         """Perform login."""
         try:
             response = await self._api_client.login(username, password)
@@ -250,8 +321,6 @@ class GUIClient(Client):
             if response.get("success"):
                 self._username = username
                 self._token = response.get("token")
-                self._api_client.username = username
-                self._api_client.token = self._token
                 
                 if self._ui_alive():
                     self.root.after(0, self._show_chat_view)
@@ -263,7 +332,7 @@ class GUIClient(Client):
             if self._ui_alive():
                 self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
     
-    def _handle_register_request(self, username: str, password: str):
+    def _handle_register_request(self, username: str, password: str) -> None:
         """Handle register request from auth view."""
         if not username or not password:
             messagebox.showwarning("Register", "Please enter username and password")
@@ -271,7 +340,7 @@ class GUIClient(Client):
         
         self._async_service.run_async(self._do_register(username, password))
     
-    async def _do_register(self, username: str, password: str):
+    async def _do_register(self, username: str, password: str) -> None:
         """Perform registration."""
         try:
             response = await self._api_client.register(username, password)
@@ -289,35 +358,28 @@ class GUIClient(Client):
             if self._ui_alive():
                 self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
     
-    def _handle_server_settings_changed(self, api_host: str, api_port: int):
+    def _handle_server_settings_changed(self, api_host: str, api_port: int) -> None:
         """Handle server settings change from auth view."""
         self._api_host = api_host
         self._api_port = api_port
-        # Recreate API client with new settings
-        self._api_client = AloneChatAPIClient(api_host, api_port)
+        self._api_client = APIClient(f"http://{api_host}:{api_port}")
         print(f"Server settings updated: API at {api_host}:{api_port}")
     
-    # ==================== Chat Handlers ====================
-    
-    def _handle_send(self, content: str):
+    def _handle_send(self, content: str) -> None:
         """Handle send message request."""
         if not content.strip():
             return
         
-        # Attach quote if replying
         if self._reply_ctx:
             quote = self._reply_ctx.get_snippet(120)
             content = f"> Reply to {self._reply_ctx.sender} ({self._reply_ctx.timestamp}): {quote}\n{content}"
         
-        # Prepare payload
         target_cid = self._conv_manager.active_cid
         payload, cid = self._conv_manager.prepare_send_payload(content, target_cid)
         
-        # Create local message
         item = MessageItem.create(self._username, content, is_self=True, status="Sending…")
         self._conv_manager.add_message(cid, item, is_active=(cid == target_cid))
         
-        # Update UI if active conversation
         if cid == target_cid:
             card = self._chat_view.add_message_card(item)
             self._search_service.set_message_cards(self._chat_view.get_message_cards())
@@ -325,22 +387,22 @@ class GUIClient(Client):
             card = None
             self._chat_view.refresh_conversation_list()
         
-        # Clear input and reply
         self._chat_view.clear_message_entry()
         self._handle_clear_reply()
         
-        # Send via API
-        self._async_service.run_async(self._send_message(payload, item, card))
+        target = cid if cid != "global" else None
+        self._async_service.run_async(self._send_message(payload, item, card, target))
     
-    async def _send_message(self, payload: str, item: MessageItem, 
-                           card: Optional[WinUI3MessageCard]):
+    async def _send_message(
+        self,
+        payload: str,
+        item: MessageItem,
+        card: Optional[WinUI3MessageCard],
+        target: Optional[str] = None
+    ) -> None:
         """Send message via API."""
         try:
-            # ConversationManager uses active_cid ("global" or username for DM).
-            # For DM we keep the legacy DM header in payload and also pass target so the server routes privately.
-            active_cid = getattr(self._conv_manager, "active_cid", "global")
-            target = active_cid if active_cid != "global" else None
-            response = await self._api_client.send_message(payload, target=target)
+            response = await self._api_client.send_message(payload, target)
             
             if response.get("success"):
                 item.status = "✓"
@@ -351,9 +413,9 @@ class GUIClient(Client):
                 item.status = f"Failed: {error}"
                 if card and self._ui_alive():
                     self.root.after(0, lambda: card.update_status(
-                        "Failed — click to retry", 
+                        "Failed — click to retry",
                         is_error=True,
-                        on_retry=lambda: self._retry_send(payload, item, card)
+                        on_retry=lambda: self._retry_send(payload, item, card, target)
                     ))
         except Exception as e:
             item.status = f"Error: {e}"
@@ -361,82 +423,75 @@ class GUIClient(Client):
                 self.root.after(0, lambda: card.update_status(
                     "Failed — click to retry",
                     is_error=True,
-                    on_retry=lambda: self._retry_send(payload, item, card)
+                    on_retry=lambda: self._retry_send(payload, item, card, target)
                 ))
     
-    def _retry_send(self, payload: str, item: MessageItem, card: WinUI3MessageCard):
+    def _retry_send(
+        self,
+        payload: str,
+        item: MessageItem,
+        card: WinUI3MessageCard,
+        target: Optional[str] = None
+    ) -> None:
         """Retry a failed send."""
         item.status = "Sending…"
         card.update_status("Sending…", is_error=False)
-        self._async_service.run_async(self._send_message(payload, item, card))
+        self._async_service.run_async(self._send_message(payload, item, card, target))
     
-    def _handle_new_conversation(self):
-        """Handle new conversation request.
-
-        Direct username DM creation is disabled. Use Friends tab to add friends first.
-        """
-        try:
-            messagebox.showinfo(
-                "New Conversation Disabled",
-                "Please add the user as a friend first (Friends → Search → Send Request).\nThen open the chat by double-clicking the friend."
-            )
-        except Exception:
-            pass
-
-        # Jump to Friends tab for convenience
-        try:
-            if hasattr(self, "_main_tabs") and self._main_tabs:
-                self._main_tabs.select(1)  # Friends
-        except Exception:
-            pass
-        return
-
-    def _handle_switch_conversation(self, cid: str):
+    def _handle_switch_conversation(self, cid: str) -> None:
         """Handle conversation switch."""
         self._conv_manager.switch_conversation(cid)
         self._chat_view.refresh_conversation_list()
         self._chat_view.render_conversation()
         self._search_service.set_message_cards(self._chat_view.get_message_cards())
     
-    def _handle_begin_reply(self, sender: str, content: str, timestamp: str):
+    def _handle_begin_reply(self, sender: str, content: str, timestamp: str) -> None:
         """Handle reply request."""
         self._reply_ctx = ReplyContext(sender=sender, content=content, timestamp=timestamp)
         self._chat_view.show_reply_banner(self._reply_ctx)
     
-    def _handle_clear_reply(self):
+    def _handle_clear_reply(self) -> None:
         """Clear reply context."""
         self._reply_ctx = None
         self._chat_view.hide_reply_banner()
     
-    def _handle_export_md(self):
+    def _handle_export_md(self) -> None:
         """Export current conversation to Markdown."""
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        path = self._persistence.export_conversation_md(
-            self._username, conv.cid, conv.name,
-            [item.__dict__ for item in conv.items]
-        )
-        if path:
-            self._open_logs_folder()
+        self._async_service.run_async(self._do_export_md(conv))
     
-    def _handle_export_json(self):
+    async def _do_export_md(self, conv) -> None:
+        """Perform Markdown export asynchronously."""
+        path = await self._persistence.export_conversation_md(
+            self._username, conv.cid, conv.name,
+            [item.to_dict() for item in conv.items]
+        )
+        if path and self._ui_alive():
+            self.root.after(0, self._open_logs_folder)
+    
+    def _handle_export_json(self) -> None:
         """Export current conversation to JSON."""
         conv = self._conv_manager.get_active_conversation()
         if not conv:
             return
-        path = self._persistence.export_conversation_json(
-            self._username, conv.cid,
-            [item.__dict__ for item in conv.items]
-        )
-        if path:
-            self._open_logs_folder()
+        self._async_service.run_async(self._do_export_json(conv))
     
-    def _handle_export_logs(self):
+    async def _do_export_json(self, conv) -> None:
+        """Perform JSON export asynchronously."""
+        path = await self._persistence.export_conversation_json(
+            self._username, conv.cid,
+            [item.to_dict() for item in conv.items]
+        )
+        if path and self._ui_alive():
+            self.root.after(0, self._open_logs_folder)
+    
+    def _handle_export_logs(self) -> None:
         """Open logs folder."""
         self._open_logs_folder()
     
-    def _open_logs_folder(self):
+    def _open_logs_folder(self) -> None:
         """Open logs folder in file explorer."""
         try:
             folder = os.path.abspath(self._persistence.log_dir)
@@ -449,103 +504,257 @@ class GUIClient(Client):
         except Exception as e:
             messagebox.showerror("Export", f"Failed to open logs folder: {e}")
     
-    def _handle_logout(self):
+    def _handle_logout(self) -> None:
         """Handle logout request."""
         self._running = False
+        
+        if self._event_service:
+            self._async_service.run_async(self._event_service.stop())
+        
         self._async_service.run_async(self._do_logout())
     
-    async def _do_logout(self):
+    async def _do_logout(self) -> None:
         """Perform logout."""
-        # noinspection PyBroadException
         try:
             await self._api_client.logout()
-        except:
+        except Exception:
             pass
         finally:
             if self._ui_alive():
                 self.root.after(0, self._show_auth_view)
     
-    # ==================== Message Handling ====================
+    def _handle_set_status(self, status: str) -> None:
+        """Handle user status change."""
+        self._async_service.run_async(self._do_set_status(status))
     
-    async def _poll_messages(self):
-        """Poll for new messages."""
-        while self._running and not self._closing:
-            # noinspection PyBroadException
-            try:
-                msg = await self._api_client.receive_message()
-                
-                if isinstance(msg, dict) and msg.get("success"):
-                    sender = msg.get("sender")
-                    content = msg.get("content")
-                    
-                    if sender and content and sender != self._username:
-                        cid, actual_sender, body = self._conv_manager.process_received_message(
-                            sender, content, self._username
-                        )
-                        
-                        if cid:
-                            item = MessageItem.create(actual_sender, body, is_self=False)
-                            is_active = (cid == self._conv_manager.active_cid)
-                            self._conv_manager.add_message(cid, item, is_active=is_active)
-                            
-                            if self._ui_alive():
-                                if is_active:
-                                    self.root.after(0, lambda: self._add_message_to_ui(item))
-                                else:
-                                    self.root.after(0, self._chat_view.refresh_conversation_list)
-                
-                await asyncio.sleep(0.1)
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                await asyncio.sleep(0.5)
+    async def _do_set_status(self, status: str) -> None:
+        """Set user status via API."""
+        try:
+            await self._api_client.set_status(status)
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showwarning("Status", f"Failed to set status: {e}"))
     
-    async def _heartbeat_loop(self):
-        """Send heartbeat periodically so server can compute online users."""
-        while self._running:
-            try:
-                await self._api_client.heartbeat()
-            except Exception:
-                pass
-            await asyncio.sleep(10)
+    def _handle_refresh_users(self) -> None:
+        """Handle refresh users request."""
+        self._async_service.run_async(self._do_refresh_users())
+    
+    async def _do_refresh_users(self) -> None:
+        """Refresh online users from API."""
+        try:
+            result = await self._api_client.get_online_users()
+            if result and self._ui_alive():
+                users = result.get("users", [])
+                for user_data in users:
+                    user_id = user_data if isinstance(user_data, str) else user_data.get("user_id")
+                    if user_id:
+                        self._conv_manager.update_partner_status(user_id, True, "online")
+                
+                self.root.after(0, self._chat_view.refresh_conversation_list)
+        except Exception as e:
+            logger.warning("Failed to refresh users: %s", e)
+    
+    def _handle_user_list(self) -> None:
+        """Handle user list button click."""
+        if not self._user_list_dialog:
+            self._user_list_dialog = UserListDialog(
+                self.root,
+                on_select_user=self._handle_select_user_from_list,
+                on_refresh=self._handle_refresh_users_for_dialog,
+                is_friend=lambda u: (u or '').strip() in self._friends_cache,
+                on_add_friend=self._handle_send_friend_request,
+            )
+        self._user_list_dialog.show()
+        self._async_service.run_async(self._do_load_users_for_dialog())
+    
+    def _handle_select_user_from_list(self, user_id: str) -> None:
+        """Handle selecting a user from the user list dialog."""
+        conv = self._conv_manager.get_conversation(user_id)
+        is_online = conv.partner_online if conv else False
+        status = conv.partner_status if conv else "offline"
+        
+        self._conv_manager.create_private_conversation(
+            user_id, user_id, is_online=is_online, status=status
+        )
+        self._conv_manager.switch_conversation(user_id)
+        self._chat_view.refresh_conversation_list()
+        self._chat_view.render_conversation()
+    
 
-    def _open_dm_from_friends(self, friend_username: str):
-        """Create/switch to a DM conversation and jump to Chats tab."""
-        if not friend_username:
+    # ---------------- Friends (GUI Sidebar) ----------------
+    def _handle_open_private_from_friends(self, friend_user: str) -> None:
+        """Open (or create) a private conversation from Friends sidebar."""
+        friend_user = (friend_user or "").strip()
+        if not friend_user:
             return
-        self._conv_manager.create_conversation(friend_username, name=friend_username)
-        self._conv_manager.switch_conversation(friend_username)
-        if hasattr(self, "_chat_view") and self._chat_view:
-            self._chat_view.refresh_conversation_list()
-            # ChatView public API
-            self._chat_view.render_conversation()
-        if hasattr(self, "_main_tabs") and self._main_tabs:
+        conv = self._conv_manager.get_conversation(friend_user)
+        is_online = conv.partner_online if conv else False
+        status = conv.partner_status if conv else "offline"
+        self._conv_manager.create_private_conversation(friend_user, friend_user, is_online=is_online, status=status)
+        self._handle_switch_conversation(friend_user)
+
+    def _handle_refresh_friends(self) -> None:
+        """Refresh friends list and requests."""
+        if not self._token or not self._chat_view or not self._ui_alive():
+            return
+
+        async def fetch():
+            friends = await self._api_client.friends_list()
+            incoming = await self._api_client.friends_requests(direction="incoming")
+            outgoing = await self._api_client.friends_requests(direction="outgoing")
+            users = await self._api_client.get_all_users()
+            return friends, incoming, outgoing, users
+
+        def on_ok(result):
+            if not self._ui_alive() or not self._chat_view:
+                return
+            friends_res, inc_res, out_res, users_res = result
+            friends = friends_res.get("friends") or []
+
+            # Update friends cache for gating private chat from all-users list
             try:
-                # Chats tab is index 0
-                self._main_tabs.select(0)
+                self._friends_cache = set([str(x) for x in friends if x])
             except Exception:
-                pass
+                self._friends_cache = set()
 
+            incoming = inc_res.get("requests") or []
+            outgoing = out_res.get("requests") or []
+            users = users_res.get("users") if isinstance(users_res, dict) else users_res
+            users = users or []
+            # Update UI on main thread
+            self.root.after(0, lambda: self._chat_view.update_friends_data(friends=friends, incoming=incoming, outgoing=outgoing, users=users))
 
-    def _add_message_to_ui(self, item: MessageItem):
+        def on_err(err: Exception):
+            if not self._ui_alive():
+                return
+            self.root.after(0, lambda: messagebox.showwarning("Friends", f"Failed to refresh friends: {err}"))
+
+        self._async_service.run_async(fetch(), callback=on_ok, error_callback=on_err)
+
+    def _handle_send_friend_request(self, to_user: str) -> None:
+        """Send a friend request."""
+        to_user = (to_user or "").strip()
+        if not to_user or not self._token:
+            return
+
+        async def run():
+            return await self._api_client.friends_request(to_user)
+
+        def on_ok(res):
+            if not self._ui_alive():
+                return
+            if res.get("success"):
+                self.root.after(0, lambda: messagebox.showinfo("Friends", f"Friend request sent to {to_user}"))
+            else:
+                self.root.after(0, lambda: messagebox.showwarning("Friends", res.get("message") or "Failed to send request"))
+            self._handle_refresh_friends()
+
+        def on_err(err: Exception):
+            if not self._ui_alive():
+                return
+            self.root.after(0, lambda: messagebox.showwarning("Friends", f"Failed to send request: {err}"))
+
+        self._async_service.run_async(run(), callback=on_ok, error_callback=on_err)
+
+    def _handle_accept_friend_request(self, from_user: str) -> None:
+        from_user = (from_user or "").strip()
+        if not from_user or not self._token:
+            return
+
+        async def run():
+            return await self._api_client.friends_accept(from_user)
+
+        def on_ok(res):
+            if not self._ui_alive():
+                return
+            if res.get("success") is False:
+                self.root.after(0, lambda: messagebox.showwarning("Friends", res.get("message") or "Failed to accept request"))
+            else:
+                self.root.after(0, lambda: messagebox.showinfo("Friends", f"You and {from_user} are now friends"))
+            self._handle_refresh_friends()
+
+        def on_err(err: Exception):
+            if not self._ui_alive():
+                return
+            self.root.after(0, lambda: messagebox.showwarning("Friends", f"Failed to accept: {err}"))
+
+        self._async_service.run_async(run(), callback=on_ok, error_callback=on_err)
+
+    def _handle_reject_friend_request(self, from_user: str) -> None:
+        from_user = (from_user or "").strip()
+        if not from_user or not self._token:
+            return
+
+        async def run():
+            return await self._api_client.friends_reject(from_user)
+
+        def on_ok(res):
+            if not self._ui_alive():
+                return
+            if res.get("success") is False:
+                self.root.after(0, lambda: messagebox.showwarning("Friends", res.get("message") or "Failed to reject request"))
+            else:
+                self.root.after(0, lambda: messagebox.showinfo("Friends", f"Rejected request from {from_user}"))
+            self._handle_refresh_friends()
+
+        def on_err(err: Exception):
+            if not self._ui_alive():
+                return
+            self.root.after(0, lambda: messagebox.showwarning("Friends", f"Failed to reject: {err}"))
+
+        self._async_service.run_async(run(), callback=on_ok, error_callback=on_err)
+
+    def _handle_refresh_users_for_dialog(self) -> None:
+        """Handle refresh button in user list dialog."""
+        self._async_service.run_async(self._do_load_users_for_dialog())
+    
+    async def _do_load_users_for_dialog(self) -> None:
+        """Load all registered users from API and update dialog."""
+        try:
+            result = await self._api_client.get_all_users()
+            if result and self._ui_alive():
+                users = result.get("users", [])
+                
+                filtered_users = []
+                for user_data in users:
+                    if isinstance(user_data, dict):
+                        user_id = user_data.get("user_id")
+                        if user_id == self._username:
+                            continue
+                        
+                        is_online = user_data.get("is_online", False)
+                        status = user_data.get("status", "online" if is_online else "offline")
+                        
+                        if user_id:
+                            self._conv_manager.update_partner_status(user_id, is_online, status)
+                            filtered_users.append(user_data)
+                
+                if self._user_list_dialog:
+                    self.root.after(0, lambda: self._user_list_dialog.set_users(filtered_users))
+        except Exception as e:
+            logger.warning("Failed to load users: %s", e)
+    
+    def _add_message_to_ui(self, item: MessageItem) -> None:
         """Add a message to the UI."""
         if not self._chat_view:
             return
         card = self._chat_view.add_message_card(item)
         self._search_service.set_message_cards(self._chat_view.get_message_cards())
-        self._persistence.log_chat(self._username, item.sender, item.content)
+        self._async_service.run_async(
+            self._persistence.log_chat(self._username, item.sender, item.content)
+        )
     
-    def _add_system_message(self, content: str):
+    def _add_system_message(self, content: str) -> None:
         """Add a system message."""
         item = MessageItem.create("System", content, is_system=True)
         self._conv_manager.add_message(self._conv_manager.active_cid, item, is_active=True)
         if self._chat_view:
             self._chat_view.add_message_card(item)
-        self._persistence.log_chat(self._username, "System", content)
+        self._async_service.run_async(
+            self._persistence.log_chat(self._username, "System", content)
+        )
     
-    # ==================== Search ====================
-    
-    def _open_search(self):
+    def _open_search(self) -> None:
         """Open search dialog."""
         if self._search_dialog and self._search_dialog.window and self._search_dialog.window.winfo_exists():
             self._search_dialog.window.lift()
@@ -565,41 +774,39 @@ class GUIClient(Client):
         count = self._search_service.search(query)
         return count
     
-    def _handle_search_next(self):
+    def _handle_search_next(self) -> None:
         """Go to next search result."""
         self._search_service.next_result()
         card = self._search_service.get_current_hit_widget()
         if card and self._chat_view:
             self._chat_view.scroll_to_card(card)
     
-    def _handle_search_prev(self):
+    def _handle_search_prev(self) -> None:
         """Go to previous search result."""
         self._search_service.prev_result()
         card = self._search_service.get_current_hit_widget()
         if card and self._chat_view:
             self._chat_view.scroll_to_card(card)
     
-    def _handle_search_close(self):
+    def _handle_search_close(self) -> None:
         """Close search dialog."""
         self._search_service.clear()
         self._search_dialog = None
     
-    # ==================== Cleanup ====================
-    
-    def _on_close(self):
+    def _on_close(self) -> None:
         """Handle window close."""
         self._closing = True
         self._running = False
         
-        # Cancel poll future
-        if self._poll_future and not self._poll_future.done():
-            self._poll_future.cancel()
+        if self._event_service:
+            self._async_service.run_async(self._event_service.stop())
         
-        # Stop async service
+        self._persistence.flush_buffers_sync()
+        
+        self._async_service.run_async(self._api_client.close())
+        
         self._async_service.stop()
         
-        # Drop tk variable references
-        # noinspection PyBroadException
         try:
             for name in ("username_var", "password_var", "server_var", "port_var",
                         "status_var", "input_var", "search_var"):
@@ -609,8 +816,6 @@ class GUIClient(Client):
         except Exception:
             pass
         
-        # Destroy UI
-        # noinspection PyBroadException
         try:
             if self.root:
                 self.root.quit()

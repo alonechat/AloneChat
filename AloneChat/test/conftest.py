@@ -1,11 +1,5 @@
 """
 Test configuration and fixtures for AloneChat server tests.
-
-Provides:
-- Server configuration for testing
-- Test fixtures for pytest
-- Performance metrics collection
-- Mock data generation
 """
 
 import asyncio
@@ -228,7 +222,7 @@ async def server_instance(test_config: TestConfig):
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     
-    from AloneChat.core.server import UnifiedWebSocketManager
+    from AloneChat.core.server import get_message_service, get_user_service
     from AloneChat.core.logging import configure_logging, LogConfig
     
     log_config = LogConfig(
@@ -239,22 +233,13 @@ async def server_instance(test_config: TestConfig):
     )
     configure_logging(log_config)
     
-    manager = UnifiedWebSocketManager(enable_plugins=False)
+    message_service = get_message_service()
+    user_service = get_user_service()
     
-    server_task = asyncio.create_task(
-        manager.start(test_config.host, test_config.port)
-    )
-    
-    await asyncio.sleep(0.5)
-    
-    yield manager
-    
-    await manager.stop()
-    server_task.cancel()
-    try:
-        await server_task
-    except asyncio.CancelledError:
-        pass
+    yield {
+        'message_service': message_service,
+        'user_service': user_service
+    }
 
 
 @pytest.fixture(scope="session")

@@ -1,43 +1,935 @@
-2026-02-15 20:41:08 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
-2026-02-15 20:41:08 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
-2026-02-15 20:41:08 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
-2026-02-15 20:41:08 - __main__ - INFO - [__main__.py:81 - main] - Command: client
-2026-02-15 20:41:08 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
-2026-02-15 20:41:30 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
-2026-02-15 20:41:30 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
-2026-02-15 20:41:30 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
-2026-02-15 20:41:30 - __main__ - INFO - [__main__.py:81 - main] - Command: server
-2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:30 - _reset_user_statuses] - All user credentials saved. All statuses reset to 'offline'.
-2026-02-15 20:41:30 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: help
-2026-02-15 20:41:30 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: echo
-2026-02-15 20:41:30 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
-2026-02-15 20:41:30 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
-2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
-2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
-2026-02-15 20:41:30 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
-2026-02-15 20:41:30 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
-2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
-2026-02-15 20:41:30 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
-2026-02-15 20:41:30 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:336 - __init__] - UnifiedWebSocketManager initialized
-2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:128 - server] - HTTP API server starting on http://0.0.0.0:8766
-2026-02-15 20:41:30 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
-2026-02-15 20:41:30 - AloneChat.core.server.transport - INFO - [__init__.py:242 - start] - Connection health monitor started
-2026-02-15 20:41:30 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
-2026-02-15 20:41:30 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:397 - start] - WebSocket server started on ws://0.0.0.0:8765
-2026-02-15 20:41:30 - AloneChat.start.server - INFO - [server.py:103 - start_websocket_server] - WebSocket server running on ws://0.0.0.0:8765
-2026-02-15 20:41:35 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: help
-2026-02-15 20:41:35 - AloneChat.core.server.commands - DEBUG - [__init__.py:119 - register] - Registered command handler: echo
-2026-02-15 20:41:35 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
-2026-02-15 20:41:35 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
-2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
-2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
-2026-02-15 20:41:35 - AloneChat.plugins.loader - DEBUG - [loader.py:64 - add_search_path] - Added plugin search path: AloneChat\plugins
-2026-02-15 20:41:35 - AloneChat.plugins.loader - INFO - [loader.py:104 - discover_plugins] - Discovered 0 plugins
-2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:164 - load_all] - Loaded 0 plugins
-2026-02-15 20:41:35 - AloneChat.plugins.manager - INFO - [manager.py:242 - initialize_all] - All plugins initialized
-2026-02-15 20:41:35 - AloneChat.core.server.websocket_manager - INFO - [websocket_manager.py:336 - __init__] - UnifiedWebSocketManager initialized
-2026-02-15 20:41:44 - root - INFO - [__init__.py:242 - configure] - Logging system configured with level: DEBUG
-2026-02-15 20:41:44 - AloneChat.core.logging - INFO - [__init__.py:408 - auto_configure] - Logging auto-configured for environment: development
-2026-02-15 20:41:44 - __main__ - INFO - [__main__.py:80 - main] - AloneChat starting...
-2026-02-15 20:41:44 - __main__ - INFO - [__main__.py:81 - main] - Command: client
-2026-02-15 20:41:44 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-16 23:58:27 - root - INFO - [__init__.py:247 - configure] - Logging system configured with level: DEBUG
+2026-02-16 23:58:27 - AloneChat.core.logging - INFO - [__init__.py:413 - auto_configure] - Logging auto-configured for environment: development
+2026-02-16 23:58:27 - __main__ - INFO - [__main__.py:69 - main] - AloneChat starting...
+2026-02-16 23:58:27 - __main__ - INFO - [__main__.py:70 - main] - Command: server
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: CREATE DATABASE IF NOT EXISTS alonechat
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: 
+        CREATE TABLE IF NOT EXISTS users (
+            user_id String,
+            password_hash String,
+            display_name String DEFAULT '',
+            status Enum8('online' = 1, 'away' = 2, 'busy' = 3, 'offline' = 4) DEFAULT 'offline',
+            is_online UInt8 DEFAULT 0,
+            last_seen DateTime DEFAULT now(),
+            created_at DateTime DEFAULT now(),
+            updated_at DateTime DEFAULT now()
+        ) ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY user_id
+    
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: 
+        CREATE TABLE IF NOT EXISTS user_activity (
+            user_id String,
+            activity_type String,
+            activity_data String DEFAULT '',
+            timestamp DateTime DEFAULT now()
+        ) ENGINE = MergeTree()
+        ORDER BY (user_id, timestamp)
+    
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: 
+        CREATE TABLE IF NOT EXISTS private_messages (
+            id String,
+            sender String,
+            recipient String,
+            content String,
+            timestamp DateTime DEFAULT now(),
+            delivered UInt8 DEFAULT 0
+        ) ENGINE = MergeTree()
+        ORDER BY (sender, recipient, timestamp)
+    
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: 
+        CREATE TABLE IF NOT EXISTS friend_requests (
+            request_id String,
+            from_user String,
+            to_user String,
+            status Enum8('pending' = 1, 'accepted' = 2, 'rejected' = 3, 'cancelled' = 4) DEFAULT 'pending',
+            created_at DateTime DEFAULT now(),
+            updated_at DateTime DEFAULT now()
+        ) ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (to_user, from_user, request_id)
+    
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001018
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: 
+        CREATE TABLE IF NOT EXISTS friends (
+            user_id String,
+            friend_user_id String,
+            created_at DateTime DEFAULT now()
+        ) ENGINE = MergeTree()
+        ORDER BY (user_id, friend_user_id)
+    
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - AloneChat.core.server.database - INFO - [database.py:36 - get_client] - ClickHouse connected: 127.0.0.1:9000/alonechat
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: INSERT INTO users (user_id, password_hash, display_name, status, is_online, last_seen, updated_at) SELECT   user_id,   argMax(password_hash, updated_at),   argMax(display_name, updated_at),   'offline',   0,   '2026-02-16 23:58:27',   '2026-02-16 23:58:27' FROM users GROUP BY user_id
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:27 - tzlocal - DEBUG - [win32.py:55 - _get_localzone_name] - Looking up time zone info from registry
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT count(DISTINCT user_id) FROM users
+2026-02-16 23:58:27 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column countDistinct(user_id)
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:27 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:27 - AloneChat.core.server.database - INFO - [database.py:337 - set_all_offline] - Set all 2 users to offline status
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:29 - _set_all_users_offline] - Set 2 users to offline status
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:93 - server] - 
+    ___    __                 ________          __
+   /   |  / /___  ____  ___  / ____/ /_  ____ _/ /_
+  / /| | / / __ \/ __ \/ _ \/ /   / __ \/ __ `/ __/
+ / ___ |/ / /_/ / / / /  __/ /___/ / / / /_/ / /_
+/_/  |_/_/\____/_/ /_/\___/\____/_/ /_/\__,_/\__/
+
+AloneChat Project - A modular chat application framework.
+
+Originally developed by: @hi-zcy, @hi-tyc (@tony231218)
+Developed by: AloneChat Team, and open-source community of contributors.
+License: Apache-2.0 License (Dependencies' licenses stored in NOTICE file)
+
+"Let chat no longer be alone."
+
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:94 - server] - 
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:95 - server] - Server started. Press Ctrl+C to shutdown gracefully.
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:96 - server] - Press Ctrl+C twice to force quit.
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:97 - server] - 
+2026-02-16 23:58:27 - AloneChat.start.server - INFO - [server.py:115 - server] - HTTP API server starting on http://0.0.0.0:8766
+2026-02-16 23:58:27 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-16 23:58:27 - AloneChat.api.app - INFO - [app.py:128 - lifespan] - AloneChat API starting up
+2026-02-16 23:58:32 - root - INFO - [__init__.py:247 - configure] - Logging system configured with level: DEBUG
+2026-02-16 23:58:32 - AloneChat.core.logging - INFO - [__init__.py:413 - auto_configure] - Logging auto-configured for environment: development
+2026-02-16 23:58:32 - __main__ - INFO - [__main__.py:69 - main] - AloneChat starting...
+2026-02-16 23:58:32 - __main__ - INFO - [__main__.py:70 - main] - Command: client
+2026-02-16 23:58:32 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-16 23:58:32 - AloneChat.core.client.gui.services.async_service - DEBUG - [async_service.py:74 - start] - AsyncService started
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users WHERE user_id = 'tyc' GROUP BY user_id
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:40 - AloneChat.core.server.auth - INFO - [auth.py:75 - authenticate] - User authenticated: tyc
+2026-02-16 23:58:40 - AloneChat.core.server.user - INFO - [user.py:69 - start] - StatusBuffer started with flush_interval=5.0s, max_size=50
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users WHERE user_id = 'tyc' GROUP BY user_id
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:40 - AloneChat.core.client.gui.services.event_service - INFO - [event_service.py:185 - _connect] - Connecting to SSE: http://localhost:8766/events
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT friend_user_id FROM friends WHERE user_id = 'tyc' ORDER BY friend_user_id
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001286
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE to_user = 'tyc' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(to_user, updated_at) AS to_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'tyc' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(from_user, updated_at) AS from_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:58:40 - AloneChat.core.client.gui.client - INFO - [client.py:246 - _on_sse_connected] - SSE connected
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:58:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:40 - AloneChat.core.client.gui.services.event_service - INFO - [event_service.py:197 - _connect] - SSE connected successfully
+2026-02-16 23:58:40 - AloneChat.core.client.gui.services.event_service - DEBUG - [event_service.py:219 - _process_event] - SSE connected event received
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name FROM users WHERE user_id IN ('tyc') GROUP BY user_id
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: INSERT INTO users (user_id, password_hash, display_name, status, is_online, last_seen, updated_at) VALUES
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column user_id
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column password_hash
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column display_name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column status
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column is_online
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column last_seen
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column updated_at
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001996
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:45 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:45 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:45 - AloneChat.core.server.user - DEBUG - [user.py:120 - flush] - Flushed 1 status updates to database
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT count() FROM users WHERE user_id = 'test1' LIMIT 1
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column count()
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT count() FROM friends WHERE user_id = 'tyc' AND friend_user_id = 'test1' LIMIT 1
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001116
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column count()
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'tyc' AND to_user = 'test1' GROUP BY request_id ORDER BY updated_at DESC LIMIT 1
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - AloneChat.core.server.database - ERROR - [database.py:454 - get_latest_friend_request] - get_latest_friend_request failed: Code: 184.
+DB::Exception: Aggregate function max(updated_at) AS updated_at is found inside another aggregate function in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6c3b9
+7. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+8. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+9. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+10. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+11. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+12. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+13. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+14. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+15. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+16. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+17. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+18. DB::TCPHandler::run() @ 0x000000001d147fa4
+19. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+20. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+21. Poco::PooledThread::run() @ 0x000000002264cf45
+22. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+23. ? @ 0x000000000009caa4
+24. ? @ 0x0000000000129c6c
+
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: INSERT INTO friend_requests (request_id, from_user, to_user, status, created_at, updated_at) VALUES
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column request_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column from_user
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column to_user
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column status
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column created_at
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column updated_at
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.002144
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT friend_user_id FROM friends WHERE user_id = 'tyc' ORDER BY friend_user_id
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE to_user = 'tyc' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(to_user, updated_at) AS to_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'tyc' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(from_user, updated_at) AS from_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:58:48 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:48 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:58:55 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:58:55 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:58:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:00 - root - INFO - [__init__.py:247 - configure] - Logging system configured with level: DEBUG
+2026-02-16 23:59:00 - AloneChat.core.logging - INFO - [__init__.py:413 - auto_configure] - Logging auto-configured for environment: development
+2026-02-16 23:59:00 - __main__ - INFO - [__main__.py:69 - main] - AloneChat starting...
+2026-02-16 23:59:00 - __main__ - INFO - [__main__.py:70 - main] - Command: client
+2026-02-16 23:59:00 - asyncio - DEBUG - [proactor_events.py:634 - __init__] - Using proactor: IocpProactor
+2026-02-16 23:59:00 - AloneChat.core.client.gui.services.async_service - DEBUG - [async_service.py:74 - start] - AsyncService started
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users WHERE user_id = 'test1' GROUP BY user_id
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:05 - AloneChat.core.server.auth - INFO - [auth.py:75 - authenticate] - User authenticated: test1
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users WHERE user_id = 'test1' GROUP BY user_id
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:05 - AloneChat.core.client.gui.services.event_service - INFO - [event_service.py:185 - _connect] - Connecting to SSE: http://localhost:8766/events
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT friend_user_id FROM friends WHERE user_id = 'test1' ORDER BY friend_user_id
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE to_user = 'test1' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(to_user, updated_at) AS to_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'test1' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(from_user, updated_at) AS from_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:05 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:05 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:06 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:06 - AloneChat.core.client.gui.client - INFO - [client.py:246 - _on_sse_connected] - SSE connected
+2026-02-16 23:59:06 - AloneChat.core.client.gui.services.event_service - INFO - [event_service.py:197 - _connect] - SSE connected successfully
+2026-02-16 23:59:06 - AloneChat.core.client.gui.services.event_service - DEBUG - [event_service.py:219 - _process_event] - SSE connected event received
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name FROM users WHERE user_id IN ('test1') GROUP BY user_id
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: INSERT INTO users (user_id, password_hash, display_name, status, is_online, last_seen, updated_at) VALUES
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column user_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column password_hash
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column display_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column status
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column is_online
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column last_seen
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column updated_at
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001999
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:10 - AloneChat.core.server.user - DEBUG - [user.py:120 - flush] - Flushed 1 status updates to database
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:10 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:10 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:10 - AloneChat.core.client.gui.services.event_service - DEBUG - [event_service.py:221 - _process_event] - SSE heartbeat received
+2026-02-16 23:59:20 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:20 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:20 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT count() FROM users WHERE user_id = 'tyc' LIMIT 1
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column count()
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT count() FROM friends WHERE user_id = 'test1' AND friend_user_id = 'tyc' LIMIT 1
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column count()
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'test1' AND to_user = 'tyc' GROUP BY request_id ORDER BY updated_at DESC LIMIT 1
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - AloneChat.core.server.database - ERROR - [database.py:454 - get_latest_friend_request] - get_latest_friend_request failed: Code: 184.
+DB::Exception: Aggregate function max(updated_at) AS updated_at is found inside another aggregate function in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6c3b9
+7. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+8. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+9. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+10. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+11. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+12. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+13. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+14. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+15. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+16. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+17. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+18. DB::TCPHandler::run() @ 0x000000001d147fa4
+19. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+20. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+21. Poco::PooledThread::run() @ 0x000000002264cf45
+22. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+23. ? @ 0x000000000009caa4
+24. ? @ 0x0000000000129c6c
+
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: INSERT INTO friend_requests (request_id, from_user, to_user, status, created_at, updated_at) VALUES
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column request_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column from_user
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column to_user
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column status
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column created_at
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:47 - write] - Writing column updated_at
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001997
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT friend_user_id FROM friends WHERE user_id = 'test1' ORDER BY friend_user_id
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.001278
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE to_user = 'test1' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(to_user, updated_at) AS to_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT request_id,   argMax(from_user, updated_at) as from_user,   argMax(to_user, updated_at) as to_user,   argMax(status, updated_at) as status,   argMax(created_at, updated_at) as created_at,   max(updated_at) as updated_at FROM friend_requests WHERE from_user = 'test1' GROUP BY request_id ORDER BY updated_at DESC LIMIT 100
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - AloneChat.core.server.database - ERROR - [database.py:492 - list_friend_requests] - list_friend_requests failed: Code: 184.
+DB::Exception: Aggregate function argMax(from_user, updated_at) AS from_user is found in WHERE in query. Stack trace:
+
+0. DB::Exception::Exception(DB::Exception::MessageMasked&&, int, bool) @ 0x00000000166a472a
+1. DB::Exception::Exception(String&&, int, String, bool) @ 0x000000000dcb1ace
+2. DB::Exception::Exception(PreformattedMessage&&, int) @ 0x000000000dcb1409
+3. DB::Exception::Exception<String, String&>(int, FormatStringHelperImpl<std::type_identity<String>::type, std::type_identity<String&>::type>, String&&, String&) @ 0x000000000fc1c776
+4. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71712
+5. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+6. DB::InDepthQueryTreeVisitor<DB::(anonymous namespace)::CollectAggregateFunctionNodesVisitor, true>::visit(std::shared_ptr<DB::IQueryTreeNode> const&) (.llvm.16893773785573554064) @ 0x000000001aa71690
+7. DB::validateAggregates(std::shared_ptr<DB::IQueryTreeNode> const&, DB::AggregatesValidationParams) @ 0x000000001aa6bc84
+8. DB::QueryAnalyzer::resolveQuery(std::shared_ptr<DB::IQueryTreeNode> const&, DB::IdentifierResolveScope&) @ 0x000000001aa243e0
+9. DB::QueryAnalyzer::resolve(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::IQueryTreeNode> const&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1e8e4
+10. DB::QueryAnalysisPass::run(std::shared_ptr<DB::IQueryTreeNode>&, std::shared_ptr<DB::Context const>) @ 0x000000001aa1de9c
+11. DB::QueryTreePassManager::run(std::shared_ptr<DB::IQueryTreeNode>&) @ 0x000000001aa78841
+12. DB::buildQueryTreeAndRunPasses(boost::intrusive_ptr<DB::IAST> const&, DB::SelectQueryOptions const&, std::shared_ptr<DB::Context const> const&, std::shared_ptr<DB::IStorage> const&) @ 0x000000001b64e264
+13. DB::InterpreterSelectQueryAnalyzer::InterpreterSelectQueryAnalyzer(boost::intrusive_ptr<DB::IAST> const&, std::shared_ptr<DB::Context const> const&, DB::SelectQueryOptions const&, std::vector<String, std::allocator<String>> const&) @ 0x000000001b64c707
+14. std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> std::__function::__policy_func<std::unique_ptr<DB::IInterpreter, std::default_delete<DB::IInterpreter>> (DB::InterpreterFactory::Arguments const&)>::__call_func[abi:fe210105]<DB::registerInterpreterSelectQueryAnalyzer(DB::InterpreterFactory&)::$_0>(std::__function::__policy_storage const*, DB::InterpreterFactory::Arguments const&) (.llvm.13059844549162579018) @ 0x000000001b653de2
+15. DB::InterpreterFactory::get(boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::Context>, DB::SelectQueryOptions const&) @ 0x000000001b5fa50d
+16. DB::executeQueryImpl(char const*, char const*, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum, std::unique_ptr<DB::ReadBuffer, std::default_delete<DB::ReadBuffer>>&, boost::intrusive_ptr<DB::IAST>&, std::shared_ptr<DB::ImplicitTransactionControlExecutor>, std::function<void ()>, DB::QueryResultDetails&) @ 0x000000001ba3d655
+17. DB::executeQuery(String const&, std::shared_ptr<DB::Context>, DB::QueryFlags, DB::QueryProcessingStage::Enum) @ 0x000000001ba381dd
+18. DB::TCPHandler::runImpl() @ 0x000000001d125e4d
+19. DB::TCPHandler::run() @ 0x000000001d147fa4
+20. Poco::Net::TCPServerConnection::start() @ 0x000000002268e247
+21. Poco::Net::TCPServerDispatcher::run() @ 0x000000002268e7c2
+22. Poco::PooledThread::run() @ 0x000000002264cf45
+23. Poco::ThreadImpl::runnableEntry(void*) @ 0x000000002264b4cf
+24. ? @ 0x000000000009caa4
+25. ? @ 0x0000000000129c6c
+
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:418 - connect] - Connecting. Database: alonechat. User: default
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:425 - connect] - Connecting to 127.0.0.1:9000
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:550 - receive_hello] - Connected to ClickHouse server version 26.2.1, revision: 54483
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:22 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:22 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:25 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:25 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:25 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:35 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:35 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:35 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:36 - AloneChat.core.client.gui.services.event_service - DEBUG - [event_service.py:221 - _process_event] - SSE heartbeat received
+2026-02-16 23:59:40 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:40 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:40 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:40 - AloneChat.core.client.gui.services.event_service - DEBUG - [event_service.py:221 - _process_event] - SSE heartbeat received
+2026-02-16 23:59:50 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:50 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:50 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
+2026-02-16 23:59:55 - clickhouse_driver.connection - DEBUG - [connection.py:767 - send_query] - Query: SELECT   user_id,   argMax(password_hash, updated_at) as password_hash,   argMax(display_name, updated_at) as display_name,   argMax(status, updated_at) as status,   argMax(is_online, updated_at) as is_online,   argMax(last_seen, updated_at) as last_seen,   argMax(created_at, updated_at) as created_at FROM users GROUP BY user_id
+2026-02-16 23:59:55 - clickhouse_driver.connection - DEBUG - [connection.py:721 - send_data] - Block "" send time: 0.000000
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column user_id
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column password_hash
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column display_name
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column status
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column is_online
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column last_seen
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column created_at
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column host_name
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column current_time
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column thread_id
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column type
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column name
+2026-02-16 23:59:55 - clickhouse_driver.streams.native - DEBUG - [native.py:88 - read] - Reading column value
