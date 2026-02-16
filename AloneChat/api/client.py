@@ -2,13 +2,22 @@
 High-level API client for AloneChat application.
 
 Provides a clean interface for interacting with the AloneChat API endpoints.
+Core messaging (send/receive) uses WebSocket for high performance.
+Other operations (auth, status, history) use HTTP.
 """
 
 import asyncio
+import json
+import logging
 import threading
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import aiohttp
+import websockets
+
+from AloneChat.core.message import Message, MessageType
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_API_PORT = 8766
 
@@ -59,14 +68,156 @@ _session_manager = SessionManager()
 
 
 class AloneChatAPIClient:
-    """High-level API client for AloneChat."""
+    """High-level API client for AloneChat.
+    
+    Core messaging uses WebSocket for high performance.
+    Other operations (auth, status, history) use HTTP.
+    """
     
     def __init__(self, host: str = "localhost", port: int = DEFAULT_API_PORT):
         self.host = host
         self.port = port
         self.base_url = f"http://{host}:{port}"
+        self.ws_url = f"ws://{host}:{port}/ws"
         self.token: Optional[str] = None
         self.username: Optional[str] = None
+        
+        self._ws: Optional[websockets.WebSocketClientProtocol] = None
+        self._ws_lock = asyncio.Lock()
+        self._message_queue: asyncio.Queue = asyncio.Queue()
+        self._receive_task: Optional[asyncio.Task] = None
+        self._message_handlers: Dict[MessageType, Callable] = {}
+        self._running = False
+    
+    async def connect_ws(self) -> bool:
+        """Connect to WebSocket server for messaging."""
+        if not self.token:
+            return False
+        
+        async with self._ws_lock:
+            if self._ws is not None:
+                try:
+                    if not self._ws.state.name in ('CLOSING', 'CLOSED'):
+                        return True
+                except Exception:
+                    pass
+            
+            try:
+                url = f"{self.ws_url}?token={self.token}"
+                self._ws = await websockets.connect(url, proxy=None)
+                self._running = True
+                self._receive_task = asyncio.create_task(self._receive_loop())
+                logger.debug("WebSocket connected: %s", self.username)
+                return True
+            except Exception as e:
+                logger.warning("WebSocket connection failed: %s", e)
+                return False
+    
+    async def disconnect_ws(self) -> None:
+        """Disconnect WebSocket."""
+        self._running = False
+        
+        if self._receive_task:
+            self._receive_task.cancel()
+            try:
+                await self._receive_task
+            except asyncio.CancelledError:
+                pass
+            self._receive_task = None
+        
+        async with self._ws_lock:
+            if self._ws is not None:
+                try:
+                    await self._ws.close()
+                except Exception:
+                    pass
+            self._ws = None
+    
+    async def _receive_loop(self) -> None:
+        """Background task to receive messages from WebSocket."""
+        while self._running:
+            try:
+                if self._ws is None:
+                    await asyncio.sleep(0.1)
+                    continue
+                
+                try:
+                    if self._ws.state.name in ('CLOSING', 'CLOSED'):
+                        break
+                except Exception:
+                    break
+                
+                data = await self._ws.recv()
+                try:
+                    msg = Message.deserialize(data)
+                    
+                    if msg.type == MessageType.HEARTBEAT:
+                        continue
+                    
+                    await self._message_queue.put(msg)
+                    
+                    if msg.type in self._message_handlers:
+                        handler = self._message_handlers[msg.type]
+                        if asyncio.iscoroutinefunction(handler):
+                            await handler(msg)
+                        else:
+                            handler(msg)
+                except Exception:
+                    await self._message_queue.put(data)
+                    
+            except websockets.ConnectionClosed:
+                logger.debug("WebSocket connection closed")
+                break
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.warning("Receive error: %s", e)
+                await asyncio.sleep(0.1)
+    
+    def on_message(self, msg_type: MessageType, handler: Callable) -> None:
+        """Register a handler for a specific message type."""
+        self._message_handlers[msg_type] = handler
+    
+    async def receive_message_ws(self, timeout: float = 30.0) -> Optional[Message]:
+        """Receive a message from the WebSocket queue."""
+        try:
+            return await asyncio.wait_for(self._message_queue.get(), timeout=timeout)
+        except asyncio.TimeoutError:
+            return None
+    
+    async def send_message_ws(self, content: str, target: Optional[str] = None) -> bool:
+        """Send a message through WebSocket.
+        
+        This is the high-performance messaging method.
+        """
+        if self._ws is None:
+            connected = await self.connect_ws()
+            if not connected:
+                return False
+        
+        try:
+            if self._ws.state.name in ('CLOSING', 'CLOSED'):
+                return False
+        except Exception:
+            return False
+        
+        try:
+            msg = Message(MessageType.TEXT, self.username or "", content, target=target)
+            await self._ws.send(msg.serialize())
+            return True
+        except Exception as e:
+            logger.warning("WebSocket send failed: %s", e)
+            return False
+    
+    @property
+    def is_ws_connected(self) -> bool:
+        """Check if WebSocket is connected."""
+        if self._ws is None:
+            return False
+        try:
+            return self._ws.state.name not in ('CLOSING', 'CLOSED')
+        except Exception:
+            return False
     
     async def _request(
         self, 
@@ -100,6 +251,7 @@ class AloneChatAPIClient:
         return resp
     
     async def logout(self) -> Dict[str, Any]:
+        await self.disconnect_ws()
         resp = await self._request("/api/logout", "POST")
         if resp.get("success"):
             self.token = None
@@ -110,6 +262,15 @@ class AloneChatAPIClient:
         return await self._request("/api/get_default_server")
     
     async def send_message(self, message: str, target: Optional[str] = None) -> Dict[str, Any]:
+        """Send a message, preferring WebSocket for high performance.
+        
+        Falls back to HTTP if WebSocket is not available.
+        """
+        if self.is_ws_connected or await self.connect_ws():
+            success = await self.send_message_ws(message, target)
+            if success:
+                return {"success": True}
+        
         return await self._request("/send", "POST", {
             "sender": self.username, "message": message, "target": target
         })

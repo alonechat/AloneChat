@@ -92,7 +92,7 @@ class MessageService:
     - SSE clients: use message queues for polling
     """
     
-    def __init__(self, max_concurrent: int = 50):
+    def __init__(self, max_concurrent: int = 1024):
         self._queues: Dict[str, MessageQueue] = {}
         self._connections: Dict[str, Callable] = {}
         self._sse_clients: Set[str] = set()
