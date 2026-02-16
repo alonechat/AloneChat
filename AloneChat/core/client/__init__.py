@@ -1,13 +1,9 @@
 """
 Client module for AloneChat application.
-Provides base client functionality and standard command-line client implementation.
+Provides GUI client functionality and entry point.
 """
 
-from . import auth
-from . import cli
-from . import input
-# Import submodules for easy access
-from . import ui
+from . import gui
 from . import utils
 from .client_base import Client
 from .gui_client import SimpleGUIClient
@@ -17,9 +13,6 @@ __all__ = [
     'Client',
     'SimpleGUIClient',
     'run_client',
-    'ui',
-    'input',
-    'auth',
+    'gui',
     'utils',
-    'cli',
 ]
