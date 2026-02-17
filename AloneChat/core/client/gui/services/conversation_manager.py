@@ -93,6 +93,8 @@ class Conversation:
     partner_status: str = "offline"
     last_activity: Optional[float] = None
     max_items: int = 1000
+    is_friend: bool = False
+    remark: str = ""
     
     def add_message(self, item: MessageItem) -> None:
         """Add a message to this conversation."""
@@ -115,6 +117,11 @@ class Conversation:
         self.partner_online = is_online
         self.partner_status = status
     
+    def update_friend_status(self, is_friend: bool, remark: str = "") -> None:
+        """Update friend status for private conversations."""
+        self.is_friend = is_friend
+        self.remark = remark
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -126,6 +133,8 @@ class Conversation:
             "partner_online": self.partner_online,
             "partner_status": self.partner_status,
             "last_activity": self.last_activity,
+            "is_friend": self.is_friend,
+            "remark": self.remark,
         }
     
     @classmethod
@@ -140,6 +149,8 @@ class Conversation:
             partner_online=data.get("partner_online", False),
             partner_status=data.get("partner_status", "offline"),
             last_activity=data.get("last_activity"),
+            is_friend=data.get("is_friend", False),
+            remark=data.get("remark", ""),
         )
 
 
@@ -296,6 +307,17 @@ class ConversationManager:
         if partner_id in self._conversations:
             conv = self._conversations[partner_id]
             conv.update_partner_status(is_online, status)
+    
+    def update_friend_status(
+        self,
+        partner_id: str,
+        is_friend: bool,
+        remark: str = ""
+    ) -> None:
+        """Update friend status for a partner."""
+        if partner_id in self._conversations:
+            conv = self._conversations[partner_id]
+            conv.update_friend_status(is_friend, remark)
     
     def is_private_conversation(self, cid: str) -> bool:
         """Check if a conversation is a private chat."""

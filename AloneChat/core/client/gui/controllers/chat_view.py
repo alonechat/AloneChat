@@ -38,7 +38,9 @@ class ChatView:
         on_logout: Callable[[], None],
         on_set_status: Optional[Callable[[str], None]] = None,
         on_refresh_users: Optional[Callable[[], None]] = None,
-        on_user_list: Optional[Callable[[], None]] = None
+        on_user_list: Optional[Callable[[], None]] = None,
+        on_friends: Optional[Callable[[], None]] = None,
+        on_friend_requests: Optional[Callable[[], None]] = None
     ):
         self.root = root
         self.username = username
@@ -54,6 +56,8 @@ class ChatView:
         self.on_set_status = on_set_status
         self.on_refresh_users = on_refresh_users
         self.on_user_list = on_user_list
+        self.on_friends = on_friends
+        self.on_friend_requests = on_friend_requests
         
         self.frame: Optional[ttk.Frame] = None
         self.main_pane: Optional[ttk.Frame] = None
@@ -106,7 +110,9 @@ class ChatView:
             on_logout=self.on_logout,
             on_export_logs=self.on_export_logs,
             on_refresh_users=self.on_refresh_users,
-            on_set_status=self.on_set_status
+            on_set_status=self.on_set_status,
+            on_friends=self.on_friends,
+            on_friend_requests=self.on_friend_requests
         )
         header_frame = self._header.build()
         header_frame.grid(row=0, column=0, sticky="ew")

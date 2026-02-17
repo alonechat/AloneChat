@@ -18,7 +18,7 @@ import subprocess
 import sys
 import tkinter as tk
 from tkinter import messagebox
-from typing import Optional
+from typing import Callable, Optional, List, Dict, Any
 
 import darkdetect
 import sv_ttk
@@ -30,6 +30,9 @@ from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
 from .controllers.search_dialog import SearchDialog
 from .controllers.user_list_dialog import UserListDialog
+from .controllers.friend_list_dialog import FriendListDialog
+from .controllers.add_friend_dialog import AddFriendDialog
+from .controllers.friend_request_dialog import FriendRequestDialog
 from .services.async_service import AsyncService
 from .services.conversation_manager import ConversationManager, MessageItem, ReplyContext
 from .services.event_service import APIClient, EventService, EventServiceConfig, ChatMessage, MessageType
@@ -69,6 +72,9 @@ class GUIClient(Client):
         self._chat_view: Optional[ChatView] = None
         self._search_dialog: Optional[SearchDialog] = None
         self._user_list_dialog: Optional[UserListDialog] = None
+        self._friend_list_dialog: Optional[FriendListDialog] = None
+        self._add_friend_dialog: Optional[AddFriendDialog] = None
+        self._friend_request_dialog: Optional[FriendRequestDialog] = None
         
         self._async_service = AsyncService()
         self._conv_manager = ConversationManager()
@@ -149,7 +155,9 @@ class GUIClient(Client):
             on_logout=self._handle_logout,
             on_set_status=self._handle_set_status,
             on_refresh_users=self._handle_refresh_users,
-            on_user_list=self._handle_user_list
+            on_user_list=self._handle_user_list,
+            on_friends=self._handle_friends,
+            on_friend_requests=self._handle_friend_requests
         )
         self._chat_view.show()
         
@@ -655,6 +663,219 @@ class GUIClient(Client):
         """Close search dialog."""
         self._search_service.clear()
         self._search_dialog = None
+    
+    def _handle_friends(self) -> None:
+        """Handle friends button click."""
+        if not self._friend_list_dialog:
+            self._friend_list_dialog = FriendListDialog(
+                self.root,
+                on_start_chat=self._handle_start_chat_with_friend,
+                on_remove_friend=self._handle_remove_friend,
+                on_set_remark=self._handle_set_remark,
+                on_refresh=self._handle_refresh_friends,
+                on_add_friend=self._handle_add_friend_dialog
+            )
+        self._friend_list_dialog.show()
+        self._async_service.run_async(self._do_load_friends())
+    
+    def _handle_friend_requests(self) -> None:
+        """Handle friend requests button click."""
+        if not self._friend_request_dialog:
+            self._friend_request_dialog = FriendRequestDialog(
+                self.root,
+                on_accept=self._handle_accept_friend_request,
+                on_reject=self._handle_reject_friend_request,
+                on_refresh=self._handle_refresh_friend_requests
+            )
+        self._friend_request_dialog.show()
+        self._async_service.run_async(self._do_load_friend_requests())
+    
+    def _handle_add_friend_dialog(self) -> None:
+        """Open add friend dialog."""
+        if not self._add_friend_dialog:
+            self._add_friend_dialog = AddFriendDialog(
+                self.root,
+                on_search=self._handle_search_users,
+                on_send_request=self._handle_send_friend_request,
+                current_user=self._username
+            )
+        self._add_friend_dialog.show()
+    
+    def _handle_start_chat_with_friend(self, friend_id: str) -> None:
+        """Start chat with a friend."""
+        self._conv_manager.create_private_conversation(
+            friend_id, friend_id, is_online=True, status="online"
+        )
+        self._conv_manager.switch_conversation(friend_id)
+        self._chat_view.refresh_conversation_list()
+        self._chat_view.render_conversation()
+    
+    def _handle_remove_friend(self, friend_id: str) -> None:
+        """Remove a friend."""
+        self._async_service.run_async(self._do_remove_friend(friend_id))
+    
+    def _handle_set_remark(self, friend_id: str, remark: str) -> None:
+        """Set remark for a friend."""
+        self._async_service.run_async(self._do_set_remark(friend_id, remark))
+    
+    def _handle_refresh_friends(self) -> None:
+        """Refresh friends list."""
+        self._async_service.run_async(self._do_load_friends())
+    
+    def _handle_refresh_friend_requests(self) -> None:
+        """Refresh friend requests."""
+        self._async_service.run_async(self._do_load_friend_requests())
+    
+    def _handle_search_users(self, query: str, callback: Callable[[List[Dict[str, Any]]], None]) -> None:
+        """Search for users asynchronously."""
+        self._async_service.run_async(self._do_search_users_with_callback(query, callback))
+    
+    async def _do_search_users_with_callback(self, query: str, callback: Callable[[List[Dict[str, Any]]], None]) -> None:
+        """Search users from API and call callback with results."""
+        try:
+            logger.debug("Searching users with query: %s", query)
+            result = await self._api_client.search_users(query)
+            logger.debug("Search result: %s", result)
+            users = result.get("users", []) if result else []
+            logger.debug("Users found: %d", len(users))
+            if self._ui_alive():
+                self.root.after(0, lambda: callback(users))
+        except Exception as e:
+            logger.warning("Failed to search users: %s", e)
+            if self._ui_alive():
+                self.root.after(0, lambda: callback([]))
+    
+    def _handle_send_friend_request(self, to_user: str, message: str) -> None:
+        """Send friend request."""
+        self._async_service.run_async(self._do_send_friend_request(to_user, message))
+    
+    def _handle_accept_friend_request(self, request_id: str) -> None:
+        """Accept friend request."""
+        self._async_service.run_async(self._do_accept_friend_request(request_id))
+    
+    def _handle_reject_friend_request(self, request_id: str) -> None:
+        """Reject friend request."""
+        self._async_service.run_async(self._do_reject_friend_request(request_id))
+    
+    async def _do_load_friends(self) -> None:
+        """Load friends from API."""
+        try:
+            result = await self._api_client.get_friends()
+            if result and self._ui_alive():
+                friends = result.get("friends", [])
+                if self._friend_list_dialog:
+                    self.root.after(0, lambda: self._friend_list_dialog.set_friends(friends))
+                
+                for friend in friends:
+                    friend_id = friend.get("user_id")
+                    remark = friend.get("remark", "")
+                    is_online = friend.get("is_online", False)
+                    status = friend.get("status", "offline")
+                    
+                    if friend_id:
+                        self._conv_manager.update_partner_status(friend_id, is_online, status)
+                        self._conv_manager.update_friend_status(friend_id, True, remark)
+        except Exception as e:
+            logger.warning("Failed to load friends: %s", e)
+    
+    async def _do_load_friend_requests(self) -> None:
+        """Load friend requests from API."""
+        try:
+            result = await self._api_client.get_pending_friend_requests()
+            if result and self._ui_alive():
+                requests = result.get("requests", [])
+                if self._friend_request_dialog:
+                    self.root.after(0, lambda: self._friend_request_dialog.set_requests(requests))
+        except Exception as e:
+            logger.warning("Failed to load friend requests: %s", e)
+    
+    async def _do_search_users(self, query: str) -> List[Dict[str, Any]]:
+        """Search users from API."""
+        try:
+            result = await self._api_client.search_users(query)
+            if result:
+                return result.get("users", [])
+        except Exception as e:
+            logger.warning("Failed to search users: %s", e)
+        return []
+    
+    async def _do_send_friend_request(self, to_user: str, message: str) -> None:
+        """Send friend request via API."""
+        try:
+            logger.debug("Sending friend request to: %s, token: %s", to_user, self._api_client.token[:20] if self._api_client.token else "None")
+            result = await self._api_client.send_friend_request(to_user, message)
+            logger.debug("Friend request result: %s", result)
+            if self._ui_alive():
+                if result.get("success"):
+                    self.root.after(0, lambda: messagebox.showinfo("Friend Request", "Friend request sent!"))
+                else:
+                    error = result.get("error", result.get("message", "Failed to send request"))
+                    self.root.after(0, lambda: messagebox.showwarning("Friend Request", error))
+        except Exception as e:
+            logger.error("Send friend request error: %s", e)
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+    
+    async def _do_accept_friend_request(self, request_id: str) -> None:
+        """Accept friend request via API."""
+        try:
+            result = await self._api_client.accept_friend_request(request_id)
+            if self._ui_alive():
+                if result.get("success"):
+                    self.root.after(0, lambda: messagebox.showinfo("Friend Request", "Friend request accepted!"))
+                    self._async_service.run_async(self._do_load_friends())
+                    self._async_service.run_async(self._do_load_friend_requests())
+                else:
+                    error = result.get("error", "Failed to accept request")
+                    self.root.after(0, lambda: messagebox.showwarning("Friend Request", error))
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+    
+    async def _do_reject_friend_request(self, request_id: str) -> None:
+        """Reject friend request via API."""
+        try:
+            result = await self._api_client.reject_friend_request(request_id)
+            if self._ui_alive():
+                if result.get("success"):
+                    self._async_service.run_async(self._do_load_friend_requests())
+                else:
+                    error = result.get("error", "Failed to reject request")
+                    self.root.after(0, lambda: messagebox.showwarning("Friend Request", error))
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+    
+    async def _do_remove_friend(self, friend_id: str) -> None:
+        """Remove friend via API."""
+        try:
+            result = await self._api_client.remove_friend(friend_id)
+            if self._ui_alive():
+                if result.get("success"):
+                    self.root.after(0, lambda: messagebox.showinfo("Friend", "Friend removed."))
+                    self._conv_manager.update_friend_status(friend_id, False, "")
+                    self._async_service.run_async(self._do_load_friends())
+                else:
+                    error = result.get("error", "Failed to remove friend")
+                    self.root.after(0, lambda: messagebox.showwarning("Friend", error))
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+    
+    async def _do_set_remark(self, friend_id: str, remark: str) -> None:
+        """Set friend remark via API."""
+        try:
+            result = await self._api_client.set_friend_remark(friend_id, remark)
+            if self._ui_alive():
+                if result.get("success"):
+                    self._conv_manager.update_friend_status(friend_id, True, remark)
+                    self._async_service.run_async(self._do_load_friends())
+                else:
+                    error = result.get("error", "Failed to set remark")
+                    self.root.after(0, lambda: messagebox.showwarning("Remark", error))
+        except Exception as e:
+            if self._ui_alive():
+                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
     
     def _on_close(self) -> None:
         """Handle window close."""

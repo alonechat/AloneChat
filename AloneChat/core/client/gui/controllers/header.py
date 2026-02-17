@@ -18,7 +18,9 @@ class HeaderBar:
         on_logout: Callable[[], None],
         on_export_logs: Callable[[], None],
         on_refresh_users: Optional[Callable[[], None]] = None,
-        on_set_status: Optional[Callable[[str], None]] = None
+        on_set_status: Optional[Callable[[str], None]] = None,
+        on_friends: Optional[Callable[[], None]] = None,
+        on_friend_requests: Optional[Callable[[], None]] = None
     ):
         self.parent = parent
         self.username = username
@@ -26,6 +28,8 @@ class HeaderBar:
         self.on_export_logs = on_export_logs
         self.on_refresh_users = on_refresh_users
         self.on_set_status = on_set_status
+        self.on_friends = on_friends
+        self.on_friend_requests = on_friend_requests
         
         self.frame: Optional[ttk.Frame] = None
         self.status_var: Optional[tk.StringVar] = None
@@ -55,6 +59,20 @@ class HeaderBar:
                 btn_frame,
                 text="Refresh",
                 command=self.on_refresh_users
+            ).pack(side="right", padx=4)
+        
+        if self.on_friend_requests:
+            ttk.Button(
+                btn_frame,
+                text="Requests",
+                command=self.on_friend_requests
+            ).pack(side="right", padx=4)
+        
+        if self.on_friends:
+            ttk.Button(
+                btn_frame,
+                text="Friends",
+                command=self.on_friends
             ).pack(side="right", padx=4)
         
         ttk.Button(

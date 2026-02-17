@@ -427,6 +427,58 @@ class APIClient:
         """Get user's submitted feedback."""
         return await self._request("GET", "/api/feedback/my-feedback")
     
+    async def get_friends(self) -> Dict[str, Any]:
+        """Get user's friend list."""
+        return await self._request("GET", "/api/friends")
+    
+    async def send_friend_request(self, to_user: str, message: str = "") -> Dict[str, Any]:
+        """Send a friend request."""
+        return await self._request("POST", "/api/friends/request", {
+            "to_user": to_user,
+            "message": message
+        })
+    
+    async def accept_friend_request(self, request_id: str) -> Dict[str, Any]:
+        """Accept a friend request."""
+        return await self._request("POST", "/api/friends/accept", {
+            "request_id": request_id
+        })
+    
+    async def reject_friend_request(self, request_id: str) -> Dict[str, Any]:
+        """Reject a friend request."""
+        return await self._request("POST", "/api/friends/reject", {
+            "request_id": request_id
+        })
+    
+    async def remove_friend(self, friend_id: str) -> Dict[str, Any]:
+        """Remove a friend."""
+        return await self._request("POST", "/api/friends/remove", {
+            "request_id": friend_id
+        })
+    
+    async def set_friend_remark(self, friend_id: str, remark: str) -> Dict[str, Any]:
+        """Set remark for a friend."""
+        return await self._request("POST", "/api/friends/remark", {
+            "friend_id": friend_id,
+            "remark": remark
+        })
+    
+    async def get_pending_friend_requests(self) -> Dict[str, Any]:
+        """Get pending friend requests received."""
+        return await self._request("GET", "/api/friends/requests/pending")
+    
+    async def get_sent_friend_requests(self) -> Dict[str, Any]:
+        """Get sent friend requests pending."""
+        return await self._request("GET", "/api/friends/requests/sent")
+    
+    async def search_users(self, query: str, limit: int = 20) -> Dict[str, Any]:
+        """Search for users."""
+        return await self._request("GET", "/api/friends/search", params={"query": query, "limit": limit})
+    
+    async def check_friendship(self, user_id: str) -> Dict[str, Any]:
+        """Check if friends with a user."""
+        return await self._request("GET", f"/api/friends/check/{user_id}")
+    
     @property
     def token(self) -> Optional[str]:
         """Get current auth token."""

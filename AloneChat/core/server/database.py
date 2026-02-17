@@ -5,6 +5,7 @@ Provides ClickHouse-based data persistence with optimized batch operations.
 """
 
 import logging
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -13,48 +14,60 @@ logger = logging.getLogger(__name__)
 
 _client = None
 _store = None
+_client_lock = threading.Lock()
 
 
 def get_client():
     global _client
-    if _client is not None:
-        return _client
     
-    try:
-        from clickhouse_driver import Client
-        from AloneChat.config import config
+    with _client_lock:
+        if _client is not None:
+            try:
+                _client.execute("SELECT 1")
+                return _client
+            except Exception as e:
+                logger.warning("ClickHouse connection lost, reconnecting: %s", e)
+                _client = None
         
-        _client = Client(
-            host=config.CLICKHOUSE_HOST,
-            port=config.CLICKHOUSE_PORT,
-            user=config.CLICKHOUSE_USER,
-            password=config.CLICKHOUSE_PASSWORD,
-            database=config.CLICKHOUSE_DATABASE,
-        )
-        
-        _ensure_tables(_client)
-        logger.info("ClickHouse connected: %s:%s/%s", 
-                   config.CLICKHOUSE_HOST, config.CLICKHOUSE_PORT, config.CLICKHOUSE_DATABASE)
-        return _client
-        
-    except ImportError:
-        logger.warning("clickhouse-driver not installed")
-        return None
-    except Exception as e:
-        logger.error("ClickHouse connection failed: %s", e)
-        return None
+        try:
+            from clickhouse_driver import Client
+            from AloneChat.config import config
+            
+            temp_client = Client(
+                host=config.CLICKHOUSE_HOST,
+                port=config.CLICKHOUSE_PORT,
+                user=config.CLICKHOUSE_USER,
+                password=config.CLICKHOUSE_PASSWORD,
+            )
+            
+            _ensure_database_and_tables(temp_client, config.CLICKHOUSE_DATABASE)
+            temp_client.disconnect()
+            
+            _client = Client(
+                host=config.CLICKHOUSE_HOST,
+                port=config.CLICKHOUSE_PORT,
+                user=config.CLICKHOUSE_USER,
+                password=config.CLICKHOUSE_PASSWORD,
+                database=config.CLICKHOUSE_DATABASE,
+            )
+            
+            logger.info("ClickHouse connected: %s:%s/%s", 
+                       config.CLICKHOUSE_HOST, config.CLICKHOUSE_PORT, config.CLICKHOUSE_DATABASE)
+            return _client
+            
+        except ImportError:
+            logger.warning("clickhouse-driver not installed")
+            return None
+        except Exception as e:
+            logger.error("ClickHouse connection failed: %s", e)
+            return None
 
 
-def _ensure_tables(client):
-    from AloneChat.config import config
+def _ensure_database_and_tables(client, database_name):
+    client.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
     
-    try:
-        client.execute(f"CREATE DATABASE IF NOT EXISTS {config.CLICKHOUSE_DATABASE}")
-    except Exception:
-        pass
-    
-    client.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+    client.execute(f"""
+        CREATE TABLE IF NOT EXISTS {database_name}.users (
             user_id String,
             password_hash String,
             display_name String DEFAULT '',
@@ -67,8 +80,8 @@ def _ensure_tables(client):
         ORDER BY user_id
     """)
     
-    client.execute("""
-        CREATE TABLE IF NOT EXISTS user_activity (
+    client.execute(f"""
+        CREATE TABLE IF NOT EXISTS {database_name}.user_activity (
             user_id String,
             activity_type String,
             activity_data String DEFAULT '',
@@ -77,8 +90,8 @@ def _ensure_tables(client):
         ORDER BY (user_id, timestamp)
     """)
     
-    client.execute("""
-        CREATE TABLE IF NOT EXISTS private_messages (
+    client.execute(f"""
+        CREATE TABLE IF NOT EXISTS {database_name}.private_messages (
             id String,
             sender String,
             recipient String,
@@ -87,6 +100,30 @@ def _ensure_tables(client):
             delivered UInt8 DEFAULT 0
         ) ENGINE = MergeTree()
         ORDER BY (sender, recipient, timestamp)
+    """)
+    
+    client.execute(f"""
+        CREATE TABLE IF NOT EXISTS {database_name}.friendships (
+            user_id String,
+            friend_id String,
+            remark String DEFAULT '',
+            created_at DateTime DEFAULT now(),
+            updated_at DateTime DEFAULT now()
+        ) ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (user_id, friend_id)
+    """)
+    
+    client.execute(f"""
+        CREATE TABLE IF NOT EXISTS {database_name}.friend_requests (
+            id String,
+            from_user String,
+            to_user String,
+            message String DEFAULT '',
+            status Enum8('pending' = 1, 'accepted' = 2, 'rejected' = 3) DEFAULT 'pending',
+            created_at DateTime DEFAULT now(),
+            updated_at DateTime DEFAULT now()
+        ) ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (to_user, from_user, created_at)
     """)
 
 
@@ -107,6 +144,34 @@ class Database:
     def __init__(self, client=None):
         self._client = client or get_client()
         self._enabled = self._client is not None
+    
+    def _get_client(self):
+        """Get a working client connection."""
+        if self._client is None:
+            self._client = get_client()
+            self._enabled = self._client is not None
+        return self._client
+    
+    def _safe_execute(self, query, params=None):
+        """Execute query with connection retry."""
+        client = self._get_client()
+        if client is None:
+            raise Exception("Database not available")
+        
+        try:
+            if params:
+                return client.execute(query, params)
+            return client.execute(query)
+        except Exception as e:
+            logger.warning("Query failed, attempting reconnect: %s", e)
+            self._client = None
+            client = self._get_client()
+            if client is None:
+                raise Exception("Database reconnection failed")
+            
+            if params:
+                return client.execute(query, params)
+            return client.execute(query)
     
     @property
     def is_enabled(self) -> bool:
@@ -348,6 +413,227 @@ class Database:
         except Exception as e:
             logger.error("get_private_messages failed: %s", e)
             return []
+    
+    def add_friend(self, user_id: str, friend_id: str, remark: str = "") -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            now = datetime.now()
+            self._client.execute(
+                "INSERT INTO friendships (user_id, friend_id, remark, created_at, updated_at) VALUES",
+                [
+                    {'user_id': user_id, 'friend_id': friend_id, 'remark': remark, 'created_at': now, 'updated_at': now},
+                    {'user_id': friend_id, 'friend_id': user_id, 'remark': '', 'created_at': now, 'updated_at': now}
+                ]
+            )
+            return True
+        except Exception as e:
+            logger.error("add_friend failed: %s", e)
+            return False
+    
+    def remove_friend(self, user_id: str, friend_id: str) -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            now = datetime.now()
+            self._client.execute(
+                "INSERT INTO friendships (user_id, friend_id, remark, created_at, updated_at) VALUES",
+                [
+                    {'user_id': user_id, 'friend_id': friend_id, 'remark': '__deleted__', 'created_at': now, 'updated_at': now},
+                    {'user_id': friend_id, 'friend_id': user_id, 'remark': '__deleted__', 'created_at': now, 'updated_at': now}
+                ]
+            )
+            return True
+        except Exception as e:
+            logger.error("remove_friend failed: %s", e)
+            return False
+    
+    def get_friends(self, user_id: str) -> List[Dict[str, Any]]:
+        if not self._enabled:
+            return []
+        
+        try:
+            result = self._client.execute(
+                "SELECT friend_id, remark, created_at "
+                "FROM ("
+                "  SELECT friend_id, argMax(remark, updated_at) as remark, "
+                "  argMax(created_at, updated_at) as created_at "
+                "  FROM friendships "
+                "  WHERE user_id = %(uid)s "
+                "  GROUP BY friend_id"
+                ") "
+                "WHERE remark != '__deleted__' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'friend_id': r[0], 'remark': r[1], 'created_at': r[2]} for r in result]
+        except Exception as e:
+            logger.error("get_friends failed: %s", e)
+            return []
+    
+    def is_friend(self, user_id: str, friend_id: str) -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            result = self._client.execute(
+                "SELECT argMax(remark, updated_at) as remark "
+                "FROM friendships "
+                "WHERE user_id = %(uid)s AND friend_id = %(fid)s "
+                "GROUP BY user_id, friend_id",
+                {'uid': user_id, 'fid': friend_id}
+            )
+            if result and result[0][0] != '__deleted__':
+                return True
+            return False
+        except Exception as e:
+            logger.error("is_friend failed: %s", e)
+            return False
+    
+    def set_friend_remark(self, user_id: str, friend_id: str, remark: str) -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            now = datetime.now()
+            self._client.execute(
+                "INSERT INTO friendships (user_id, friend_id, remark, created_at, updated_at) VALUES",
+                [{'user_id': user_id, 'friend_id': friend_id, 'remark': remark, 'created_at': now, 'updated_at': now}]
+            )
+            return True
+        except Exception as e:
+            logger.error("set_friend_remark failed: %s", e)
+            return False
+    
+    def create_friend_request(self, request_id: str, from_user: str, to_user: str, message: str = "") -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            now = datetime.now()
+            self._client.execute(
+                "INSERT INTO friend_requests (id, from_user, to_user, message, status, created_at, updated_at) VALUES",
+                [{'id': request_id, 'from_user': from_user, 'to_user': to_user, 
+                  'message': message, 'status': 'pending', 'created_at': now, 'updated_at': now}]
+            )
+            return True
+        except Exception as e:
+            logger.error("create_friend_request failed: %s", e)
+            return False
+    
+    def get_friend_request(self, request_id: str) -> Optional[Dict[str, Any]]:
+        if not self._enabled:
+            return None
+        
+        try:
+            result = self._client.execute(
+                "SELECT id, from_user, to_user, message, "
+                "argMax(status, updated_at) as status, "
+                "argMax(created_at, updated_at) as created_at "
+                "FROM friend_requests "
+                "WHERE id = %(rid)s "
+                "GROUP BY id, from_user, to_user, message",
+                {'rid': request_id}
+            )
+            if result:
+                r = result[0]
+                return {'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]}
+            return None
+        except Exception as e:
+            logger.error("get_friend_request failed: %s", e)
+            return None
+    
+    def get_pending_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
+        if not self._enabled:
+            return []
+        
+        try:
+            result = self._client.execute(
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM ("
+                "  SELECT id, from_user, to_user, message, "
+                "  argMax(status, updated_at) as status, "
+                "  argMax(created_at, updated_at) as created_at "
+                "  FROM friend_requests "
+                "  WHERE to_user = %(uid)s "
+                "  GROUP BY id, from_user, to_user, message"
+                ") "
+                "WHERE status = 'pending' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
+        except Exception as e:
+            logger.error("get_pending_friend_requests failed: %s", e)
+            return []
+    
+    def get_sent_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
+        if not self._enabled:
+            return []
+        
+        try:
+            result = self._client.execute(
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM ("
+                "  SELECT id, from_user, to_user, message, "
+                "  argMax(status, updated_at) as status, "
+                "  argMax(created_at, updated_at) as created_at "
+                "  FROM friend_requests "
+                "  WHERE from_user = %(uid)s "
+                "  GROUP BY id, from_user, to_user, message"
+                ") "
+                "WHERE status = 'pending' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
+        except Exception as e:
+            logger.error("get_sent_friend_requests failed: %s", e)
+            return []
+    
+    def update_friend_request_status(self, request_id: str, status: str) -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            now = datetime.now()
+            existing = self.get_friend_request(request_id)
+            if not existing:
+                return False
+            
+            self._client.execute(
+                "INSERT INTO friend_requests (id, from_user, to_user, message, status, created_at, updated_at) VALUES",
+                [{'id': request_id, 'from_user': existing['from_user'], 'to_user': existing['to_user'],
+                  'message': existing['message'], 'status': status, 'created_at': existing['created_at'], 'updated_at': now}]
+            )
+            return True
+        except Exception as e:
+            logger.error("update_friend_request_status failed: %s", e)
+            return False
+    
+    def has_pending_request(self, from_user: str, to_user: str) -> bool:
+        if not self._enabled:
+            return False
+        
+        try:
+            result = self._client.execute(
+                "SELECT count() "
+                "FROM ("
+                "  SELECT id, argMax(status, updated_at) as status "
+                "  FROM friend_requests "
+                "  WHERE from_user = %(f)s AND to_user = %(t)s "
+                "  GROUP BY id"
+                ") "
+                "WHERE status = 'pending' "
+                "LIMIT 1",
+                {'f': from_user, 't': to_user}
+            )
+            return result[0][0] > 0 if result else False
+        except Exception as e:
+            logger.error("has_pending_request failed: %s", e)
+            return False
 
 
 def get_database() -> Database:

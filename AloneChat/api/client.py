@@ -103,8 +103,10 @@ class AloneChatAPIClient:
                     pass
             
             try:
-                url = f"{self.ws_url}?token={self.token}"
-                self._ws = await websockets.connect(url, proxy=None)
+                headers = {"Authorization": f"Bearer {self.token}"}
+                # We set proxy to None to avoid potential issues with proxy settings
+                # Hope it works in most cases with stream grabbers...
+                self._ws = await websockets.connect(self.ws_url, additional_headers=headers, proxy=None)
                 self._running = True
                 self._receive_task = asyncio.create_task(self._receive_loop())
                 logger.debug("WebSocket connected: %s", self.username)
@@ -308,17 +310,44 @@ class AloneChatAPIClient:
     async def clear_pending_messages(self) -> Dict[str, Any]:
         return await self._request("/api/chat/pending/clear", "POST")
     
+    async def get_friends(self) -> Dict[str, Any]:
+        return await self._request("/api/friends")
+    
+    async def send_friend_request(self, to_user: str, message: str = "") -> Dict[str, Any]:
+        return await self._request("/api/friends/request", "POST", {"to_user": to_user, "message": message})
+    
+    async def accept_friend_request(self, request_id: str) -> Dict[str, Any]:
+        return await self._request("/api/friends/accept", "POST", {"request_id": request_id})
+    
+    async def reject_friend_request(self, request_id: str) -> Dict[str, Any]:
+        return await self._request("/api/friends/reject", "POST", {"request_id": request_id})
+    
+    async def remove_friend(self, friend_id: str) -> Dict[str, Any]:
+        return await self._request("/api/friends/remove", "POST", {"request_id": friend_id})
+    
+    async def set_friend_remark(self, friend_id: str, remark: str) -> Dict[str, Any]:
+        return await self._request("/api/friends/remark", "POST", {"friend_id": friend_id, "remark": remark})
+    
+    async def get_pending_friend_requests(self) -> Dict[str, Any]:
+        return await self._request("/api/friends/requests/pending")
+    
+    async def get_sent_friend_requests(self) -> Dict[str, Any]:
+        return await self._request("/api/friends/requests/sent")
+    
+    async def search_users(self, query: str, limit: int = 20) -> Dict[str, Any]:
+        return await self._request(f"/api/friends/search?query={query}&limit={limit}")
+    
+    async def check_friendship(self, user_id: str) -> Dict[str, Any]:
+        return await self._request(f"/api/friends/check/{user_id}")
+    
     async def get_server_stats(self) -> Dict[str, Any]:
         return await self._request("/api/stats")
     
     def is_authenticated(self) -> bool:
         return self.token is not None
     
-    def get_ws_url(self, token: Optional[str] = None) -> str:
-        use_token = token or self.token
-        if not use_token:
-            raise ValueError("No token available")
-        return f"ws://{self.host}:{self.port}/ws?token={use_token}"
+    def get_ws_url(self) -> str:
+        return self.ws_url
 
 
 async def close_session() -> None:

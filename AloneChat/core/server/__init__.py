@@ -21,6 +21,7 @@ Architecture:
 from .auth import AuthService, AuthResult, RegisterResult, get_auth_service
 from .chat import ChatService, ChatSession, PendingMessage, get_chat_service
 from .database import Database, UserData, get_database
+from .friend import FriendService, FriendInfo, FriendRequest, get_friend_service
 from .message import DeliveryResult, MessageQueue, MessageService, get_message_service
 from .user import Status, UserInfo, UserService, get_user_service, shutdown_user_service
 
@@ -45,6 +46,11 @@ __all__ = [
     'ChatSession',
     'PendingMessage',
     'get_chat_service',
+    
+    'FriendService',
+    'FriendInfo',
+    'FriendRequest',
+    'get_friend_service',
     
     'Database',
     'UserData',

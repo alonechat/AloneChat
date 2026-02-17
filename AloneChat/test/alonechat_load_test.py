@@ -81,7 +81,8 @@ async def send_messages(user_id: int, clients: dict) -> MessageResult:
 
     try:
         ws_url = client.get_ws_url()
-        async with websockets.connect(ws_url, proxy=None) as ws:
+        headers = {"Authorization": f"Bearer {client.token}"}
+        async with websockets.connect(ws_url, additional_headers=headers, proxy=None) as ws:
             for i in range(MESSAGES_PER_USER):
                 msg_content = f"hello {i} {uuid.uuid4()}"
                 msg_start = time.time()
@@ -111,7 +112,8 @@ async def send_messages_ws(user_id: int, clients: dict) -> MessageResult:
 
     try:
         ws_url = client.get_ws_url()
-        async with websockets.connect(ws_url, proxy=None) as ws:
+        headers = {"Authorization": f"Bearer {client.token}"}
+        async with websockets.connect(ws_url, additional_headers=headers, proxy=None) as ws:
             for i in range(MESSAGES_PER_USER):
                 msg_content = f"hello {i} {uuid.uuid4()}"
                 msg = Message(MessageType.TEXT, username, msg_content)
@@ -201,9 +203,10 @@ async def single_user_high_frequency_test():
     latencies = []
     
     ws_url = client.get_ws_url()
+    headers = {"Authorization": f"Bearer {client.token}"}
     
     try:
-        async with websockets.connect(ws_url, proxy=None) as ws:
+        async with websockets.connect(ws_url, proxy=None, additional_headers=headers) as ws:
             print(f"WebSocket connected, sending {SINGLE_USER_MESSAGES} messages...")
             start = time.time()
             
