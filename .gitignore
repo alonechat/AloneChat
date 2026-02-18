@@ -221,3 +221,11 @@ feedback.json
 #  These files are specific to macOS and should be ignored by Git when working on a macOS system.
 #  They include system files and directories that are not relevant to the project.
 .DS_Store
+
+
+# ClickHouse specific ignores
+#  These files are specific to ClickHouse and should be ignored by Git when working on a ClickHouse project.
+#  They include logs, temporary files, and other artifacts that are not relevant to the source code.
+clickhouse-server.log
+clickhouse-client.log
+keeper_*/
