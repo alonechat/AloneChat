@@ -29,7 +29,6 @@ from .components import WinUI3MessageCard
 from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
 from .controllers.search_dialog import SearchDialog
-from .controllers.user_list_dialog import UserListDialog
 from .controllers.friend_list_dialog import FriendListDialog
 from .controllers.add_friend_dialog import AddFriendDialog
 from .controllers.friend_request_dialog import FriendRequestDialog
@@ -71,7 +70,6 @@ class GUIClient(Client):
         self._auth_view: Optional[AuthView] = None
         self._chat_view: Optional[ChatView] = None
         self._search_dialog: Optional[SearchDialog] = None
-        self._user_list_dialog: Optional[UserListDialog] = None
         self._friend_list_dialog: Optional[FriendListDialog] = None
         self._add_friend_dialog: Optional[AddFriendDialog] = None
         self._friend_request_dialog: Optional[FriendRequestDialog] = None
@@ -155,7 +153,6 @@ class GUIClient(Client):
             on_logout=self._handle_logout,
             on_set_status=self._handle_set_status,
             on_refresh_users=self._handle_refresh_users,
-            on_user_list=self._handle_user_list,
             on_friends=self._handle_friends,
             on_friend_requests=self._handle_friend_requests
         )
@@ -263,30 +260,30 @@ class GUIClient(Client):
         if not self._running or self._closing:
             return
         
-        self._async_service.run_async(self._do_refresh_all_users())
+        self._async_service.run_async(self._do_refresh_friends_status())
         
         if self._ui_alive():
             self.root.after(15000, self._refresh_status)
     
-    async def _do_refresh_all_users(self) -> None:
-        """Refresh all users status from API."""
+    async def _do_refresh_friends_status(self) -> None:
+        """Refresh friends status from API."""
         try:
-            result = await self._api_client.get_all_users()
+            result = await self._api_client.get_friends()
             if result and self._ui_alive():
-                users = result.get("users", [])
+                friends = result.get("friends", [])
                 
-                for user_data in users:
-                    if isinstance(user_data, dict):
-                        user_id = user_data.get("user_id")
-                        status = user_data.get("status", "offline")
-                        is_online = user_data.get("is_online", False)
+                for friend in friends:
+                    if isinstance(friend, dict):
+                        friend_id = friend.get("user_id")
+                        status = friend.get("status", "offline")
+                        is_online = friend.get("is_online", False)
                         
-                        if user_id and user_id != self._username:
-                            self._conv_manager.update_partner_status(user_id, is_online, status)
+                        if friend_id:
+                            self._conv_manager.update_partner_status(friend_id, is_online, status)
                 
                 self.root.after(0, self._chat_view.refresh_conversation_list)
         except Exception as e:
-            logger.debug("Failed to refresh user status: %s", e)
+            logger.debug("Failed to refresh friends status: %s", e)
     
     def _show_onboarding(self) -> None:
         """Show one-time onboarding tips."""
@@ -297,6 +294,7 @@ class GUIClient(Client):
                 "• Click Send to send messages\n"
                 "• If a message fails, click the red status to retry\n"
                 "• Use Export to open your local chat logs folder\n"
+                "• Use Friends to manage your contacts\n"
                 "• Need help? Contact to us with tonytao2022 @outlook.com | zhang.chenyun @outlook.com"
             )
             state["onboarding_shown"] = True
@@ -305,7 +303,8 @@ class GUIClient(Client):
     def _handle_login_request(self, username: str, password: str) -> None:
         """Handle login request from auth view."""
         if not username or not password:
-            messagebox.showwarning("Login", "Please enter username and password")
+            if self._auth_view:
+                self._auth_view.show_error("Please enter username and password")
             return
         
         self._async_service.run_async(self._do_login(username, password))
@@ -320,19 +319,22 @@ class GUIClient(Client):
                 self._token = response.get("token")
                 
                 if self._ui_alive():
-                    self.root.after(0, self._show_chat_view)
+                    if self._auth_view:
+                        self._auth_view.show_success("Login successful!")
+                    self.root.after(500, self._show_chat_view)
             else:
                 error = response.get("message", "Login failed")
-                if self._ui_alive():
-                    self.root.after(0, lambda: messagebox.showerror("Login Failed", error))
+                if self._ui_alive() and self._auth_view:
+                    self.root.after(0, lambda: self._auth_view.show_error(error))
         except Exception as e:
-            if self._ui_alive():
-                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+            if self._ui_alive() and self._auth_view:
+                self.root.after(0, lambda: self._auth_view.show_error(str(e)))
     
     def _handle_register_request(self, username: str, password: str) -> None:
         """Handle register request from auth view."""
         if not username or not password:
-            messagebox.showwarning("Register", "Please enter username and password")
+            if self._auth_view:
+                self._auth_view.show_error("Please enter username and password")
             return
         
         self._async_service.run_async(self._do_register(username, password))
@@ -343,17 +345,16 @@ class GUIClient(Client):
             response = await self._api_client.register(username, password)
             
             if response.get("success"):
-                if self._ui_alive():
-                    self.root.after(0, lambda: messagebox.showinfo(
-                        "Success", "Account created! Please sign in."
-                    ))
+                if self._ui_alive() and self._auth_view:
+                    self.root.after(0, lambda: self._auth_view.show_success("Account created! Please sign in."))
+                    self.root.after(0, lambda: self._auth_view.register_btn.stop_loading() if self._auth_view else None)
             else:
                 error = response.get("message", "Registration failed")
-                if self._ui_alive():
-                    self.root.after(0, lambda: messagebox.showerror("Registration Failed", error))
+                if self._ui_alive() and self._auth_view:
+                    self.root.after(0, lambda: self._auth_view.show_error(error))
         except Exception as e:
-            if self._ui_alive():
-                self.root.after(0, lambda: messagebox.showerror("Error", str(e)))
+            if self._ui_alive() and self._auth_view:
+                self.root.after(0, lambda: self._auth_view.show_error(str(e)))
     
     def _handle_server_settings_changed(self, api_host: str, api_port: int) -> None:
         """Handle server settings change from auth view."""
@@ -533,77 +534,8 @@ class GUIClient(Client):
                 self.root.after(0, lambda: messagebox.showwarning("Status", f"Failed to set status: {e}"))
     
     def _handle_refresh_users(self) -> None:
-        """Handle refresh users request."""
-        self._async_service.run_async(self._do_refresh_users())
-    
-    async def _do_refresh_users(self) -> None:
-        """Refresh online users from API."""
-        try:
-            result = await self._api_client.get_online_users()
-            if result and self._ui_alive():
-                users = result.get("users", [])
-                for user_data in users:
-                    user_id = user_data if isinstance(user_data, str) else user_data.get("user_id")
-                    if user_id:
-                        self._conv_manager.update_partner_status(user_id, True, "online")
-                
-                self.root.after(0, self._chat_view.refresh_conversation_list)
-        except Exception as e:
-            logger.warning("Failed to refresh users: %s", e)
-    
-    def _handle_user_list(self) -> None:
-        """Handle user list button click."""
-        if not self._user_list_dialog:
-            self._user_list_dialog = UserListDialog(
-                self.root,
-                on_select_user=self._handle_select_user_from_list,
-                on_refresh=self._handle_refresh_users_for_dialog
-            )
-        self._user_list_dialog.show()
-        self._async_service.run_async(self._do_load_users_for_dialog())
-    
-    def _handle_select_user_from_list(self, user_id: str) -> None:
-        """Handle selecting a user from the user list dialog."""
-        conv = self._conv_manager.get_conversation(user_id)
-        is_online = conv.partner_online if conv else False
-        status = conv.partner_status if conv else "offline"
-        
-        self._conv_manager.create_private_conversation(
-            user_id, user_id, is_online=is_online, status=status
-        )
-        self._conv_manager.switch_conversation(user_id)
-        self._chat_view.refresh_conversation_list()
-        self._chat_view.render_conversation()
-    
-    def _handle_refresh_users_for_dialog(self) -> None:
-        """Handle refresh button in user list dialog."""
-        self._async_service.run_async(self._do_load_users_for_dialog())
-    
-    async def _do_load_users_for_dialog(self) -> None:
-        """Load all registered users from API and update dialog."""
-        try:
-            result = await self._api_client.get_all_users()
-            if result and self._ui_alive():
-                users = result.get("users", [])
-                
-                filtered_users = []
-                for user_data in users:
-                    if isinstance(user_data, dict):
-                        user_id = user_data.get("user_id")
-                        if user_id == self._username:
-                            continue
-                        
-                        is_online = user_data.get("is_online", False)
-                        status = user_data.get("status", "online" if is_online else "offline")
-                        
-                        if user_id:
-                            self._conv_manager.update_partner_status(user_id, is_online, status)
-                            filtered_users.append(user_data)
-                
-                if self._user_list_dialog:
-                    self.root.after(0, lambda: self._user_list_dialog.set_users(filtered_users))
-        except Exception as e:
-            logger.warning("Failed to load users: %s", e)
+        """Handle refresh users request - refreshes friends list."""
+        self._async_service.run_async(self._do_refresh_friends_status())
     
     def _add_message_to_ui(self, item: MessageItem) -> None:
         """Add a message to the UI."""
@@ -788,16 +720,6 @@ class GUIClient(Client):
                     self.root.after(0, lambda: self._friend_request_dialog.set_requests(requests))
         except Exception as e:
             logger.warning("Failed to load friend requests: %s", e)
-    
-    async def _do_search_users(self, query: str) -> List[Dict[str, Any]]:
-        """Search users from API."""
-        try:
-            result = await self._api_client.search_users(query)
-            if result:
-                return result.get("users", [])
-        except Exception as e:
-            logger.warning("Failed to search users: %s", e)
-        return []
     
     async def _do_send_friend_request(self, to_user: str, message: str) -> None:
         """Send friend request via API."""

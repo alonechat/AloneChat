@@ -228,4 +228,26 @@ feedback.json
 #  They include logs, temporary files, and other artifacts that are not relevant to the source code.
 clickhouse-server.log
 clickhouse-client.log
+
+# ClickHouse Keeper specific ignores
 keeper_*/
+keeper_config-preprocessed.xml
+
+# ClickHouse Database specific ignores
+access/
+data/
+flags/
+format_schemas/
+store/
+metadata*/
+
+# ClickHouse User specific ignores
+user_files/
+preprocessed_configs/
+
+# ClickHouse temporary files
+state
+status
+uuid
+
+tmp/

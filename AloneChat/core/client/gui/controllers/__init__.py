@@ -9,7 +9,6 @@ from .sidebar import Sidebar
 from .message_area import MessageArea
 from .input_area import InputArea
 from .search_dialog import SearchDialog
-from .user_list_dialog import UserListDialog
 from .status_bar import StatusBar
 
 __all__ = [
@@ -20,6 +19,5 @@ __all__ = [
     'MessageArea',
     'InputArea',
     'SearchDialog',
-    'UserListDialog',
     'StatusBar',
 ]

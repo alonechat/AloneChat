@@ -1,6 +1,6 @@
 """
 Sidebar component for chat view.
-Contains conversation selector and user list button.
+Contains conversation selector.
 """
 
 import tkinter as tk
@@ -12,19 +12,17 @@ if TYPE_CHECKING:
 
 
 class Sidebar:
-    """Sidebar with conversation selector and user list."""
+    """Sidebar with conversation selector."""
     
     def __init__(
         self,
         parent: ttk.Frame,
         conversation_manager: 'ConversationManager',
-        on_select_conversation: Callable[[str], None],
-        on_user_list: Optional[Callable[[], None]] = None
+        on_select_conversation: Callable[[str], None]
     ):
         self.parent = parent
         self.conv_manager = conversation_manager
         self.on_select_conversation = on_select_conversation
-        self.on_user_list = on_user_list
         
         self.frame: Optional[ttk.LabelFrame] = None
         self.conv_combo: Optional[ttk.Combobox] = None
@@ -33,13 +31,6 @@ class Sidebar:
     def build(self) -> ttk.LabelFrame:
         """Build and return the sidebar frame."""
         self.frame = ttk.LabelFrame(self.parent, text="Conversations", padding=12)
-        
-        if self.on_user_list:
-            ttk.Button(
-                self.frame,
-                text="User List",
-                command=self._on_user_list
-            ).pack(fill="x", pady=(0, 12))
         
         ttk.Label(self.frame, text="Select conversation:").pack(anchor="w", pady=(0, 4))
         
@@ -53,11 +44,6 @@ class Sidebar:
         self.refresh_conversation_list()
         
         return self.frame
-    
-    def _on_user_list(self) -> None:
-        """Handle user list button click."""
-        if self.on_user_list:
-            self.on_user_list()
     
     def _on_conv_select(self, event) -> None:
         """Handle conversation selection from Combobox."""

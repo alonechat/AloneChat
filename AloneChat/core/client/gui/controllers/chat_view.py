@@ -38,7 +38,6 @@ class ChatView:
         on_logout: Callable[[], None],
         on_set_status: Optional[Callable[[str], None]] = None,
         on_refresh_users: Optional[Callable[[], None]] = None,
-        on_user_list: Optional[Callable[[], None]] = None,
         on_friends: Optional[Callable[[], None]] = None,
         on_friend_requests: Optional[Callable[[], None]] = None
     ):
@@ -55,7 +54,6 @@ class ChatView:
         self.on_logout = on_logout
         self.on_set_status = on_set_status
         self.on_refresh_users = on_refresh_users
-        self.on_user_list = on_user_list
         self.on_friends = on_friends
         self.on_friend_requests = on_friend_requests
         
@@ -132,8 +130,7 @@ class ChatView:
         self._sidebar = Sidebar(
             self.main_pane,
             conversation_manager=self.conv_manager,
-            on_select_conversation=self.on_select_conversation,
-            on_user_list=self.on_user_list
+            on_select_conversation=self.on_select_conversation
         )
         self._sidebar.build().grid(row=0, column=0, sticky="ns")
     
