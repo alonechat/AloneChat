@@ -652,6 +652,7 @@ async def message_events(request: Request):
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     
+    username = None
     token = None
     
     auth_header = websocket.headers.get("Authorization")
@@ -719,14 +720,15 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.warning("WebSocket error: %s", e)
     finally:
-        _active_websockets[username].discard(websocket)
-        if not _active_websockets[username]:
-            del _active_websockets[username]
-        
-        message_service.unregister_connection(username)
-        user_service.set_offline(username)
-        
-        logger.info("WebSocket disconnected: %s", username)
+        if username:
+            _active_websockets[username].discard(websocket)
+            if not _active_websockets[username]:
+                del _active_websockets[username]
+            
+            message_service.unregister_connection(username)
+            user_service.set_offline(username)
+            
+            logger.info("WebSocket disconnected: %s", username)
 
 
 FEEDBACK_FILE = "feedback.json"

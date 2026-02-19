@@ -4,8 +4,10 @@ Database service for AloneChat server.
 Provides ClickHouse-based data persistence with optimized batch operations.
 """
 
+import asyncio
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -15,6 +17,7 @@ logger = logging.getLogger(__name__)
 _client = None
 _store = None
 _client_lock = threading.Lock()
+_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="db_")
 
 
 def get_client():
@@ -173,6 +176,11 @@ class Database:
                 return client.execute(query, params)
             return client.execute(query)
     
+    async def _async_execute(self, query, params=None):
+        """Execute query asynchronously using thread pool."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(_executor, self._safe_execute, query, params)
+    
     @property
     def is_enabled(self) -> bool:
         return self._enabled
@@ -200,17 +208,10 @@ class Database:
         
         try:
             result = self._client.execute(
-                "SELECT "
-                "  user_id, "
-                "  argMax(password_hash, updated_at) as password_hash, "
-                "  argMax(display_name, updated_at) as display_name, "
-                "  argMax(status, updated_at) as status, "
-                "  argMax(is_online, updated_at) as is_online, "
-                "  argMax(last_seen, updated_at) as last_seen, "
-                "  argMax(created_at, updated_at) as created_at "
-                "FROM users "
+                "SELECT user_id, password_hash, display_name, status, is_online, last_seen, created_at "
+                "FROM users FINAL "
                 "WHERE user_id = %(uid)s "
-                "GROUP BY user_id",
+                "LIMIT 1",
                 {'uid': user_id}
             )
             if result:
@@ -225,18 +226,58 @@ class Database:
             logger.error("get_user failed: %s", e)
             return None
     
+    async def async_get_user(self, user_id: str) -> Optional[UserData]:
+        """Async version of get_user with optimized query."""
+        if not self._enabled:
+            return None
+        
+        try:
+            result = await self._async_execute(
+                "SELECT user_id, password_hash, display_name, status, is_online, last_seen, created_at "
+                "FROM users FINAL "
+                "WHERE user_id = %(uid)s "
+                "LIMIT 1",
+                {'uid': user_id}
+            )
+            if result:
+                row = result[0]
+                return UserData(
+                    user_id=row[0], password_hash=row[1], display_name=row[2],
+                    status=row[3], is_online=bool(row[4]), 
+                    last_seen=row[5], created_at=row[6]
+                )
+            return None
+        except Exception as e:
+            logger.error("async_get_user failed: %s", e)
+            return None
+    
     def user_exists(self, user_id: str) -> bool:
         if not self._enabled:
             return False
         
         try:
             result = self._client.execute(
-                "SELECT count() FROM users WHERE user_id = %(uid)s LIMIT 1",
+                "SELECT 1 FROM users WHERE user_id = %(uid)s LIMIT 1",
                 {'uid': user_id}
             )
-            return result[0][0] > 0
+            return len(result) > 0
         except Exception as e:
             logger.error("user_exists failed: %s", e)
+            return False
+    
+    async def async_user_exists(self, user_id: str) -> bool:
+        """Async version of user_exists."""
+        if not self._enabled:
+            return False
+        
+        try:
+            result = await self._async_execute(
+                "SELECT 1 FROM users WHERE user_id = %(uid)s LIMIT 1",
+                {'uid': user_id}
+            )
+            return len(result) > 0
+        except Exception as e:
+            logger.error("async_user_exists failed: %s", e)
             return False
     
     def update_status(self, user_id: str, status: str, is_online: bool) -> bool:
@@ -336,6 +377,37 @@ class Database:
             logger.error("get_all_users failed: %s", e)
             return []
     
+    async def async_get_all_users(self) -> List[UserData]:
+        """Async version of get_all_users.
+        
+        Uses argMax with GROUP BY since no filter is applied (0% selectivity).
+        FINAL would merge the entire table which is expensive.
+        """
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT "
+                "  user_id, "
+                "  argMax(password_hash, updated_at) as password_hash, "
+                "  argMax(display_name, updated_at) as display_name, "
+                "  argMax(status, updated_at) as status, "
+                "  argMax(is_online, updated_at) as is_online, "
+                "  argMax(last_seen, updated_at) as last_seen, "
+                "  argMax(created_at, updated_at) as created_at "
+                "FROM users "
+                "GROUP BY user_id"
+            )
+            return [
+                UserData(user_id=r[0], password_hash=r[1], display_name=r[2],
+                        status=r[3], is_online=bool(r[4]), last_seen=r[5], created_at=r[6])
+                for r in result
+            ]
+        except Exception as e:
+            logger.error("async_get_all_users failed: %s", e)
+            return []
+    
     def get_online_users(self) -> List[str]:
         if not self._enabled:
             return []
@@ -350,6 +422,27 @@ class Database:
             return [r[0] for r in result]
         except Exception as e:
             logger.error("get_online_users failed: %s", e)
+            return []
+    
+    async def async_get_online_users(self) -> List[str]:
+        """Async version of get_online_users.
+        
+        Uses argMax with GROUP BY since online users are typically ≤50% of total.
+        This avoids the overhead of merging the entire table with FINAL.
+        """
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT user_id "
+                "FROM users "
+                "GROUP BY user_id "
+                "HAVING argMax(is_online, updated_at) = 1"
+            )
+            return [r[0] for r in result]
+        except Exception as e:
+            logger.error("async_get_online_users failed: %s", e)
             return []
     
     def set_all_offline(self) -> int:
@@ -414,6 +507,23 @@ class Database:
             logger.error("get_private_messages failed: %s", e)
             return []
     
+    async def async_get_private_messages(self, user1: str, user2: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Async version of get_private_messages."""
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT sender, content, timestamp FROM private_messages "
+                "WHERE (sender = %(u1)s AND recipient = %(u2)s) OR (sender = %(u2)s AND recipient = %(u1)s) "
+                "ORDER BY timestamp DESC LIMIT %(limit)s",
+                {'u1': user1, 'u2': user2, 'limit': limit}
+            )
+            return [{'sender': r[0], 'content': r[1], 'timestamp': r[2]} for r in reversed(result)]
+        except Exception as e:
+            logger.error("async_get_private_messages failed: %s", e)
+            return []
+    
     def add_friend(self, user_id: str, friend_id: str, remark: str = "") -> bool:
         if not self._enabled:
             return False
@@ -457,14 +567,8 @@ class Database:
         try:
             result = self._client.execute(
                 "SELECT friend_id, remark, created_at "
-                "FROM ("
-                "  SELECT friend_id, argMax(remark, updated_at) as remark, "
-                "  argMax(created_at, updated_at) as created_at "
-                "  FROM friendships "
-                "  WHERE user_id = %(uid)s "
-                "  GROUP BY friend_id"
-                ") "
-                "WHERE remark != '__deleted__' "
+                "FROM friendships FINAL "
+                "WHERE user_id = %(uid)s AND remark != '__deleted__' "
                 "ORDER BY created_at DESC",
                 {'uid': user_id}
             )
@@ -473,16 +577,33 @@ class Database:
             logger.error("get_friends failed: %s", e)
             return []
     
+    async def async_get_friends(self, user_id: str) -> List[Dict[str, Any]]:
+        """Async version of get_friends."""
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT friend_id, remark, created_at "
+                "FROM friendships FINAL "
+                "WHERE user_id = %(uid)s AND remark != '__deleted__' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'friend_id': r[0], 'remark': r[1], 'created_at': r[2]} for r in result]
+        except Exception as e:
+            logger.error("async_get_friends failed: %s", e)
+            return []
+    
     def is_friend(self, user_id: str, friend_id: str) -> bool:
         if not self._enabled:
             return False
         
         try:
             result = self._client.execute(
-                "SELECT argMax(remark, updated_at) as remark "
-                "FROM friendships "
+                "SELECT remark FROM friendships FINAL "
                 "WHERE user_id = %(uid)s AND friend_id = %(fid)s "
-                "GROUP BY user_id, friend_id",
+                "LIMIT 1",
                 {'uid': user_id, 'fid': friend_id}
             )
             if result and result[0][0] != '__deleted__':
@@ -490,6 +611,25 @@ class Database:
             return False
         except Exception as e:
             logger.error("is_friend failed: %s", e)
+            return False
+    
+    async def async_is_friend(self, user_id: str, friend_id: str) -> bool:
+        """Async version of is_friend."""
+        if not self._enabled:
+            return False
+        
+        try:
+            result = await self._async_execute(
+                "SELECT remark FROM friendships FINAL "
+                "WHERE user_id = %(uid)s AND friend_id = %(fid)s "
+                "LIMIT 1",
+                {'uid': user_id, 'fid': friend_id}
+            )
+            if result and result[0][0] != '__deleted__':
+                return True
+            return False
+        except Exception as e:
+            logger.error("async_is_friend failed: %s", e)
             return False
     
     def set_friend_remark(self, user_id: str, friend_id: str, remark: str) -> bool:
@@ -529,12 +669,10 @@ class Database:
         
         try:
             result = self._client.execute(
-                "SELECT id, from_user, to_user, message, "
-                "argMax(status, updated_at) as status, "
-                "argMax(created_at, updated_at) as created_at "
-                "FROM friend_requests "
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM friend_requests FINAL "
                 "WHERE id = %(rid)s "
-                "GROUP BY id, from_user, to_user, message",
+                "LIMIT 1",
                 {'rid': request_id}
             )
             if result:
@@ -545,6 +683,27 @@ class Database:
             logger.error("get_friend_request failed: %s", e)
             return None
     
+    async def async_get_friend_request(self, request_id: str) -> Optional[Dict[str, Any]]:
+        """Async version of get_friend_request."""
+        if not self._enabled:
+            return None
+        
+        try:
+            result = await self._async_execute(
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM friend_requests FINAL "
+                "WHERE id = %(rid)s "
+                "LIMIT 1",
+                {'rid': request_id}
+            )
+            if result:
+                r = result[0]
+                return {'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]}
+            return None
+        except Exception as e:
+            logger.error("async_get_friend_request failed: %s", e)
+            return None
+    
     def get_pending_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
         if not self._enabled:
             return []
@@ -552,21 +711,32 @@ class Database:
         try:
             result = self._client.execute(
                 "SELECT id, from_user, to_user, message, status, created_at "
-                "FROM ("
-                "  SELECT id, from_user, to_user, message, "
-                "  argMax(status, updated_at) as status, "
-                "  argMax(created_at, updated_at) as created_at "
-                "  FROM friend_requests "
-                "  WHERE to_user = %(uid)s "
-                "  GROUP BY id, from_user, to_user, message"
-                ") "
-                "WHERE status = 'pending' "
+                "FROM friend_requests FINAL "
+                "WHERE to_user = %(uid)s AND status = 'pending' "
                 "ORDER BY created_at DESC",
                 {'uid': user_id}
             )
             return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
         except Exception as e:
             logger.error("get_pending_friend_requests failed: %s", e)
+            return []
+    
+    async def async_get_pending_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
+        """Async version of get_pending_friend_requests."""
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM friend_requests FINAL "
+                "WHERE to_user = %(uid)s AND status = 'pending' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
+        except Exception as e:
+            logger.error("async_get_pending_friend_requests failed: %s", e)
             return []
     
     def get_sent_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
@@ -576,21 +746,32 @@ class Database:
         try:
             result = self._client.execute(
                 "SELECT id, from_user, to_user, message, status, created_at "
-                "FROM ("
-                "  SELECT id, from_user, to_user, message, "
-                "  argMax(status, updated_at) as status, "
-                "  argMax(created_at, updated_at) as created_at "
-                "  FROM friend_requests "
-                "  WHERE from_user = %(uid)s "
-                "  GROUP BY id, from_user, to_user, message"
-                ") "
-                "WHERE status = 'pending' "
+                "FROM friend_requests FINAL "
+                "WHERE from_user = %(uid)s AND status = 'pending' "
                 "ORDER BY created_at DESC",
                 {'uid': user_id}
             )
             return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
         except Exception as e:
             logger.error("get_sent_friend_requests failed: %s", e)
+            return []
+    
+    async def async_get_sent_friend_requests(self, user_id: str) -> List[Dict[str, Any]]:
+        """Async version of get_sent_friend_requests."""
+        if not self._enabled:
+            return []
+        
+        try:
+            result = await self._async_execute(
+                "SELECT id, from_user, to_user, message, status, created_at "
+                "FROM friend_requests FINAL "
+                "WHERE from_user = %(uid)s AND status = 'pending' "
+                "ORDER BY created_at DESC",
+                {'uid': user_id}
+            )
+            return [{'id': r[0], 'from_user': r[1], 'to_user': r[2], 'message': r[3], 'status': r[4], 'created_at': r[5]} for r in result]
+        except Exception as e:
+            logger.error("async_get_sent_friend_requests failed: %s", e)
             return []
     
     def update_friend_request_status(self, request_id: str, status: str) -> bool:
@@ -619,20 +800,31 @@ class Database:
         
         try:
             result = self._client.execute(
-                "SELECT count() "
-                "FROM ("
-                "  SELECT id, argMax(status, updated_at) as status "
-                "  FROM friend_requests "
-                "  WHERE from_user = %(f)s AND to_user = %(t)s "
-                "  GROUP BY id"
-                ") "
-                "WHERE status = 'pending' "
+                "SELECT 1 FROM friend_requests FINAL "
+                "WHERE from_user = %(f)s AND to_user = %(t)s AND status = 'pending' "
                 "LIMIT 1",
                 {'f': from_user, 't': to_user}
             )
-            return result[0][0] > 0 if result else False
+            return len(result) > 0
         except Exception as e:
             logger.error("has_pending_request failed: %s", e)
+            return False
+    
+    async def async_has_pending_request(self, from_user: str, to_user: str) -> bool:
+        """Async version of has_pending_request."""
+        if not self._enabled:
+            return False
+        
+        try:
+            result = await self._async_execute(
+                "SELECT 1 FROM friend_requests FINAL "
+                "WHERE from_user = %(f)s AND to_user = %(t)s AND status = 'pending' "
+                "LIMIT 1",
+                {'f': from_user, 't': to_user}
+            )
+            return len(result) > 0
+        except Exception as e:
+            logger.error("async_has_pending_request failed: %s", e)
             return False
 
 

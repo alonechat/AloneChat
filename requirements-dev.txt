@@ -2,3 +2,8 @@
 
 # Code quality
 pylint
+
+# Logging and Reporting
+# This may useful with heavy logging and telemetry needs, especially when integrated with HyperDX
+# To keep performance and avoid unnecessary dependencies, it's optional and can be installed when needed
+# hyperdx-opentelemetry

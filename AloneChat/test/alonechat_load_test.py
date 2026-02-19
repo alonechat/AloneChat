@@ -225,7 +225,7 @@ async def single_user_high_frequency_test():
                 if SINGLE_USER_INTERVAL > 0:
                     await asyncio.sleep(SINGLE_USER_INTERVAL)
                     
-                if (i + 1) % 100 == 0:
+                if (i + 1) % 1000 == 0:
                     print(f"  Progress: {i + 1}/{SINGLE_USER_MESSAGES}")
             
             end = time.time()

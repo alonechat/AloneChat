@@ -7,13 +7,34 @@ Enhanced with unified logging system integration.
 
 import argparse
 import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-from AloneChat.start import client, server
-from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
+def find_env_file() -> Path | None:
+    """Find .env file in current directory or parent directories."""
+    current = Path.cwd()
+    for parent in [current] + list(current.parents):
+        env_path = parent / ".env"
+        if env_path.exists():
+            return env_path
+    return None
+
+env_file = find_env_file()
+if env_file:
+    load_dotenv(env_file)
+
+if os.environ.get('PURE_SERVER_ENVIRON') is None:
+    from AloneChat.start import client
+from AloneChat.start import server
+from AloneChat.config import Config
 from AloneChat.core.logging import auto_configure, get_logger
 
 logger = get_logger(__name__)
 
+DEFAULT_PORT = Config.DEFAULT_SERVER_PORT
+DEFAULT_HOST = Config.DEFAULT_HOST
+DEFAULT_API_PORT = Config.DEFAULT_API_PORT
 
 def parse():
     """Parse command line arguments."""
@@ -80,8 +101,11 @@ def main():
                 host=args.host,
             )
         elif args.command == 'client':
-            ui = args.ui
-            client.client(api_host=args.api_host, api_port=args.api_port, ui=ui)
+            if os.environ.get('PURE_SERVER_ENVIRON') is None:
+                ui = args.ui
+                client.client(api_host=args.api_host, api_port=args.api_port, ui=ui)
+            else:
+                logger.critical("PURE_SERVER_ENVIRON is set, skip client UI")
         else:
             raise ValueError(f'Unknown command: {args.command}')
     except KeyboardInterrupt:

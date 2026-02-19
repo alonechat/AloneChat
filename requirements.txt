@@ -21,3 +21,6 @@ sv-ttk
 
 # System utilities
 psutil
+
+# Environment variables
+python-dotenv
