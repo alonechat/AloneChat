@@ -7,13 +7,34 @@ Enhanced with unified logging system integration.
 
 import argparse
 import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-from AloneChat.start import client, server, api
-from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
+def find_env_file() -> Path | None:
+    """Find .env file in current directory or parent directories."""
+    current = Path.cwd()
+    for parent in [current] + list(current.parents):
+        env_path = parent / ".env"
+        if env_path.exists():
+            return env_path
+    return None
+
+env_file = find_env_file()
+if env_file:
+    load_dotenv(env_file)
+
+if os.environ.get('PURE_SERVER_ENVIRON') is None:
+    from AloneChat.start import client
+from AloneChat.start import server
+from AloneChat.config import Config
 from AloneChat.core.logging import auto_configure, get_logger
 
 logger = get_logger(__name__)
 
+DEFAULT_PORT = Config.DEFAULT_SERVER_PORT
+DEFAULT_HOST = Config.DEFAULT_HOST
+DEFAULT_API_PORT = Config.DEFAULT_API_PORT
 
 def parse():
     """Parse command line arguments."""
@@ -49,21 +70,10 @@ def parse():
     client_parser.add_argument('--api-port', type=int, default=DEFAULT_API_PORT, help='API server port (default: 8766)')
     client_parser.add_argument(
         '--ui',
-        choices=['gui', 'tui'],
+        choices=['gui'],
         default='gui',
-        help='User interface type: gui (modern GUI), tui (curses TUI) (default: gui)'
+        help='User interface type: gui (modern GUI) (default: gui)'
     )
-
-    # Add 'srv-only' command
-    srv_parser = subparsers.add_parser('srv-only', help='Start WebSocket server only')
-    srv_parser.add_argument('--port', type=int, default=None, help='WebSocket port (default: 8765)')
-    srv_parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
-    srv_parser.add_argument('--no-plugins', action='store_true', help='Disable plugin system')
-
-    # Add 'api-only' command
-    api_parser = subparsers.add_parser('api-only', help='Start HTTP API server only')
-    api_parser.add_argument('--port', type=int, default=None, help='API server port (default: 8766)')
-    api_parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
 
     args = parser.parse_args()
 
@@ -89,20 +99,13 @@ def main():
             server.server(
                 port=args.port,
                 host=args.host,
-                enable_plugins=not args.no_plugins
             )
         elif args.command == 'client':
-            ui = args.ui
-            client.client(api_host=args.api_host, api_port=args.api_port, ui=ui)
-        elif args.command == 'srv-only':
-            server.server(
-                port=args.port,
-                host=args.host,
-                srv_only=True,
-                enable_plugins=not args.no_plugins
-            )
-        elif args.command == 'api-only':
-            api.api(port=args.port, host=args.host)
+            if os.environ.get('PURE_SERVER_ENVIRON') is None:
+                ui = args.ui
+                client.client(api_host=args.api_host, api_port=args.api_port, ui=ui)
+            else:
+                logger.critical("PURE_SERVER_ENVIRON is set, skip client UI")
         else:
             raise ValueError(f'Unknown command: {args.command}')
     except KeyboardInterrupt:

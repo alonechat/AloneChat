@@ -1,4 +1,5 @@
 # Test dependencies for AloneChat
+# Do not install with docker!!!
 
 # Testing framework
 pytest>=7.0.0

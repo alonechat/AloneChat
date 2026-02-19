@@ -1,28 +1,33 @@
 """
-Search dialog for finding messages - sv_ttk styled.
+Search dialog for finding messages.
 """
+
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable
+from typing import Callable, Optional
 
 
 class SearchDialog:
     """Floating search dialog for message search."""
     
-    def __init__(self, root: tk.Tk, on_search: Callable[[str], int],
-                 on_next: Callable[[], None],
-                 on_prev: Callable[[], None],
-                 on_close: Callable[[], None]):
+    def __init__(
+        self,
+        root: tk.Tk,
+        on_search: Callable[[str], int],
+        on_next: Callable[[], None],
+        on_prev: Callable[[], None],
+        on_close: Callable[[], None]
+    ):
         self.root = root
         self.on_search = on_search
         self.on_next = on_next
         self.on_prev = on_prev
         self.on_close = on_close
         
-        self.window = None
-        self.search_var = None
+        self.window: Optional[tk.Toplevel] = None
+        self.search_var: Optional[tk.StringVar] = None
     
-    def show(self):
+    def show(self) -> None:
         """Show the search dialog."""
         if self.window and self.window.winfo_exists():
             self.window.lift()
@@ -39,12 +44,14 @@ class SearchDialog:
         frm.pack(fill="both", expand=True)
         
         ttk.Label(frm, text="Find in messages:").pack(anchor="w")
+        
         ent = ttk.Entry(frm, textvariable=self.search_var)
         ent.pack(fill="x", pady=8)
         ent.focus_set()
         
         btns = ttk.Frame(frm)
         btns.pack(fill="x")
+        
         ttk.Button(btns, text="Prev", command=self.on_prev).pack(side="left")
         ttk.Button(btns, text="Next", command=self.on_next).pack(side="left", padx=(8, 0))
         ttk.Button(btns, text="Close", command=self._on_close).pack(side="right")
@@ -55,12 +62,12 @@ class SearchDialog:
         
         self._on_search()
     
-    def _on_search(self):
+    def _on_search(self) -> None:
         """Handle search text change."""
         query = self.search_var.get() if self.search_var else ""
         self.on_search(query)
     
-    def _on_close(self):
+    def _on_close(self) -> None:
         """Handle close button."""
         self.on_close()
         if self.window:
@@ -70,7 +77,7 @@ class SearchDialog:
                 pass
         self.window = None
     
-    def hide(self):
+    def hide(self) -> None:
         """Hide the search dialog."""
         if self.window:
             try:
@@ -82,3 +89,6 @@ class SearchDialog:
     def get_query(self) -> str:
         """Get current search query."""
         return self.search_var.get() if self.search_var else ""
+
+
+__all__ = ['SearchDialog']

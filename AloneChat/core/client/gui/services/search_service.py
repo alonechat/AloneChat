@@ -1,6 +1,7 @@
 """
 Search service for finding messages.
 """
+
 from typing import List, Optional
 
 from ..components.message_card import WinUI3MessageCard
@@ -102,3 +103,6 @@ class SearchService:
     def current_index(self) -> int:
         """Current position in search results (0-based)."""
         return self._search_idx if self._search_idx >= 0 else 0
+
+
+__all__ = ['SearchService']
