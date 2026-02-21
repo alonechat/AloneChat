@@ -21,10 +21,11 @@ def find_env_file() -> Path | None:
     return None
 
 env_file = find_env_file()
-if env_file:
+if env_file and os.environ.get('CONTAINER_MODE', 'false') == 'false':
     load_dotenv(env_file)
+    # elsewise, docker automatically load .env in container
 
-if os.environ.get('PURE_SERVER_ENVIRON') is None:
+if os.environ.get('CONTAINER_MODE', 'false') == 'false':
     from AloneChat.start import client
 from AloneChat.start import server
 from AloneChat.config import Config

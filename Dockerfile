@@ -57,6 +57,5 @@ USER alonechat_user
 EXPOSE 8766
 
 # This ignores tkinter, which can cause issues when running in a container without a display.
-
 # Run the application.
-CMD export PURE_SERVER_ENVIRON=true && python . server
+CMD export CONTAINER_MODE=true && python . server

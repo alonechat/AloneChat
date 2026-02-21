@@ -11,6 +11,7 @@ Architecture:
         - message.py: Message routing service
         - chat.py: Chat session service
         - database.py: Data persistence service
+        - parallel.py: Multi-process + multi-thread parallelization
     
     API Layer (AloneChat.api):
         - Handles HTTP requests/responses
@@ -20,9 +21,20 @@ Architecture:
 
 from .auth import AuthService, AuthResult, RegisterResult, get_auth_service
 from .chat import ChatService, ChatSession, PendingMessage, get_chat_service
-from .database import Database, UserData, get_database
+from .database import Database, UserData, get_database, initialize_database, shutdown_database
 from .friend import FriendService, FriendInfo, FriendRequest, get_friend_service
-from .message import DeliveryResult, MessageQueue, MessageService, get_message_service
+from .message import DeliveryResult, MessageQueue, MessageService, get_message_service, shutdown_message_service
+from .parallel import (
+    ParallelConfig,
+    ParallelManager,
+    SharedState,
+    TaskDispatcher,
+    TaskType,
+    WorkerPool,
+    get_parallel_manager,
+    initialize_parallel,
+    shutdown_parallel,
+)
 from .user import Status, UserInfo, UserService, get_user_service, shutdown_user_service
 
 __all__ = [
@@ -41,6 +53,7 @@ __all__ = [
     'MessageQueue',
     'DeliveryResult',
     'get_message_service',
+    'shutdown_message_service',
     
     'ChatService',
     'ChatSession',
@@ -55,4 +68,16 @@ __all__ = [
     'Database',
     'UserData',
     'get_database',
+    'initialize_database',
+    'shutdown_database',
+    
+    'ParallelConfig',
+    'ParallelManager',
+    'SharedState',
+    'TaskDispatcher',
+    'TaskType',
+    'WorkerPool',
+    'get_parallel_manager',
+    'initialize_parallel',
+    'shutdown_parallel',
 ]

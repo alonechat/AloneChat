@@ -32,9 +32,9 @@ def clear_clickhouse():
     try:
         from AloneChat.config import config
         
-        if not config.CLICKHOUSE_ENABLED:
-            print("○ ClickHouse not enabled, skipping")
-            return True
+        # if not config.CLICKHOUSE_ENABLED:
+        #     print("○ ClickHouse not enabled, skipping")
+        #     return True
         
         from clickhouse_driver import Client
         

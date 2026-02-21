@@ -2,15 +2,18 @@
 Chat service for AloneChat server.
 
 Pure chat session and private messaging logic without transport concerns.
+Multi-thread safe with optimized session management.
 """
 
 import logging
+import threading
 import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from AloneChat.config import config
 from .database import get_database
 
 logger = logging.getLogger(__name__)
@@ -46,7 +49,10 @@ class PendingMessage:
 
 
 class ChatService:
-    """Pure chat management - no transport concerns."""
+    """Pure chat management - no transport concerns.
+    
+    Thread-safe with optimized session management for parallel processing.
+    """
     
     MAX_PENDING = 100
     MAX_HISTORY = 50
@@ -57,6 +63,12 @@ class ChatService:
         self._pending: Dict[str, List[PendingMessage]] = defaultdict(list)
         self._history: Dict[str, List[Tuple[str, str, float]]] = defaultdict(list)
         self._db = get_database()
+        self._lock = threading.Lock()
+        self._stats = {
+            'total_sessions': 0,
+            'total_messages': 0,
+            'active_sessions': 0,
+        }
     
     @staticmethod
     def make_session_id(user1: str, user2: str) -> str:
@@ -66,40 +78,50 @@ class ChatService:
     def get_or_create_session(self, user1: str, user2: str) -> ChatSession:
         session_id = self.make_session_id(user1, user2)
         
-        if session_id not in self._sessions:
-            sorted_users = sorted([user1, user2])
-            session = ChatSession(user1=sorted_users[0], user2=sorted_users[1])
-            self._sessions[session_id] = session
-            self._user_sessions[user1].add(session_id)
-            self._user_sessions[user2].add(session_id)
-        
-        return self._sessions[session_id]
+        with self._lock:
+            if session_id not in self._sessions:
+                sorted_users = sorted([user1, user2])
+                session = ChatSession(user1=sorted_users[0], user2=sorted_users[1])
+                self._sessions[session_id] = session
+                self._user_sessions[user1].add(session_id)
+                self._user_sessions[user2].add(session_id)
+                self._stats['total_sessions'] += 1
+                self._stats['active_sessions'] = len(self._sessions)
+            
+            return self._sessions[session_id]
     
     def record_message(self, sender: str, recipient: str, content: str, delivered: bool = True) -> ChatSession:
         session = self.get_or_create_session(sender, recipient)
-        session.message_count += 1
-        session.last_activity = time.time()
         
-        self._history[session.session_id].append((sender, content, time.time()))
-        
-        if len(self._history[session.session_id]) > self.MAX_HISTORY:
-            self._history[session.session_id] = self._history[session.session_id][-self.MAX_HISTORY:]
+        with self._lock:
+            session.message_count += 1
+            session.last_activity = time.time()
+            
+            self._history[session.session_id].append((sender, content, time.time()))
+            
+            if len(self._history[session.session_id]) > self.MAX_HISTORY:
+                self._history[session.session_id] = self._history[session.session_id][-self.MAX_HISTORY:]
+            
+            self._stats['total_messages'] += 1
         
         msg_id = str(uuid.uuid4())
         self._db.save_private_message(msg_id, sender, recipient, content, delivered)
         
         if not delivered:
-            pending = PendingMessage(message=content, sender=sender, recipient=recipient)
-            self._pending[recipient].append(pending)
-            
-            if len(self._pending[recipient]) > self.MAX_PENDING:
-                self._pending[recipient] = self._pending[recipient][-self.MAX_PENDING:]
+            with self._lock:
+                pending = PendingMessage(message=content, sender=sender, recipient=recipient)
+                self._pending[recipient].append(pending)
+                
+                if len(self._pending[recipient]) > self.MAX_PENDING:
+                    self._pending[recipient] = self._pending[recipient][-self.MAX_PENDING:]
         
         return session
     
     def get_history(self, user1: str, user2: str, limit: int = 50) -> List[Dict[str, Any]]:
         session_id = self.make_session_id(user1, user2)
-        history = self._history.get(session_id, [])
+        
+        with self._lock:
+            history = self._history.get(session_id, [])
         
         if len(history) < limit:
             db_history = self._db.get_private_messages(user1, user2, limit)
@@ -112,18 +134,21 @@ class ChatService:
         ]
     
     def get_pending(self, user_id: str) -> List[PendingMessage]:
-        return self._pending.get(user_id, []).copy()
+        with self._lock:
+            return self._pending.get(user_id, []).copy()
     
     def clear_pending(self, user_id: str) -> int:
-        count = len(self._pending.get(user_id, []))
-        self._pending[user_id] = []
-        return count
+        with self._lock:
+            count = len(self._pending.get(user_id, []))
+            self._pending[user_id] = []
+            return count
     
     def get_user_sessions(self, user_id: str) -> List[ChatSession]:
-        session_ids = self._user_sessions.get(user_id, set())
-        sessions = [self._sessions[sid] for sid in session_ids if sid in self._sessions]
-        sessions.sort(key=lambda s: s.last_activity, reverse=True)
-        return sessions
+        with self._lock:
+            session_ids = self._user_sessions.get(user_id, set())
+            sessions = [self._sessions[sid] for sid in session_ids if sid in self._sessions]
+            sessions.sort(key=lambda s: s.last_activity, reverse=True)
+            return sessions
     
     def get_recent_chats(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         sessions = self.get_user_sessions(user_id)[:limit]
@@ -140,18 +165,30 @@ class ChatService:
     def end_session(self, user1: str, user2: str) -> bool:
         session_id = self.make_session_id(user1, user2)
         
-        if session_id in self._sessions:
-            session = self._sessions.pop(session_id)
-            self._user_sessions[session.user1].discard(session_id)
-            self._user_sessions[session.user2].discard(session_id)
-            return True
-        return False
+        with self._lock:
+            if session_id in self._sessions:
+                session = self._sessions.pop(session_id)
+                self._user_sessions[session.user1].discard(session_id)
+                self._user_sessions[session.user2].discard(session_id)
+                self._stats['active_sessions'] = len(self._sessions)
+                return True
+            return False
     
     def get_session_count(self) -> int:
-        return len(self._sessions)
+        with self._lock:
+            return len(self._sessions)
     
     def get_total_message_count(self) -> int:
-        return sum(s.message_count for s in self._sessions.values())
+        with self._lock:
+            return sum(s.message_count for s in self._sessions.values())
+    
+    def get_stats(self) -> Dict[str, Any]:
+        with self._lock:
+            return {
+                **self._stats,
+                'pending_messages': sum(len(p) for p in self._pending.values()),
+                'history_entries': sum(len(h) for h in self._history.values()),
+            }
 
 
 _chat_service: Optional[ChatService] = None

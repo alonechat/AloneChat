@@ -17,6 +17,9 @@ clickhouse-driver
 darkdetect
 sv-ttk
 
+# Environment management
+python-dotenv
+
 # windows-curses; sys_platform == "win32" or sys_platform == "cygwin" and python_version <= "3.13"
 
 # System utilities

@@ -32,4 +32,15 @@
 **/values.dev.yaml
 **/logs
 LICENSE
-README.md
+NOTICE
+README*.md
+TODOs.md
+
+# To fit in min-container, we need to exclude everything 
+# except the source code.
+
+**/.idea
+**/.chglog
+**/assets
+**/docs
+**/*.example
