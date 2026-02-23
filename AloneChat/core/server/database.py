@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionPool:
-    """Thread-safe database connection pool."""
+    """Thread-safe database connection pool with health checking."""
     
     def __init__(self, max_size: int = 10, overflow: int = 10, timeout: float = 30.0):
         self._max_size = max_size
@@ -31,6 +31,8 @@ class ConnectionPool:
         self._created = 0
         self._lock = threading.Lock()
         self._connection_args = None
+        self._health_check_interval = 60.0
+        self._last_health_check = time.time()
     
     def initialize(self, host: str, port: int, user: str, password: str, database: str) -> None:
         self._connection_args = {
@@ -53,10 +55,29 @@ class ConnectionPool:
             logger.warning("Failed to create connection: %s", e)
             return None
     
+    def _is_connection_healthy(self, conn) -> bool:
+        try:
+            conn.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+    
     def get(self, timeout: Optional[float] = None):
         timeout = timeout or self._timeout
         try:
             conn = self._pool.get(timeout=timeout)
+            
+            if time.time() - self._last_health_check > self._health_check_interval:
+                if not self._is_connection_healthy(conn):
+                    try:
+                        conn.disconnect()
+                    except Exception:
+                        pass
+                    conn = self._create_connection()
+                    if conn is None:
+                        raise RuntimeError("Failed to create healthy connection")
+                self._last_health_check = time.time()
+            
             return conn
         except Empty:
             with self._lock:
@@ -452,16 +473,15 @@ class Database:
         
         try:
             now = datetime.now()
-            user_ids = [u['user_id'] for u in updates]
-            placeholders = ', '.join([f"'{uid}'" for uid in user_ids])
             
             result = self._safe_execute(
-                f"SELECT user_id, "
-                f"  argMax(password_hash, updated_at) as password_hash, "
-                f"  argMax(display_name, updated_at) as display_name "
-                f"FROM users "
-                f"WHERE user_id IN ({placeholders}) "
-                f"GROUP BY user_id"
+                "SELECT user_id, "
+                "  argMax(password_hash, updated_at) as password_hash, "
+                "  argMax(display_name, updated_at) as display_name "
+                "FROM users "
+                "WHERE user_id IN %(uids)s "
+                "GROUP BY user_id",
+                {'uids': [u['user_id'] for u in updates]}
             )
             
             user_data_map = {r[0]: {'password_hash': r[1], 'display_name': r[2]} for r in result}
@@ -619,6 +639,32 @@ class Database:
         except Exception as e:
             logger.error("save_private_message failed: %s", e)
             return False
+    
+    def batch_save_private_messages(self, messages: List[Dict[str, Any]]) -> int:
+        """Batch insert private messages for better performance."""
+        if not self._enabled or not messages:
+            return 0
+        
+        try:
+            batch_data = []
+            for msg in messages:
+                batch_data.append({
+                    'id': msg['msg_id'],
+                    'sender': msg['sender'],
+                    'recipient': msg['recipient'],
+                    'content': msg['content'],
+                    'timestamp': msg.get('timestamp', datetime.now()),
+                    'delivered': 1 if msg.get('delivered', False) else 0
+                })
+            
+            self._safe_execute(
+                "INSERT INTO private_messages (id, sender, recipient, content, timestamp, delivered) VALUES",
+                batch_data
+            )
+            return len(batch_data)
+        except Exception as e:
+            logger.error("batch_save_private_messages failed: %s", e)
+            return 0
     
     def get_private_messages(self, user1: str, user2: str, limit: int = 50) -> List[Dict[str, Any]]:
         if not self._enabled:
@@ -967,4 +1013,3 @@ def shutdown_database() -> None:
         _connection_pool = None
     _store = None
     logger.info("Database shutdown complete")
-

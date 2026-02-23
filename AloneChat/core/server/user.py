@@ -2,7 +2,7 @@
 User service for AloneChat server.
 
 Pure user management logic without any transport concerns.
-Multi-thread safe with optimized status buffering.
+Multi-thread safe with optimized status buffering and fine-grained locking.
 """
 
 import logging
@@ -42,6 +42,21 @@ class UserInfo:
         }
 
 
+class StripedLockManager:
+    """Fine-grained lock manager using striped locking pattern.
+    
+    Reduces lock contention by distributing locks across multiple stripes.
+    """
+    
+    def __init__(self, stripes: int = 64):
+        self._stripes = stripes
+        self._locks: List[threading.RLock] = [threading.RLock() for _ in range(stripes)]
+    
+    def get_lock(self, key: str) -> threading.RLock:
+        idx = hash(key) % self._stripes
+        return self._locks[idx]
+
+
 class StatusBuffer:
     """Buffer for batching status updates to reduce database writes.
     
@@ -49,7 +64,7 @@ class StatusBuffer:
     - Batches multiple status updates before writing to database
     - Auto-flushes every flush_interval seconds
     - Auto-flushes when buffer reaches max_size
-    - Thread-safe for concurrent access
+    - Thread-safe for concurrent access with fine-grained locking
     - Supports parallel processing with configurable workers
     """
     
@@ -57,7 +72,7 @@ class StatusBuffer:
         self._buffer: Dict[str, Dict[str, Any]] = {}
         self._flush_interval = flush_interval or 5.0
         self._max_size = max_size or 50
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._last_flush = time.time()
         self._running = False
         self._flush_thread: Optional[threading.Thread] = None
@@ -66,6 +81,7 @@ class StatusBuffer:
             'total_flushes': 0,
             'last_flush_count': 0,
         }
+        self._stats_lock = threading.Lock()
     
     def start(self) -> None:
         if self._running:
@@ -126,8 +142,9 @@ class StatusBuffer:
             db = get_database()
             count = db.batch_update_status(updates)
             if count > 0:
-                self._stats['total_flushes'] += 1
-                self._stats['last_flush_count'] = count
+                with self._stats_lock:
+                    self._stats['total_flushes'] += 1
+                    self._stats['last_flush_count'] = count
                 logger.debug("Flushed %d status updates to database", count)
                 return True
         return False
@@ -148,26 +165,31 @@ class StatusBuffer:
             self._buffer.clear()
     
     def get_stats(self) -> Dict[str, Any]:
+        with self._stats_lock:
+            stats = dict(self._stats)
         with self._lock:
-            return {
-                **self._stats,
-                'pending_count': len(self._buffer),
-                'buffer_size': self._max_size,
-                'flush_interval': self._flush_interval,
-            }
+            stats['pending_count'] = len(self._buffer)
+        stats['buffer_size'] = self._max_size
+        stats['flush_interval'] = self._flush_interval
+        return stats
 
 
 class UserService:
     """Pure user management - no transport concerns.
     
-    Thread-safe with optimized status buffering for parallel processing.
+    Thread-safe with fine-grained locking for high concurrency.
+    Uses striped locking to reduce contention on user operations.
     """
     
     def __init__(self, flush_interval: float = None, max_buffer_size: int = None):
         self._db = get_database()
         self._online_users: Dict[str, UserInfo] = {}
         self._user_connections: Dict[str, int] = {}
-        self._lock = threading.Lock()
+        
+        self._lock_manager = StripedLockManager(stripes=64)
+        self._online_users_lock = threading.RLock()
+        self._connections_lock = threading.RLock()
+        
         self._status_buffer = StatusBuffer(
             flush_interval=flush_interval or 5.0,
             max_size=max_buffer_size or 50
@@ -178,6 +200,7 @@ class UserService:
             'total_offline': 0,
             'current_online': 0,
         }
+        self._stats_lock = threading.Lock()
     
     def register(self, username: str, password: str):
         from .auth import get_auth_service
@@ -188,45 +211,77 @@ class UserService:
         return get_auth_service().authenticate(username, password)
     
     def set_online(self, user_id: str) -> None:
-        with self._lock:
-            if user_id not in self._online_users:
-                user_data = self._db.get_user(user_id)
-                display_name = user_data.display_name if user_data else user_id
-                self._online_users[user_id] = UserInfo(
-                    user_id=user_id,
-                    status=Status.ONLINE,
-                    display_name=display_name
-                )
-                self._stats['total_online'] += 1
-            else:
-                self._online_users[user_id].status = Status.ONLINE
-                self._online_users[user_id].last_seen = time.time()
+        user_lock = self._lock_manager.get_lock(user_id)
+        
+        with user_lock:
+            with self._online_users_lock:
+                if user_id not in self._online_users:
+                    user_data = self._db.get_user(user_id)
+                    display_name = user_data.display_name if user_data else user_id
+                    self._online_users[user_id] = UserInfo(
+                        user_id=user_id,
+                        status=Status.ONLINE,
+                        display_name=display_name
+                    )
+                    with self._stats_lock:
+                        self._stats['total_online'] += 1
+                else:
+                    self._online_users[user_id].status = Status.ONLINE
+                    self._online_users[user_id].last_seen = time.time()
             
-            self._user_connections[user_id] = self._user_connections.get(user_id, 0) + 1
-            self._stats['current_online'] = len([u for u in self._online_users.values() if u.status != Status.OFFLINE])
+            with self._connections_lock:
+                self._user_connections[user_id] = self._user_connections.get(user_id, 0) + 1
+            
+            with self._online_users_lock:
+                with self._stats_lock:
+                    self._stats['current_online'] = len([
+                        u for u in self._online_users.values() 
+                        if u.status != Status.OFFLINE
+                    ])
         
         self._status_buffer.add(user_id, "online", True)
     
     def set_offline(self, user_id: str) -> None:
-        with self._lock:
-            if user_id in self._user_connections:
-                self._user_connections[user_id] -= 1
-                if self._user_connections[user_id] <= 0:
-                    del self._user_connections[user_id]
+        user_lock = self._lock_manager.get_lock(user_id)
+        
+        with user_lock:
+            should_set_offline = False
+            
+            with self._connections_lock:
+                if user_id in self._user_connections:
+                    self._user_connections[user_id] -= 1
+                    if self._user_connections[user_id] <= 0:
+                        del self._user_connections[user_id]
+                        should_set_offline = True
+            
+            if should_set_offline:
+                with self._online_users_lock:
                     if user_id in self._online_users:
                         self._online_users[user_id].status = Status.OFFLINE
                         self._online_users[user_id].last_seen = time.time()
+                
+                with self._stats_lock:
                     self._stats['total_offline'] += 1
-                    self._stats['current_online'] = len([u for u in self._online_users.values() if u.status != Status.OFFLINE])
-                    self._status_buffer.add(user_id, "offline", False)
+                
+                with self._online_users_lock:
+                    with self._stats_lock:
+                        self._stats['current_online'] = len([
+                            u for u in self._online_users.values() 
+                            if u.status != Status.OFFLINE
+                        ])
+                
+                self._status_buffer.add(user_id, "offline", False)
     
     def set_status(self, user_id: str, status: Status) -> bool:
-        with self._lock:
-            if user_id not in self._online_users:
-                return False
-            
-            self._online_users[user_id].status = status
-            self._online_users[user_id].last_seen = time.time()
+        user_lock = self._lock_manager.get_lock(user_id)
+        
+        with user_lock:
+            with self._online_users_lock:
+                if user_id not in self._online_users:
+                    return False
+                
+                self._online_users[user_id].status = status
+                self._online_users[user_id].last_seen = time.time()
         
         status_str = status.name.lower()
         is_online = status != Status.OFFLINE
@@ -234,16 +289,19 @@ class UserService:
         return True
     
     def is_online(self, user_id: str) -> bool:
-        with self._lock:
+        with self._online_users_lock:
             info = self._online_users.get(user_id)
             return info is not None and info.status != Status.OFFLINE
     
     def get_online_users(self) -> List[str]:
-        with self._lock:
-            return [uid for uid, info in self._online_users.items() if info.status != Status.OFFLINE]
+        with self._online_users_lock:
+            return [
+                uid for uid, info in self._online_users.items() 
+                if info.status != Status.OFFLINE
+            ]
     
     def get_user_info(self, user_id: str) -> Optional[UserInfo]:
-        with self._lock:
+        with self._online_users_lock:
             if user_id in self._online_users:
                 return self._online_users[user_id]
         
@@ -260,9 +318,11 @@ class UserService:
     def get_all_users(self) -> List[Dict[str, Any]]:
         users = self._db.get_all_users()
         result = []
+        
         for u in users:
-            with self._lock:
+            with self._online_users_lock:
                 info = self._online_users.get(u.user_id)
+            
             if info:
                 result.append(info.to_dict())
             else:
@@ -285,11 +345,10 @@ class UserService:
         return self._status_buffer.get_pending_count()
     
     def get_stats(self) -> Dict[str, Any]:
-        with self._lock:
-            return {
-                **self._stats,
-                'buffer_stats': self._status_buffer.get_stats(),
-            }
+        with self._stats_lock:
+            stats = dict(self._stats)
+        stats['buffer_stats'] = self._status_buffer.get_stats()
+        return stats
     
     def shutdown(self) -> None:
         self._status_buffer.stop()
