@@ -1,0 +1,323 @@
+<html lang="zh-CN" style="--s-video-dl-bg: rgb(54, 54, 57); --s-video-font: rgb(247,247,247); --s-video-hd-bg: #4b4b4b; --s-video-posterbg: rgba(0, 0, 0, 1); --s-video-font2: #DCDCDC; --s-video-line: #4d4d4d; --s-video-modal-bg: rgba(0, 0, 0, 0.4); --s-video-000-bg: rgba(0,0,0,0);"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AloneChat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0d0d0d;
+            color: #e8e8e8;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 60px;
+            position: relative;
+        }
+
+        /* Top big title area */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 60px;
+        }
+
+        .title-area {
+            flex: 1;
+        }
+
+        .main-title {
+            font-size: 120px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            line-height: 1;
+            color: #f5f5f5;
+        }
+
+        .main-title .outline {
+            color: transparent;
+            -webkit-text-stroke: 2px #4a4a4a;
+        }
+
+        .main-title .green {
+            color: transparent;
+            -webkit-text-stroke: 2px #67c23a;
+            transition: -webkit-text-stroke 0.3s ease;
+        }
+
+        .main-title .red {
+            color: transparent;
+            -webkit-text-stroke: 2px #f56c6c;
+            transition: -webkit-text-stroke 0.3s ease;
+        }
+
+        /*
+        .subtitle {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: #f5f5f5;
+            margin-top: 10px;
+        }
+        */
+
+        /* Right "server" */
+        .server-preview {
+            width: 200px;
+            height: 380px;
+            border: 2px solid #4a4a4a;
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-left: 40px;
+        }
+
+        .server-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .server-dot {
+            width: 8px;
+            height: 8px;
+            border: 1px solid #4a4a4a;
+            border-radius: 50%;
+        }
+
+        .server-line {
+            height: 35px;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .server-line::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border: 1px solid #4a4a4a;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        /* Bottom area */
+        .bottom-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex: 1;
+        }
+
+        /* Left tech stack */
+        .tech-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tech-item {
+            font-size: 32px;
+            font-weight: 300;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        .tech-item.highlight {
+            color: #f5f5f5;
+            font-weight: 400;
+        }
+
+        /* Right "client" */
+        .chat-window {
+            width: 600px;
+            height: 280px;
+            border: 2px solid #4a4a4a;
+            border-radius: 15px;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .chat-sidebar {
+            width: 180px;
+            border-right: 1px solid #4a4a4a;
+            padding: 15px;
+        }
+
+        .sidebar-header {
+            height: 30px;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-item {
+            height: 25px;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: 12px;
+            color: #f5f5f5;
+        }
+
+        /* Decoration lines */
+        .decoration-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #4a4a4a, transparent);
+            height: 1px;
+        }
+
+        .line-1 {
+            top: 50%;
+            left: 0;
+            right: 0;
+        }
+
+        /* @media settings */
+        @media (max-width: 1200px) {
+            .main-title {
+                font-size: 80px;
+            }
+            .subtitle {
+                font-size: 32px;
+            }
+            .chat-window {
+                width: 400px;
+            }
+        }
+    </style>
+<body>
+    <div class="container">
+        <!-- Top area -->
+        <div class="header-section">
+            <div class="title-area">
+                <div class="main-title">
+                    AL<span class="outline green">ON</span>E
+                </div>
+                <div class="main-title">
+                    CHAT
+                </div>
+            </div>
+            
+            <!-- Server preview -->
+            <div class="server-preview">
+                <div class="server-header">
+                    <div class="server-dot"></div>
+                    <div class="server-dot"></div>
+                </div>
+                <div class="server-line"></div>
+                <div class="server-line"></div>
+                <div class="server-line"></div>
+                <div class="server-line"></div>
+                <div class="server-line"></div>
+            </div>
+        </div>
+
+        <!-- Bottom area -->
+        <div class="bottom-section">
+            <!-- Tech stack -->
+            <div class="tech-stack">
+                <div class="tech-item highlight">Python</div>
+                <div class="tech-item">Tkinter</div>
+                <div class="tech-item">WebSocket</div>
+            </div>
+
+            <!-- Chat window -->
+            <div class="chat-window">
+                <div class="chat-sidebar">
+                    <div class="sidebar-header"></div>
+                    <div class="sidebar-item"></div>
+                    <div class="sidebar-item"></div>
+                    <div class="sidebar-item"></div>
+                </div>
+                <div class="chat-main">
+                    <div class="chat-title">HI!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="decoration-line line-1"></div>
+    </div>
+
+    <script>
+        // Check server status by trying to fetch the current page
+        async function checkServerStatus() {
+            const statusElement = document.querySelector('.main-title .green');
+            const messageElement = document.querySelector('.chat-main .chat-title');
+            if (!statusElement||!messageElement) return;
+
+            try {
+                // Try connecting host with current host URL, set a timeout of 3 seconds
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+                const response = await fetch(window.location.href, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    cache: 'no-cache'
+                });
+
+                // If you want to test the "OFF" status, uncomment the line below to simulate a failed fetch
+                // throw new Error('Test!');
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    // Server is up - keep green ON
+                    statusElement.textContent = 'ON';
+                    statusElement.classList.remove('red');
+                    statusElement.classList.add('green');
+                    messageElement.textContent = 'HI!';
+                } else {
+                    throw new Error('Internal Server Error during status checking!');
+                }
+            } catch (error) {
+                // Server is done - change green ON to red OFF
+                statusElement.textContent = 'OFF';
+                statusElement.classList.remove('green');
+                statusElement.classList.add('red');
+                messageElement.textContent = 'Oops!';
+            }
+        }
+
+        // Check when loading page
+        checkServerStatus();
+
+        // Check per 10 seconds
+        setInterval(checkServerStatus, 10000);
+    </script>
+</body></html>

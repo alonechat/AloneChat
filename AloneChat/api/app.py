@@ -5,18 +5,19 @@ This module handles all transport concerns and delegates business logic
 to the server layer services.
 """
 
-import asyncio
 import json
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional, Set
+from typing import Dict, Optional, Set
 
 import jwt
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -157,12 +158,22 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         whitelist = [
             "/api/login", "/api/register", "/api/get_default_server",
-            "/static/", "/login.html", "/events", "/recv", "/recv/batch"
+            "/static/", "/login.html", "/events", "/recv", "/recv/batch",
+            "/", "/index.html"
         ]
         
         if any(request.url.path.startswith(p) for p in whitelist):

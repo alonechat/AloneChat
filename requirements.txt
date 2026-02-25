@@ -5,6 +5,7 @@ fastapi
 starlette
 pyjwt
 uvicorn
+pydantic
 websockets
 
 # Cryptography
