@@ -39,32 +39,46 @@ jobs:
           mkdir -p logs/test
           mkdir -p logs/dev
 
-      - name: Run all integration tests
+      - name: Run unit tests
         run: |
-          pytest AloneChat/test/test_server_integration.py \
+          pytest AloneChat/test/ \
+            -v \
+            --tb=short \
+            --cov=AloneChat \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -m "unit" \
+            --ignore=AloneChat/test/alonechat_load_test.py \
+            --junitxml=reports/unit-${{ matrix.os }}-${{ matrix.python-version }}.xml
+
+      - name: Run integration tests
+        run: |
+          pytest AloneChat/test/ \
             -v \
             --tb=short \
             --cov=AloneChat \
             --cov-report=xml \
             --cov-report=term-missing \
             -m "integration" \
+            --ignore=AloneChat/test/alonechat_load_test.py \
             --junitxml=reports/integration-${{ matrix.os }}-${{ matrix.python-version }}.xml
         env:
-          ALONECHAT_ENV: ${{ inputs.environment }}
+          ALONECHAT_ENV: ${{ env.ALONECHAT_ENV }}
 
       - name: Run performance tests
         run: |
-          if [ "${{ inputs.run_slow_tests }}" == "true" ]; then
-            MARKER="performance"
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            MARKER="performance and not slow"
           else
             MARKER="performance and not slow"
           fi
-          pytest AloneChat/test/test_server_integration.py \
+          pytest AloneChat/test/ \
             -v \
             --tb=short \
-            -m "$MARKER"
+            -m "$MARKER" \
+            --ignore=AloneChat/test/alonechat_load_test.py
         env:
-          ALONECHAT_ENV: ${{ inputs.environment }}
+          ALONECHAT_ENV: ${{ env.ALONECHAT_ENV }}
         shell: bash
 
       - name: Upload test results
@@ -81,7 +95,6 @@ jobs:
   load-tests:
     name: Load Tests
     runs-on: ubuntu-latest
-    if: inputs.run_slow_tests == true
     needs: [comprehensive-tests]
 
     steps:
@@ -97,17 +110,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio websockets PyJWT
+          pip install pytest pytest-asyncio websockets PyJWT aiohttp
           pip install -r requirements.txt || true
 
       - name: Run load tests
         run: |
-          pytest AloneChat/test/test_server_integration.py \
+          pytest AloneChat/test/alonechat_load_test.py \
             -v \
             --tb=short \
             -m "slow"
         env:
-          ALONECHAT_ENV: ${{ inputs.environment }}
+          ALONECHAT_ENV: ${{ env.ALONECHAT_ENV }}
 
   test-report:
     name: Test Report
@@ -120,12 +133,10 @@ jobs:
         run: |
           echo "## Comprehensive Server Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Slow Tests:** ${{ inputs.run_slow_tests }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ALONECHAT_ENV }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Test Matrix" >> $GITHUB_STEP_SUMMARY
-          echo "- Ubuntu: Python 3.10, 3.11, 3.12, 3.13" >> $GITHUB_STEP_SUMMARY
-          echo "- Windows: Python 3.10, 3.11, 3.12, 3.13" >> $GITHUB_STEP_SUMMARY
+          echo "- Ubuntu: Python 3.13" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY

@@ -1,5 +1,5 @@
 """
-Test configuration and fixtures for AloneChat server tests.
+Test configuration and fixtures for AloneChat tests.
 """
 
 import asyncio
@@ -250,8 +250,36 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture
+def mock_user_db():
+    """Create a mock user database for testing."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump({}, f)
+        temp_path = f.name
+    
+    yield temp_path
+    
+    try:
+        os.unlink(temp_path)
+    except OSError:
+        pass
+
+
+@pytest.fixture
+def sample_users():
+    """Provide sample user credentials for testing."""
+    return {
+        "user1": {"password": "password1", "is_online": False},
+        "user2": {"password": "password2", "is_online": False},
+        "user3": {"password": "password3", "is_online": False},
+    }
+
+
 def pytest_configure(config):
     """Configure pytest with custom markers."""
+    config.addinivalue_line(
+        "markers", "unit: mark test as unit test"
+    )
     config.addinivalue_line(
         "markers", "integration: mark test as integration test"
     )
