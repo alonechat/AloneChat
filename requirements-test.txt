@@ -2,20 +2,7 @@
 # Do not install with docker!!!
 
 # Testing framework
-pytest>=7.0.0
-pytest-cov>=4.0.0
-pytest-asyncio>=0.21.0
-pytest-timeout>=2.2.0
+pytest
+pytest-asyncio
 
-# Code quality
-ruff>=0.1.0
-black>=23.0.0
-mypy>=1.0.0
-
-# Security
-bandit>=1.7.0
-safety>=2.3.0
-
-# Coverage
-coverage>=7.0.0
-codecov>=2.1.0
+httpx
