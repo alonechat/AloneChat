@@ -6,7 +6,41 @@ Container-aware CPU detection for Docker deployments.
 
 import multiprocessing as mp
 import os
+import secrets
+import string
 from typing import Dict, Any
+
+import logging
+logger = logging.getLogger(__name__)
+
+def _generate_strong_secret(length: int = 64) -> str:
+    """Generate a cryptographically strong random secret."""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def _get_env_mode() -> str:
+    """Get current environment mode."""
+    return os.environ.get('ENV_MODE', 'development').lower()
+
+
+def _validate_jwt_secret() -> str:
+    """Validate and return JWT secret with strong defaults."""
+    secret = os.environ.get("JWT_SECRET", "")
+    env_mode = _get_env_mode()
+    
+    if secret and len(secret) >= 32:
+        return secret
+    
+    if env_mode in ('production', 'prod'):
+        raise ValueError(
+            "JWT_SECRET must be set with at least 32 characters in production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    
+    generated = _generate_strong_secret()
+    logger.warning(f"Using auto-generated JWT_SECRET for {env_mode} mode. This is not secure for production!")
+    return generated
 
 
 def get_container_cpu_count() -> int:
@@ -47,9 +81,15 @@ class Config:
     """Application configuration class."""
 
     # JWT Configuration
-    JWT_SECRET = os.environ.get("JWT_SECRET", "default-secret-key-change-in-production")
+    JWT_SECRET = _validate_jwt_secret()
     JWT_ALGORITHM = "HS256"
     JWT_EXPIRE_MINUTES = 30
+
+    # CORS Configuration
+    CORS_ALLOW_ORIGINS = \
+        os.environ.get("CORS_ALLOW_ORIGINS", "").split(",") if os.environ.get("CORS_ALLOW_ORIGINS") \
+        else ["http://localhost:8123", "http://localhost:8766"]
+    CORS_ALLOW_CREDENTIALS = os.environ.get("CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
 
     # Server Configuration
     DEFAULT_HOST = "localhost"

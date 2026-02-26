@@ -150,8 +150,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=config.CORS_ALLOW_ORIGINS,
+    allow_credentials=config.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -241,7 +241,9 @@ async def logout(request: Request):
     username = _get_user(request)
     auth = request.headers.get("Authorization")
     if auth and auth.startswith("Bearer "):
-        _token_cache.invalidate(auth.split(" ", 1)[1])
+        token = auth.split(" ", 1)[1]
+        _token_cache.invalidate(token)
+        get_auth_service().revoke_token(token)
     
     get_user_service().set_offline(username)
     return {"success": True, "message": "Logout successful"}
@@ -254,9 +256,14 @@ async def get_default_server():
 
 @app.get("/api/user/status/{user_id}")
 async def get_user_status(user_id: str, request: Request):
-    _get_user(request)
+    current_user = _get_user(request)
     
     user_service = get_user_service()
+    friend_service = get_friend_service()
+    
+    if user_id != current_user and not friend_service.is_friend(current_user, user_id):
+        raise HTTPException(status_code=403, detail="Can only view your own or friends' status")
+    
     info = user_service.get_user_info(user_id)
     
     if not info:
@@ -328,6 +335,10 @@ async def send_private_message(msg_req: PrivateMessageRequest, request: Request)
 @app.get("/api/chat/history/{other_user}")
 async def get_chat_history(other_user: str, request: Request, limit: int = 50):
     current_user = _get_user(request)
+    
+    friend_service = get_friend_service()
+    if other_user != current_user and not friend_service.is_friend(current_user, other_user):
+        raise HTTPException(status_code=403, detail="Can only view chat history with yourself or friends")
     
     history = get_chat_service().get_history(current_user, other_user, limit)
     return {"success": True, "messages": history, "count": len(history)}
