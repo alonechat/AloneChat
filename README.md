@@ -1,5 +1,7 @@
 # AloneChat
 
+>[contect to us](http://47.98.235.177:38479/feedback.html)
+
 A secure, modular chat application with WebSocket-based real-time communication, plugin extensibility, and unified logging.
 
 > [!WARNING]
