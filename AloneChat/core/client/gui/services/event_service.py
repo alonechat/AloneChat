@@ -68,6 +68,7 @@ class EventServiceConfig:
     max_reconnect_delay: float = 30.0
     heartbeat_timeout: float = 60.0
     buffer_size: int = 100
+    skip_ssl_verify: bool = False
 
 
 class EventService:
@@ -122,7 +123,8 @@ class EventService:
         
         if self._session is None or self._session.closed:
             timeout = aiohttp.ClientTimeout(total=120, connect=10)
-            self._session = aiohttp.ClientSession(timeout=timeout)
+            connector = aiohttp.TCPConnector(ssl=False) if self._config.skip_ssl_verify else None
+            self._session = aiohttp.ClientSession(timeout=timeout, connector=connector)
         
         self._task = asyncio.create_task(self._run_loop())
     
@@ -267,17 +269,22 @@ class APIClient:
     Uses aiohttp for async HTTP requests.
     """
     
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, skip_ssl_verify: bool = None):
         self._base_url = base_url.rstrip('/')
         self._session: Optional[aiohttp.ClientSession] = None
         self._token: Optional[str] = None
         self._username: Optional[str] = None
+        if skip_ssl_verify is None:
+            self._skip_ssl_verify = base_url.startswith("https://")
+        else:
+            self._skip_ssl_verify = skip_ssl_verify
     
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
         if self._session is None or self._session.closed:
             timeout = aiohttp.ClientTimeout(total=60, connect=10)
-            self._session = aiohttp.ClientSession(timeout=timeout)
+            connector = aiohttp.TCPConnector(ssl=False) if self._skip_ssl_verify else None
+            self._session = aiohttp.ClientSession(timeout=timeout, connector=connector)
         return self._session
     
     async def close(self) -> None:
@@ -304,6 +311,8 @@ class APIClient:
         session = await self._get_session()
         url = f"{self._base_url}{endpoint}"
         
+        logger.debug(f"API Request: {method} {url}")
+        
         try:
             async with session.request(
                 method, 
@@ -312,13 +321,18 @@ class APIClient:
                 params=params,
                 headers=self._get_headers()
             ) as response:
+                logger.debug(f"API Response: {response.status} {url}")
                 try:
-                    return await response.json()
+                    result = await response.json()
+                    logger.debug(f"API Response Body: {result}")
+                    return result
                 except Exception:
                     return {"success": False, "message": f"HTTP {response.status}"}
         except aiohttp.ClientError as e:
+            logger.error(f"API Client Error: {type(e).__name__}: {e}")
             return {"success": False, "message": str(e)}
         except Exception as e:
+            logger.error(f"API Exception: {type(e).__name__}: {e}")
             return {"success": False, "message": str(e)}
     
     async def register(self, username: str, password: str) -> Dict[str, Any]:

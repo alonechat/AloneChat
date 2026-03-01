@@ -91,6 +91,11 @@ class Config:
         else ["http://localhost:8123", "http://localhost:8766"]
     CORS_ALLOW_CREDENTIALS = os.environ.get("CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
 
+    # Tunnel Configuration (Cloudflare Tunnel)
+    TUNNEL_TRUSTED_HOSTS = os.environ.get("TUNNEL_TRUSTED_HOSTS", "*")
+    FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "false").lower() == "true"
+    VERIFY_SSL = os.environ.get("VERIFY_SSL", "true").lower() == "true"
+
     # Server Configuration
     DEFAULT_HOST = "localhost"
     DEFAULT_SERVER_PORT = 8765

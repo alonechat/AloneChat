@@ -25,6 +25,7 @@ import sv_ttk
 
 from AloneChat.core.client.client_base import Client
 from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
+from AloneChat.config import config
 from .components import WinUI3MessageCard
 from .controllers.auth_view import AuthView
 from .controllers.chat_view import ChatView
@@ -52,13 +53,20 @@ class GUIClient(Client):
     - Automatic reconnection
     """
     
-    def __init__(self, api_host: str = DEFAULT_HOST, api_port: int = DEFAULT_API_PORT):
+    def __init__(self, api_host: str = DEFAULT_HOST, api_port: int = DEFAULT_API_PORT, secure_mode: bool = None):
         super().__init__(api_host, api_port)
         
         self._api_host = api_host
         self._api_port = api_port
         
-        self._api_client = APIClient(f"http://{api_host}:{api_port}")
+        if secure_mode is None:
+            secure_mode = os.environ.get("ALONE_CHAT_SECURE_MODE", "false").lower() == "true"
+        
+        use_https = secure_mode or api_port == 443
+        if use_https:
+            self._api_client = APIClient(f"https://{api_host}:{api_port}", skip_ssl_verify=(not config.VERIFY_SSL))
+        else:
+            self._api_client = APIClient(f"http://{api_host}:{api_port}")
         self._event_service: Optional[EventService] = None
         
         self._username = ""
@@ -175,13 +183,20 @@ class GUIClient(Client):
         if not self._token:
             return
         
+        secure_mode = os.environ.get("ALONE_CHAT_SECURE_MODE", "false").lower() == "true"
+        use_https = secure_mode or self._api_port == 443
+        skip_ssl_verify = use_https and config.VERIFY_SSL is False
+        
+        base_url = f"https://{self._api_host}:{self._api_port}" if use_https else f"http://{self._api_host}:{self._api_port}"
+        
         config = EventServiceConfig(
-            base_url=f"http://{self._api_host}:{self._api_port}",
+            base_url=base_url,
             token=self._token,
             reconnect_delay=1.0,
             max_reconnect_delay=30.0,
             heartbeat_timeout=60.0,
-            buffer_size=100
+            buffer_size=100,
+            skip_ssl_verify=skip_ssl_verify
         )
         
         self._event_service = EventService(config)
@@ -311,12 +326,15 @@ class GUIClient(Client):
     
     async def _do_login(self, username: str, password: str) -> None:
         """Perform login."""
+        logger.info(f"Attempting login for user: {username} to server: {self._api_client._base_url}")
         try:
             response = await self._api_client.login(username, password)
+            logger.info(f"Login response: {response}")
             
             if response.get("success"):
                 self._username = username
                 self._token = response.get("token")
+                logger.info(f"Login successful for user: {username}, token: {self._token[:20]}..." if self._token else "None")
                 
                 if self._ui_alive():
                     if self._auth_view:
@@ -324,9 +342,11 @@ class GUIClient(Client):
                     self.root.after(500, self._show_chat_view)
             else:
                 error = response.get("message", "Login failed")
+                logger.warning(f"Login failed for user {username}: {error}")
                 if self._ui_alive() and self._auth_view:
                     self.root.after(0, lambda: self._auth_view.show_error(error))
         except Exception as e:
+            logger.error(f"Login exception for user {username}: {type(e).__name__}: {e}")
             if self._ui_alive() and self._auth_view:
                 self.root.after(0, lambda: self._auth_view.show_error(str(e)))
     
@@ -360,7 +380,12 @@ class GUIClient(Client):
         """Handle server settings change from auth view."""
         self._api_host = api_host
         self._api_port = api_port
-        self._api_client = APIClient(f"http://{api_host}:{api_port}")
+        secure_mode = os.environ.get("ALONE_CHAT_SECURE_MODE", "false").lower() == "true"
+        use_https = secure_mode or api_port == 443
+        if use_https:
+            self._api_client = APIClient(f"https://{api_host}:{api_port}", skip_ssl_verify=(not config.VERIFY_SSL))
+        else:
+            self._api_client = APIClient(f"http://{api_host}:{api_port}")
         print(f"Server settings updated: API at {api_host}:{api_port}")
     
     def _handle_send(self, content: str) -> None:

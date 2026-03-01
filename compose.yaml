@@ -31,6 +31,12 @@ services:
       - AC_THREAD_WORKERS=${AC_THREAD_WORKERS:-60}
       - AC_IO_WORKERS=${AC_IO_WORKERS:-9}
       - AC_DB_WORKERS=${AC_DB_WORKERS:-6}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-"http://localhost:8123,http://localhost:8766"}
+      - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-true}
+      - TUNNEL_TRUSTED_HOSTS=${TUNNEL_TRUSTED_HOSTS:-"*"}
+      - FORCE_HTTPS=${FORCE_HTTPS:-false}
+      - VERIFY_SSL=${VERIFY_SSL:-true}
+
     volumes:
       - alonechat-server-logs:/app/logs
     depends_on:
@@ -58,7 +64,7 @@ services:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-logs:/var/log/clickhouse-server
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      test: [ "CMD", "clickhouse-client", "--query", "SELECT 1" ]
       interval: 10s
       timeout: 5s
       retries: 5

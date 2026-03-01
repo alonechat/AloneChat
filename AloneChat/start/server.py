@@ -15,7 +15,7 @@ import uvicorn
 
 import AloneChat
 import AloneChat.config as config
-from AloneChat.api.routes import app
+from AloneChat.api import app
 from AloneChat.core.logging import get_logger, auto_configure
 from AloneChat.core.server import get_database, shutdown_user_service
 from AloneChat.core.server.database import initialize_database, shutdown_database
@@ -89,6 +89,7 @@ def _run_uvicorn(host: str, port: int, workers: int = 1):
             workers=workers,
             log_level="warning",
             access_log=False,
+            proxy_headers=True,
         )
     else:
         uvicorn.run(
@@ -97,6 +98,7 @@ def _run_uvicorn(host: str, port: int, workers: int = 1):
             port=port,
             log_level="warning",
             access_log=False,
+            proxy_headers=True,
         )
 
 

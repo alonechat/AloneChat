@@ -77,8 +77,8 @@ class AloneChatAPIClient:
     def __init__(self, host: str = "localhost", port: int = DEFAULT_API_PORT):
         self.host = host
         self.port = port
-        self.base_url = f"http://{host}:{port}"
-        self.ws_url = f"ws://{host}:{port}/ws"
+        self.base_url = f"https://{host}:{port}" if port == 443 else f"http://{host}:{port}"
+        self.ws_url = f"wss://{host}:{port}/ws" if port == 443 else f"ws://{host}:{port}/ws"
         self.token: Optional[str] = None
         self.username: Optional[str] = None
         
