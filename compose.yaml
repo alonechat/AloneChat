@@ -10,6 +10,7 @@
 
 services:
   alonechat-server:
+    image: alonechat/server:latest
     build:
       context: .
     ports:
