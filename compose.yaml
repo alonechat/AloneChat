@@ -17,7 +17,9 @@ services:
       - "8765:8765"
       - "8766:8766"
     environment:
-      - JWT_SECRET=${JWT_SECRET:-default-secret-key-change-in-production}
+      # JWT_SECRET is required — the server will refuse to start with the default.
+      # Generate one with: openssl rand -hex 32
+      - JWT_SECRET=${JWT_SECRET:-}
       - CLICKHOUSE_HOST=${CLICKHOUSE_HOST:-clickhouse}
       - CLICKHOUSE_PORT=${CLICKHOUSE_PORT:-9000}
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
@@ -25,6 +27,7 @@ services:
       - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-alonechat}
       - CLICKHOUSE_ENABLED=${CLICKHOUSE_ENABLED:-true}
       - PURE_SERVER_ENVIRON=true
+      - STRICT_SECURITY_CHECK=${STRICT_SECURITY_CHECK:-true}
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -40,9 +43,11 @@ services:
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT:-1}
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    # ClickHouse ports are NOT exposed to the host. The server communicates
+    # with ClickHouse over the internal Docker network.
+    expose:
+      - "8123"
+      - "9000"
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-logs:/var/log/clickhouse-server
