@@ -28,13 +28,9 @@ if os.environ.get('PURE_SERVER_ENVIRON') is None:
     from AloneChat.start import client
 from AloneChat.start import server
 from AloneChat.config import Config
-from AloneChat.core.logging import auto_configure, get_logger
+from AloneChat.logging import auto_configure, get_logger
 
 logger = get_logger(__name__)
-
-DEFAULT_PORT = Config.DEFAULT_SERVER_PORT
-DEFAULT_HOST = Config.DEFAULT_HOST
-DEFAULT_API_PORT = Config.DEFAULT_API_PORT
 
 def parse():
     """Parse command line arguments."""
@@ -62,12 +58,12 @@ def parse():
     server_parser = subparsers.add_parser('server', help='Start the server (WebSocket + HTTP API)')
     server_parser.add_argument('--port', type=int, default=None, help='WebSocket port (default: 8765)')
     server_parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
-    server_parser.add_argument('--no-plugins', action='store_true', help='Disable plugin system')
+    server_parser.add_argument('--no-plugins', action='store_true', help='(no-op: plugins are deprecated)')
 
     # Setup client command line arguments
     client_parser = subparsers.add_parser('client', help='Start the client')
-    client_parser.add_argument('--api-host', default=DEFAULT_HOST, help='API server hostname (default: localhost)')
-    client_parser.add_argument('--api-port', type=int, default=DEFAULT_API_PORT, help='API server port (default: 8766)')
+    client_parser.add_argument('--api-host', default=Config.DEFAULT_HOST, help='API server hostname (default: localhost)')
+    client_parser.add_argument('--api-port', type=int, default=Config.DEFAULT_API_PORT, help='API server port (default: 8766)')
     client_parser.add_argument(
         '--ui',
         choices=['gui'],

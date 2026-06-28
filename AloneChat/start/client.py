@@ -3,8 +3,8 @@ Client startup module for AloneChat.
 Simple wrapper interface for starting the chat client.
 """
 
-from AloneChat.core.client import run_client
-from AloneChat.core.client.utils import DEFAULT_HOST, DEFAULT_API_PORT
+from AloneChat.client.runner import run_client
+from AloneChat.client.runner import DEFAULT_HOST, DEFAULT_API_PORT
 
 __all__ = ['client']
 

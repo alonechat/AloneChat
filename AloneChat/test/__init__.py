@@ -7,7 +7,7 @@ import asyncio
 
 import websockets
 
-from ..core.message.protocol import Message, MessageType
+from ..message.protocol import Message, MessageType
 
 
 async def send_message(context, host="localhost", port=8765):

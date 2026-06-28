@@ -3,6 +3,7 @@ Server startup module for AloneChat application.
 Provides the entry point for starting the chat server and API services.
 """
 
+import os
 import signal
 import sys
 import threading
@@ -12,9 +13,9 @@ import uvicorn
 
 import AloneChat
 import AloneChat.config as config
-from AloneChat.api.routes import app
-from AloneChat.core.logging import get_logger, auto_configure
-from AloneChat.core.server import get_database, shutdown_user_service
+from AloneChat.api.app import app
+from AloneChat.di import container
+from AloneChat.logging import get_logger, auto_configure
 
 logger = get_logger(__name__)
 
@@ -24,8 +25,7 @@ _shutdown_lock = threading.Lock()
 
 def _set_all_users_offline():
     """Set ALL users to offline status using single database query."""
-    db = get_database()
-    count = db.set_all_offline()
+    count = container.user_repo.set_all_offline()
     logger.info("Set %d users to offline status", count)
     return count
 
@@ -33,7 +33,7 @@ def _set_all_users_offline():
 def _graceful_shutdown():
     """Perform graceful shutdown - set users offline and flush buffer."""
     global _shutdown_state
-    
+
     with _shutdown_lock:
         if _shutdown_state == 0:
             _shutdown_state = 1
@@ -43,14 +43,14 @@ def _graceful_shutdown():
             logger.info("Setting all users offline...")
             logger.info("=" * 50)
             logger.info("")
-            
+
             try:
                 _set_all_users_offline()
-                shutdown_user_service()
+                container.shutdown()
                 logger.info("Graceful shutdown complete. Press Ctrl+C again to force exit.")
             except Exception as e:
                 logger.error("Error during graceful shutdown: %s", e)
-            
+
         elif _shutdown_state == 1:
             _shutdown_state = 2
             logger.info("")
@@ -58,7 +58,7 @@ def _graceful_shutdown():
             logger.info("Force quit requested - exiting immediately")
             logger.info("=" * 50)
             logger.info("")
-            sys.exit(1)
+            os._exit(1)
 
 
 def _signal_handler(signum, frame):
@@ -110,14 +110,23 @@ def server(
     
     try:
         if not srv_only:
-            http_thread = threading.Thread(target=start_http_server, daemon=True)
+            http_thread = threading.Thread(target=start_http_server, daemon=False, name="HTTP-Server")
             http_thread.start()
             logger.info("HTTP API server starting on http://%s:%s", host, port + 1)
-        
-        while _shutdown_state < 2:
-            time.sleep(0.5)
-            if _shutdown_state == 1:
+
+        # Main loop: read _shutdown_state under the lock to avoid data races
+        while True:
+            with _shutdown_lock:
+                state = _shutdown_state
+
+            if state >= 2:
                 break
+            if state == 1:
+                # First Ctrl+C already handled; sleep then re-check
+                time.sleep(0.5)
+                continue
+
+            time.sleep(0.5)
     except KeyboardInterrupt:
         _graceful_shutdown()
     except Exception as e:
@@ -125,6 +134,14 @@ def server(
     finally:
         if _shutdown_state == 0:
             _graceful_shutdown()
+
+        # Wait for the HTTP server thread to finish gracefully
+        if not srv_only and http_thread.is_alive():
+            logger.info("Waiting for HTTP server to shut down...")
+            http_thread.join(timeout=10.0)
+            if http_thread.is_alive():
+                logger.warning("HTTP server did not shut down within timeout")
+
         logger.info("Server shutdown complete")
 
 

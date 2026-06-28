@@ -15,8 +15,8 @@ from typing import List, Tuple
 
 import websockets
 
-from AloneChat.api.client import AloneChatAPIClient, close_session
-from AloneChat.core.message import Message, MessageType
+from AloneChat.client.api_client import AloneChatAPIClient, close_session
+from AloneChat.message.protocol import Message, MessageType
 
 API_PORT = 8766
 HOST = "localhost"
